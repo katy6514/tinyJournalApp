@@ -15,7 +15,7 @@ export default function Form({
 }: {
   emptyEntries: JournalEntry[];
 }) {
-  //   console.log("its the create entry form!");
+  //   console.log({ emptyEntries });
   return (
     <form action={createEntry}>
       <div className="rounded-md bg-gray-50 p-4 md:p-6">
@@ -23,13 +23,14 @@ export default function Form({
           {/* Select an empty date */}
           <div>
             <label
-              htmlFor="emptyDate"
+              htmlFor="date"
               className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
             >
               Select an date
             </label>
             <select
-              id="emptyDate"
+              id="date"
+              name="date_id"
               className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             >
               <option value="" disabled>
@@ -54,6 +55,7 @@ export default function Form({
             <input
               type="text"
               id="state"
+              name="state"
               className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="Doe"
               required
@@ -71,6 +73,7 @@ export default function Form({
             <input
               type="text"
               id="legname"
+              name="legname"
               className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="john.doe@company.com"
               required
@@ -87,6 +90,7 @@ export default function Form({
             </label>
             <textarea
               id="entryText"
+              name="entryText"
               className="block p-2.5 w-full text-sm text-gray-900 bg-white rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="Write your thoughts here..."
             ></textarea>

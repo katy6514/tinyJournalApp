@@ -11,6 +11,16 @@ async function listEntries() {
   return data;
 }
 
+async function listDates() {
+  const data = await sql`
+    SELECT *
+    FROM dates
+    ORDER BY date;
+  `;
+
+  return data;
+}
+
 async function listDatesWithEntries() {
   const data = await sql`
     SELECT 
@@ -46,7 +56,7 @@ async function listDatesWithCompleteEntries() {
 
 export async function GET() {
   try {
-    return Response.json(await listDatesWithCompleteEntries());
+    return Response.json(await listDates());
   } catch (error) {
     return Response.json({ error }, { status: 500 });
   }

@@ -1,5 +1,15 @@
 "use server";
-export async function createEntry(formData: FormData) {}
+
+export async function createEntry(formData: FormData) {
+  const rawFormData = {
+    date_id: formData.get("date_id"),
+    state: formData.get("state"),
+    legname: formData.get("legname"),
+    text: formData.get("entryText"),
+  };
+  // Test it out:
+  console.log(rawFormData);
+}
 
 // const CreateInvoice = FormSchema.omit({ id: true, date: true });
 
