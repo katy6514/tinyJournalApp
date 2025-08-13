@@ -4,6 +4,8 @@ import clsx from "clsx";
 import { lusitana } from "@/app/ui/fonts";
 import { fetchJournal } from "@/app/lib/data";
 
+import { UpdateEntry } from "@/app/ui/journal/buttons";
+
 import { JournalEntry } from "@/app/lib/definitions";
 // import { fetchLatestInvoices } from '@/app/lib/data';
 
@@ -22,16 +24,17 @@ export default async function JournalList() {
       </h2>
 
       {entries.map((entry, i) => {
-        const { date, id, text, legname, state } = entry as JournalEntry;
+        const { date, date_id, entry_id, text, legname, state } =
+          entry as JournalEntry;
 
         const timeZoneCorrectedDate = new Date(
           date + "T00:00:00"
         ).toDateString();
 
-        // console.log(text);
+        // console.log(entry);
         return (
           <div
-            key={id}
+            key={date_id}
             className="grid grid-flow-col grid-rows-3 gap-4 rounded-xl bg-gray-50 dark:bg-gray-600 p-4 mb-8"
           >
             <div className="row-span-3 rounded-lg bg-white dark:bg-gray-700 w-40">
@@ -52,6 +55,7 @@ export default async function JournalList() {
                 {text}
               </p>
             </div>
+            <UpdateEntry entry_id={entry_id} />
           </div>
         );
       })}

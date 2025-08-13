@@ -1,0 +1,25 @@
+import Form from "@/app/ui/journal/edit-form";
+import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
+import { fetchEntryByID } from "@/app/lib/data";
+
+export default async function Page(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  const id = params.id;
+
+  const entry = await fetchEntryByID(id);
+  return (
+    <main>
+      <Breadcrumbs
+        breadcrumbs={[
+          { label: "Journal", href: "/journal/listView" },
+          {
+            label: "Edit Entry",
+            href: `/journal/${id}/edit`,
+            active: true,
+          },
+        ]}
+      />
+      <Form entry={entry} />
+    </main>
+  );
+}

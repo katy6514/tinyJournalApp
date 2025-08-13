@@ -10,7 +10,8 @@ export async function fetchJournal() {
     const data = await sql<JournalEntry[]>` 
       SELECT 
         TO_CHAR(d.date, 'YYYY-MM-DD') AS date,
-        d.id,
+        d.id AS date_id,
+        e.id AS entry_id,
         e.text,
         e.legname,
         e.state,
@@ -25,5 +26,24 @@ export async function fetchJournal() {
   } catch (error) {
     console.error("Database Error:", error);
     throw new Error("Failed to fetch journal entries.");
+  }
+}
+
+export async function fetchEntryByID(id: string) {
+  try {
+    const data = await sql<JournalEntry[]>` 
+      SELECT
+        e.id,
+        e.state,
+        e.legname,
+        e.text
+      FROM entries e
+      WHERE e.id = ${id};
+    `;
+
+    return data;
+  } catch (error) {
+    console.error("Database Error:", error);
+    throw new Error("Failed to fetch entry.");
   }
 }

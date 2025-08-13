@@ -15,16 +15,16 @@ export function AddEntry() {
   );
 }
 
-// export function UpdateInvoice({ id }: { id: string }) {
-//   return (
-//     <Link
-//       href={`/dashboard/invoices/${id}/edit`}
-//       className="rounded-md border p-2 hover:bg-gray-100"
-//     >
-//       <PencilIcon className="w-5" />
-//     </Link>
-//   );
-// }
+export function UpdateEntry({ entry_id }: { entry_id: string }) {
+  return (
+    <Link
+      href={`/journal/${entry_id}/edit`}
+      className="rounded-md border p-2 hover:bg-gray-100"
+    >
+      <PencilIcon className="w-5" />
+    </Link>
+  );
+}
 
 // export function DeleteInvoice({ id }: { id: string }) {
 //   const deleteInvoiceWithId = deleteInvoice.bind(null, id);
