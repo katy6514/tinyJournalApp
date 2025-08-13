@@ -1,11 +1,11 @@
 // import { CustomerField } from "@/app/lib/definitions";
 import Link from "next/link";
-import {
-  CheckIcon,
-  ClockIcon,
-  CurrencyDollarIcon,
-  UserCircleIcon,
-} from "@heroicons/react/24/outline";
+// import {
+//   CheckIcon,
+//   ClockIcon,
+//   CurrencyDollarIcon,
+//   UserCircleIcon,
+// } from "@heroicons/react/24/outline";
 import { Button } from "@/app/ui/button";
 import { createEntry } from "@/app/lib/actions";
 import { JournalEntry } from "@/app/lib/definitions";
@@ -19,17 +19,18 @@ export default function Form({
   return (
     <form action={createEntry}>
       <div className="rounded-md bg-gray-50 p-4 md:p-6">
-        {/* Customer Name */}
-        <div className="mb-4">
-          <label htmlFor="emptyDate" className="mb-2 block text-sm font-medium">
-            Choose a date for the entry
-          </label>
-          <div className="relative">
+        <div className="grid gap-6 mb-6 md:grid-cols-2">
+          {/* Select an empty date */}
+          <div>
+            <label
+              htmlFor="emptyDate"
+              className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+            >
+              Select an date
+            </label>
             <select
               id="emptyDate"
-              name="customerId"
-              className="peer block w-full cursor-pointer rounded-md border border-gray-200 py-2 p-2.5 text-sm outline-2 placeholder:text-gray-500"
-              defaultValue=""
+              className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             >
               <option value="" disabled>
                 Select a date
@@ -41,61 +42,54 @@ export default function Form({
               ))}
             </select>
           </div>
-        </div>
 
-        {/* State */}
-        <div className="mb-4">
-          <label htmlFor="amount" className="mb-2 block text-sm font-medium">
-            Choose a state
-          </label>
-          <div className="relative mt-2  rounded-md">
-            <div className="relative">
-              <input
-                id="state"
-                name="state"
-                type="string"
-                placeholder="Enter state"
-                className="peer block w-full rounded-md border border-gray-200 py-2 p-2.5 text-sm outline-2 placeholder:text-gray-500"
-              />
-            </div>
+          {/* Select a state */}
+          <div>
+            <label
+              htmlFor="state"
+              className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+            >
+              State
+            </label>
+            <input
+              type="text"
+              id="state"
+              className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              placeholder="Doe"
+              required
+            />
           </div>
-        </div>
 
-        {/* Title / LegName */}
-        <div className="mb-4">
-          <label htmlFor="amount" className="mb-2 block text-sm font-medium">
-            Title / LegName
-          </label>
-          <div className="relative mt-2  rounded-md">
-            <div className="relative">
-              <input
-                id="state"
-                name="state"
-                type="string"
-                placeholder="Enter state"
-                className="peer block w-full rounded-md border border-gray-200 py-2 p-2.5 text-sm outline-2 placeholder:text-gray-500"
-              />
-            </div>
+          {/* Title / Legname */}
+          <div className="mb-6">
+            <label
+              htmlFor="legname"
+              className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+            >
+              Title / LegName
+            </label>
+            <input
+              type="text"
+              id="legname"
+              className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              placeholder="john.doe@company.com"
+              required
+            />
           </div>
-        </div>
 
-        {/* Entry text */}
-        <div className="mb-4">
-          <label
-            htmlFor="entryText"
-            className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-          >
-            Your message
-          </label>
-
-          <div className="relative mt-2 rounded-md">
-            <div className="relative">
-              <textarea
-                id="entryText"
-                className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                placeholder="Write your thoughts here..."
-              ></textarea>
-            </div>
+          {/* Journal Entry */}
+          <div className="mb-6">
+            <label
+              htmlFor="entryText"
+              className="block mb-2 w-full text-sm font-medium text-gray-900 dark:text-white"
+            >
+              Journal Entry
+            </label>
+            <textarea
+              id="entryText"
+              className="block p-2.5 w-full text-sm text-gray-900 bg-white rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              placeholder="Write your thoughts here..."
+            ></textarea>
           </div>
         </div>
       </div>
