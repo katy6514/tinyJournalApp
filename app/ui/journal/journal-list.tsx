@@ -11,17 +11,24 @@ export default async function JournalList() {
   // const latestInvoices = await fetchLatestInvoices();
   const journalEntries = await fetchJournal();
 
+  const entries = journalEntries.filter((entry) => entry.has_text);
+  const emptyEntries = journalEntries.filter((entry) => !entry.has_text);
+
+  console.log({ emptyEntries });
   return (
     <div className="flex w-full flex-col md:col-span-4">
       <h2 className={`${lusitana.className} mb-4 text-xl md:text-2xl`}>
-        Latest Entries
+        Ascending order by date
       </h2>
 
-      {journalEntries.map((entry, i) => {
-        const { id, date, legname, state, text } = entry as JournalEntry;
-        // console.log({ date });
+      {entries.map((entry, i) => {
+        const { date, id, text, legname, state } = entry as JournalEntry;
 
-        // console.log(date.toDateString());
+        const timeZoneCorrectedDate = new Date(
+          date + "T00:00:00"
+        ).toDateString();
+
+        // console.log(text);
         return (
           <div
             key={id}
@@ -35,7 +42,7 @@ export default async function JournalList() {
                 {legname} - {state}
               </p>
               <p className="hidden text-sm text-gray-500 sm:block">
-                {date.toDateString()}
+                {timeZoneCorrectedDate}
               </p>
             </div>
             <div className="col-span-2 row-span-2  rounded-lg bg-white dark:bg-gray-800 p-4  ">

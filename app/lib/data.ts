@@ -7,17 +7,20 @@ const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
 export async function fetchJournal() {
   try {
-    // Artificially delay a response for demo purposes.
-    // Don't do this in production :)
+    const data = await sql<JournalEntry[]>` 
+      SELECT 
+        TO_CHAR(d.date, 'YYYY-MM-DD') AS date,
+        d.id,
+        e.text,
+        e.legname,
+        e.state,
+        CASE WHEN e.text IS NOT NULL AND e.text <> '' THEN true ELSE false END AS has_text
 
-    // console.log('Fetching revenue data...');
-    // await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    const data = await sql<
-      JournalEntry[]
-    >`SELECT * FROM entries ORDER BY date ASC`;
-
-    // console.log('Data fetch completed after 3 seconds.');
+      FROM dates d
+      LEFT JOIN entries e
+        ON d.id = e.date_id
+      ORDER BY d.date;
+    `;
 
     return data;
   } catch (error) {
