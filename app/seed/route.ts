@@ -49,7 +49,6 @@ async function seedEntries() {
     CREATE TABLE IF NOT EXISTS entries (
       id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
       date_id INT NOT NULL REFERENCES dates(id) ON DELETE CASCADE,
-      entry_date DATE NOT NULL,
       legName VARCHAR(255) NOT NULL,
       state VARCHAR(50) NOT NULL,
       text TEXT NOT NULL
@@ -71,8 +70,8 @@ async function seedEntries() {
         await sql`SELECT id FROM dates WHERE date = ${entryDate}`;
 
       return sql`
-        INSERT INTO entries (id, date_id, entry_date, legName, state, text)
-        VALUES (${uuid}, ${dateId}, ${entryDate}, ${legName}, ${state}, ${entryText})
+        INSERT INTO entries (id, date_id, legName, state, text)
+        VALUES (${uuid}, ${dateId}, ${legName}, ${state}, ${entryText})
         ON CONFLICT (id) DO NOTHING;
       `;
     })

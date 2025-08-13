@@ -42,7 +42,6 @@ async function listDatesWithCompleteEntries() {
       d.date,
       d.id,
       e.text,
-      e.entry_date,
       e.legname,
       e.state
     FROM dates d
