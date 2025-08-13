@@ -1,10 +1,8 @@
-import { lusitana } from '@/app/ui/fonts';
-import JournalList from '@/app/ui/journal/journal-list';
-
-
+import { lusitana } from "@/app/ui/fonts";
+import JournalList from "@/app/ui/journal/journal-list";
 
 export default async function Page() {
-    // const journalEntries = await fetchJournal();
+  // const journalEntries = await fetchJournal();
 
   return (
     <main>

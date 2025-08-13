@@ -15,7 +15,6 @@ export async function fetchJournal() {
         e.legname,
         e.state,
         CASE WHEN e.text IS NOT NULL AND e.text <> '' THEN true ELSE false END AS has_text
-
       FROM dates d
       LEFT JOIN entries e
         ON d.id = e.date_id

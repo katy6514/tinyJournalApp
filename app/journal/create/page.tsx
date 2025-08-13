@@ -1,9 +1,11 @@
 import Form from "@/app/ui/journal/create-form";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
-// import { fetchCustomers } from "@/app/lib/data";
+import { fetchJournal } from "@/app/lib/data";
 
 export default async function Page() {
   //   const customers = await fetchCustomers();
+  const journalEntries = await fetchJournal();
+  const emptyEntries = journalEntries.filter((entry) => !entry.has_text);
 
   return (
     <main>
@@ -17,7 +19,7 @@ export default async function Page() {
           },
         ]}
       />
-      <Form />
+      <Form emptyEntries={emptyEntries} />
     </main>
   );
 }

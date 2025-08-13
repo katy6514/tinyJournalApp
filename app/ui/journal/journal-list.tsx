@@ -12,9 +12,9 @@ export default async function JournalList() {
   const journalEntries = await fetchJournal();
 
   const entries = journalEntries.filter((entry) => entry.has_text);
-  const emptyEntries = journalEntries.filter((entry) => !entry.has_text);
+  // const emptyEntries = journalEntries.filter((entry) => !entry.has_text);
 
-  console.log({ emptyEntries });
+  // console.log({ emptyEntries });
   return (
     <div className="flex w-full flex-col md:col-span-4">
       <h2 className={`${lusitana.className} mb-4 text-xl md:text-2xl`}>
