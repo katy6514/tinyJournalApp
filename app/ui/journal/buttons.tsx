@@ -17,7 +17,10 @@ export function AddEntry() {
 
 export function EditEntry({ id }: { id: string }) {
   return (
-    <Link href={`/journal/${id}/edit`} className="border p-2 hover:bg-gray-100">
+    <Link
+      href={`/journal/${id}/edit`}
+      className="border p-2 h-10 w-10 hover:bg-gray-100"
+    >
       <PencilIcon className="w-5" />
     </Link>
   );
