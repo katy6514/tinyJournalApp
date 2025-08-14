@@ -7,6 +7,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
   const id = params.id;
 
   const entry = await fetchEntryByID(id);
+  console.log({ entry });
   return (
     <main>
       <Breadcrumbs

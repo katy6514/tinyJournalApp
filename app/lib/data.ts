@@ -33,11 +33,15 @@ export async function fetchEntryByID(id: string) {
   try {
     const data = await sql<JournalEntry[]>` 
       SELECT
+        d.id AS date_id,
+        TO_CHAR(d.date, 'YYYY-MM-DD') AS date,
         e.id,
         e.state,
         e.legname,
         e.text
       FROM entries e
+      LEFT JOIN dates d
+        ON d.id = e.date_id
       WHERE e.id = ${id};
     `;
 
