@@ -19,7 +19,7 @@ export default function JournalCard({ entry }: { entry: JournalEntry }) {
         <p className="truncate text-sm font-semibold md:text-base">
           {legname} - {state}
         </p>
-        <p className="hidden text-sm text-gray-500 sm:block">
+        <p className=" text-sm text-gray-500 sm:block">
           {timeZoneCorrectedDate}
         </p>
       </div>

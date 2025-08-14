@@ -1,17 +1,10 @@
-// import { CustomerField } from "@/app/lib/definitions";
 import Link from "next/link";
-// import {
-//   CheckIcon,
-//   ClockIcon,
-//   CurrencyDollarIcon,
-//   UserCircleIcon,
-// } from "@heroicons/react/24/outline";
+
 import { Button } from "@/app/ui/button";
 import { updateEntry } from "@/app/lib/actions";
 import { JournalEntry } from "@/app/lib/definitions";
 
 export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
-  console.log({ entry });
   const { id, date, legname, state, text } = entry[0];
   const updateEntryWithId = updateEntry.bind(null, id);
 
@@ -20,29 +13,6 @@ export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
       <div className=" bg-gray-50 p-4 md:p-6">
         <div className="grid gap-6 mb-6 md:grid-cols-2">
           <h3 className="text-lg font-semibold">updating {date}</h3>
-          {/* Select an empty date */}
-          {/* <div>
-            <label
-              htmlFor="date"
-              className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-            >
-              Select an date
-            </label>
-            <select
-              id="date"
-              name="date_id"
-              className="bg-white border border-gray-300 text-gray-900 text-sm  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            >
-              <option value="" disabled>
-                Select a date
-              </option>
-              {emptyEntries.map((entry) => (
-                <option key={entry.id} value={entry.id}>
-                  {entry.date}
-                </option>
-              ))}
-            </select>
-          </div> */}
 
           {/* Select a state */}
           <div>
