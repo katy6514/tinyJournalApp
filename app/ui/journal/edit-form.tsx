@@ -17,7 +17,7 @@ export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
 
   return (
     <form action={updateEntryWithId}>
-      <div className="rounded-md bg-gray-50 p-4 md:p-6">
+      <div className=" bg-gray-50 p-4 md:p-6">
         <div className="grid gap-6 mb-6 md:grid-cols-2">
           <h3 className="text-lg font-semibold">updating {date}</h3>
           {/* Select an empty date */}
@@ -31,7 +31,7 @@ export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
             <select
               id="date"
               name="date_id"
-              className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              className="bg-white border border-gray-300 text-gray-900 text-sm  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             >
               <option value="" disabled>
                 Select a date
@@ -56,7 +56,7 @@ export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
               type="text"
               id="state"
               name="state"
-              className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              className="bg-white border border-gray-300 text-gray-900 text-sm  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder={"Enter state"}
               defaultValue={state || ""}
               required
@@ -75,7 +75,7 @@ export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
               type="text"
               id="legname"
               name="legname"
-              className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              className="bg-white border border-gray-300 text-gray-900 text-sm  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder={"Enter title / LegName"}
               defaultValue={legname || ""}
               required
@@ -93,7 +93,7 @@ export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
             <textarea
               id="text"
               name="text"
-              className="block p-2.5 w-full text-sm text-gray-900 bg-white rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              className="block p-2.5 w-full text-sm text-gray-900 bg-white  border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="Write your thoughts here..."
               defaultValue={text || ""}
             ></textarea>
@@ -103,7 +103,7 @@ export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
       <div className="mt-6 flex justify-end gap-4">
         <Link
           href="/journal/listView"
-          className="flex h-10 items-center rounded-lg bg-gray-100 px-4 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200"
+          className="flex h-10 items-center  bg-gray-100 px-4 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200"
         >
           Cancel
         </Link>

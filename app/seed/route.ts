@@ -60,7 +60,6 @@ async function seedEntries() {
       //   const hashedPassword = await bcrypt.hash(user.password, 10);
       const { uuid, creationDate, text } = entry;
       const entryDate = new Date(creationDate).toISOString().split("T")[0];
-      // console.log({ entryDate });
       const entryText = text || "";
       const legName = "legName";
       const state = "state";
