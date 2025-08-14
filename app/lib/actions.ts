@@ -29,11 +29,14 @@ export async function createEntry(formData: FormData) {
     text: formData.get("entryText"),
   });
 
-  await sql`
+  try {
+    await sql`
     INSERT INTO entries (date_id, legname, state, text)
     VALUES (${date_id}, ${legname}, ${state}, ${text})
   `;
-
+  } catch (error) {
+    console.error(error);
+  }
   revalidatePath("/journal/listView");
   redirect("/journal/listView");
 }
@@ -45,12 +48,15 @@ export async function updateEntry(id: string, formData: FormData) {
     text: formData.get("text"),
   });
 
-  await sql`
+  try {
+    await sql`
     UPDATE entries
     SET state = ${state}, legname = ${legname}, text = ${text}
     WHERE id = ${id}
   `;
-
+  } catch (error) {
+    console.error(error);
+  }
   revalidatePath("/journal/listView");
   redirect("/journal/listView");
 }
