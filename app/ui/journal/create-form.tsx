@@ -1,11 +1,5 @@
-// import { CustomerField } from "@/app/lib/definitions";
 import Link from "next/link";
-// import {
-//   CheckIcon,
-//   ClockIcon,
-//   CurrencyDollarIcon,
-//   UserCircleIcon,
-// } from "@heroicons/react/24/outline";
+
 import { Button } from "@/app/ui/button";
 import { createEntry } from "@/app/lib/actions";
 import { JournalEntry } from "@/app/lib/definitions";
