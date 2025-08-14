@@ -1,4 +1,4 @@
-import Form from "@/app/ui/journal/edit-form";
+import EditEntryForm from "@/app/ui/journal/edit-form";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 import { fetchEntryByID } from "@/app/lib/data";
 
@@ -19,7 +19,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
           },
         ]}
       />
-      <Form entry={entry} />
+      <EditEntryForm entry={entry} />
     </main>
   );
 }

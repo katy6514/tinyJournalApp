@@ -25,7 +25,7 @@ async function listDatesWithEntries() {
   const data = await sql`
     SELECT 
       d.date,
-      e.id AS entry_id,
+      e.id,
       e.text
     FROM dates d
     LEFT JOIN entries e

@@ -11,7 +11,7 @@ export async function fetchJournal() {
       SELECT 
         TO_CHAR(d.date, 'YYYY-MM-DD') AS date,
         d.id AS date_id,
-        e.id AS entry_id,
+        e.id,
         e.text,
         e.legname,
         e.state,

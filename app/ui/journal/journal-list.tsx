@@ -24,7 +24,7 @@ export default async function JournalList() {
       </h2>
 
       {entries.map((entry, i) => {
-        const { date, date_id, entry_id, text, legname, state } =
+        const { date, date_id, id, text, legname, state } =
           entry as JournalEntry;
 
         const timeZoneCorrectedDate = new Date(
@@ -55,7 +55,7 @@ export default async function JournalList() {
                 {text}
               </p>
             </div>
-            <UpdateEntry entry_id={entry_id} />
+            <UpdateEntry id={id} />
           </div>
         );
       })}

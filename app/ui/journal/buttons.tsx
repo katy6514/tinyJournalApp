@@ -15,10 +15,10 @@ export function AddEntry() {
   );
 }
 
-export function UpdateEntry({ entry_id }: { entry_id: string }) {
+export function UpdateEntry({ id }: { id: string }) {
   return (
     <Link
-      href={`/journal/${entry_id}/edit`}
+      href={`/journal/${id}/edit`}
       className="rounded-md border p-2 hover:bg-gray-100"
     >
       <PencilIcon className="w-5" />

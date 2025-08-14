@@ -3,7 +3,7 @@
 export type JournalEntry = {
   date: string;
   date_id: string;
-  entry_id: string;
+  id: string;
   text: string;
   legname: string;
   state: string;

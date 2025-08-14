@@ -7,15 +7,19 @@ import Link from "next/link";
 //   UserCircleIcon,
 // } from "@heroicons/react/24/outline";
 import { Button } from "@/app/ui/button";
-import { createEntry } from "@/app/lib/actions";
+import { updateEntry } from "@/app/lib/actions";
 import { JournalEntry } from "@/app/lib/definitions";
 
-export default function Form({ entry }: { entry: JournalEntry[] }) {
+export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
   console.log({ entry });
+  const { id, date, legname, state, text } = entry[0];
+  const updateEntryWithId = updateEntry.bind(null, id);
+
   return (
-    <form action={createEntry}>
+    <form action={updateEntryWithId}>
       <div className="rounded-md bg-gray-50 p-4 md:p-6">
         <div className="grid gap-6 mb-6 md:grid-cols-2">
+          <h3 className="text-lg font-semibold">updating {date}</h3>
           {/* Select an empty date */}
           {/* <div>
             <label
@@ -54,7 +58,7 @@ export default function Form({ entry }: { entry: JournalEntry[] }) {
               name="state"
               className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder={"Enter state"}
-              defaultValue={entry[0]?.state || ""}
+              defaultValue={state || ""}
               required
             />
           </div>
@@ -73,7 +77,7 @@ export default function Form({ entry }: { entry: JournalEntry[] }) {
               name="legname"
               className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder={"Enter title / LegName"}
-              defaultValue={entry[0]?.legname || ""}
+              defaultValue={legname || ""}
               required
             />
           </div>
@@ -87,11 +91,11 @@ export default function Form({ entry }: { entry: JournalEntry[] }) {
               Journal Entry
             </label>
             <textarea
-              id="entryText"
-              name="entryText"
+              id="text"
+              name="text"
               className="block p-2.5 w-full text-sm text-gray-900 bg-white rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="Write your thoughts here..."
-              defaultValue={entry[0]?.text || ""}
+              defaultValue={text || ""}
             ></textarea>
           </div>
         </div>
