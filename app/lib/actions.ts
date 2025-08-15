@@ -61,12 +61,36 @@ export async function createEntry(prevState: State, formData: FormData) {
   redirect("/journal/listView");
 }
 
-export async function updateEntry(id: string, formData: FormData) {
-  const { state, legname, text } = UpdateEntry.parse({
+export type EditState = {
+  errors?: {
+    legname?: string[];
+    state?: string[];
+    text?: string[];
+  };
+  message?: string | null;
+};
+
+export async function updateEntry(
+  id: string,
+  prevState: EditState,
+  formData: FormData
+) {
+  const validatedFields = UpdateEntry.safeParse({
     state: formData.get("state"),
     legname: formData.get("legname"),
     text: formData.get("text"),
   });
+
+  // If form validation fails, return errors early. Otherwise, continue.
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: "Missing Fields. Failed to create entry.",
+    };
+  }
+  // Prepare data for insertion into the database
+
+  const { state, legname, text } = validatedFields.data;
 
   try {
     await sql`

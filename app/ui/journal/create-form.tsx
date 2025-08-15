@@ -15,7 +15,7 @@ export default function Form({
 }) {
   const initialState: State = { message: null, errors: {} };
 
-  const [state, formAction] = useActionState(createEntry, initialState);
+  const [formState, formAction] = useActionState(createEntry, initialState);
 
   //   console.log({ emptyEntries });
   return (
@@ -35,7 +35,7 @@ export default function Form({
               name="date_id"
               className="bg-white border border-gray-300 text-gray-900 text-sm  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               aria-describedby="date-error"
-              // required
+              required
             >
               <option value="">Select a date</option>
               {emptyEntries.map((entry) => (
@@ -45,8 +45,8 @@ export default function Form({
               ))}
             </select>
             <div id="date-error" aria-live="polite" aria-atomic="true">
-              {state.errors?.date_id &&
-                state.errors.date_id.map((error: string) => (
+              {formState.errors?.date_id &&
+                formState.errors.date_id.map((error: string) => (
                   <p className="mt-2 text-sm text-red-500" key={error}>
                     {error}
                   </p>
@@ -69,11 +69,11 @@ export default function Form({
               placeholder="NM/CO/WY/ID/MT"
               className="bg-white border border-gray-300 text-gray-900 text-sm  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               aria-describedby="state-error"
-              // required
+              required
             />
             <div id="state-error" aria-live="polite" aria-atomic="true">
-              {state.errors?.state &&
-                state.errors.state.map((error: string) => (
+              {formState.errors?.state &&
+                formState.errors.state.map((error: string) => (
                   <p className="mt-2 text-sm text-red-500" key={error}>
                     {error}
                   </p>
@@ -96,11 +96,11 @@ export default function Form({
               className="bg-white border border-gray-300 text-gray-900 text-sm  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="Title"
               aria-describedby="legname-error"
-              // required
+              required
             />
             <div id="legname-error" aria-live="polite" aria-atomic="true">
-              {state.errors?.legname &&
-                state.errors.legname.map((error: string) => (
+              {formState.errors?.legname &&
+                formState.errors.legname.map((error: string) => (
                   <p className="mt-2 text-sm text-red-500" key={error}>
                     {error}
                   </p>
@@ -122,11 +122,11 @@ export default function Form({
               className="block p-2.5 w-full h-full text-sm text-gray-900 bg-white  border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="Write your thoughts here..."
               aria-describedby="entry-error"
-              // required
+              required
             ></textarea>
             <div id="entry-error" aria-live="polite" aria-atomic="true">
-              {state.errors?.text &&
-                state.errors.text.map((error: string) => (
+              {formState.errors?.text &&
+                formState.errors.text.map((error: string) => (
                   <p className="mt-2 text-sm text-red-500" key={error}>
                     {error}
                   </p>

@@ -1,21 +1,34 @@
+"use client";
+
+import { useActionState } from "react";
+
 import Link from "next/link";
 
 import { Button } from "@/app/ui/button";
-import { updateEntry } from "@/app/lib/actions";
+import { updateEntry, EditState } from "@/app/lib/actions";
 import { JournalEntry } from "@/app/lib/definitions";
 
 export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
   const { id, date, legname, state, text } = entry[0];
   const updateEntryWithId = updateEntry.bind(null, id);
 
-  return (
-    <form action={updateEntryWithId}>
-      <div className=" bg-gray-50 p-4 md:p-6">
-        <div className="grid gap-6 mb-6 md:grid-cols-2">
-          <h3 className="text-lg font-semibold">updating {date}</h3>
+  const initialState: EditState = { message: null, errors: {} };
 
-          {/* Select a state */}
-          <div>
+  const [formState, formAction] = useActionState(
+    updateEntryWithId,
+    initialState
+  );
+
+  return (
+    <form action={formAction}>
+      <div className=" bg-gray-50 p-4 md:p-6">
+        <div className="grid gap-6 mb-6 grid-cols-2 grid-rows-4">
+          <div className="col-span-2 md:col-span-1  row-span-1">
+            <h3 className="text-lg font-semibold">updating {date}</h3>
+          </div>
+
+          {/* STATE */}
+          <div className="col-span-2 md:col-span-1  row-span-1">
             <label
               htmlFor="state"
               className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
@@ -23,18 +36,27 @@ export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
               State
             </label>
             <input
-              type="text"
               id="state"
               name="state"
+              type="text"
               className="bg-white border border-gray-300 text-gray-900 text-sm  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-              placeholder={"Enter state"}
+              placeholder={"NM/CO/WY/ID/MT"}
               defaultValue={state || ""}
+              aria-describedby="state-error"
               required
             />
+            <div id="state-error" aria-live="polite" aria-atomic="true">
+              {formState.errors?.state &&
+                formState.errors.state.map((error: string) => (
+                  <p className="mt-2 text-sm text-red-500" key={error}>
+                    {error}
+                  </p>
+                ))}
+            </div>
           </div>
 
-          {/* Title / Legname */}
-          <div className="mb-6">
+          {/* LEGNAME */}
+          <div className="col-span-2 row-span-1">
             <label
               htmlFor="legname"
               className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
@@ -46,14 +68,23 @@ export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
               id="legname"
               name="legname"
               className="bg-white border border-gray-300 text-gray-900 text-sm  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-              placeholder={"Enter title / LegName"}
+              placeholder={"Title"}
               defaultValue={legname || ""}
+              aria-describedby="legname-error"
               required
             />
+            <div id="legname-error" aria-live="polite" aria-atomic="true">
+              {formState.errors?.legname &&
+                formState.errors.legname.map((error: string) => (
+                  <p className="mt-2 text-sm text-red-500" key={error}>
+                    {error}
+                  </p>
+                ))}
+            </div>
           </div>
 
           {/* Journal Entry */}
-          <div className="mb-6">
+          <div className="col-span-2 row-span-2">
             <label
               htmlFor="entryText"
               className="block mb-2 w-full text-sm font-medium text-gray-900 dark:text-white"
@@ -61,12 +92,22 @@ export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
               Journal Entry
             </label>
             <textarea
-              id="text"
-              name="text"
-              className="block p-2.5 w-full text-sm text-gray-900 bg-white  border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              id="entryText"
+              name="entryText"
+              className="block p-2.5 w-full h-full text-sm text-gray-900 bg-white  border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="Write your thoughts here..."
               defaultValue={text || ""}
+              aria-describedby="entry-error"
+              required
             ></textarea>
+            <div id="entry-error" aria-live="polite" aria-atomic="true">
+              {formState.errors?.text &&
+                formState.errors.text.map((error: string) => (
+                  <p className="mt-2 text-sm text-red-500" key={error}>
+                    {error}
+                  </p>
+                ))}
+            </div>
           </div>
         </div>
       </div>
