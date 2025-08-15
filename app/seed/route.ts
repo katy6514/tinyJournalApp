@@ -1,5 +1,8 @@
 import postgres from "postgres";
+import bcrypt from "bcrypt";
+
 import { entries } from "./cleanedEntries";
+import { users, visitors } from "../lib/placeholder-data";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
@@ -79,6 +82,56 @@ async function seedEntries() {
   return insertedEntries;
 }
 
+async function seedUsers() {
+  await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      password TEXT NOT NULL
+    );
+  `;
+
+  const insertedUsers = await Promise.all(
+    users.map(async (user) => {
+      const hashedPassword = await bcrypt.hash(user.password, 10);
+      return sql`
+        INSERT INTO users (id, name, email, password)
+        VALUES (${user.id}, ${user.name}, ${user.email}, ${hashedPassword})
+        ON CONFLICT (id) DO NOTHING;
+      `;
+    })
+  );
+
+  return insertedUsers;
+}
+
+async function seedVisitors() {
+  await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS visitors (
+      id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      image_url VARCHAR(255) NOT NULL
+    );
+  `;
+
+  const insertedCustomers = await Promise.all(
+    visitors.map(
+      (visitor) => sql`
+        INSERT INTO customers (id, name, email, image_url)
+        VALUES (${visitor.id}, ${visitor.name}, ${visitor.email}, ${visitor.image_url})
+        ON CONFLICT (id) DO NOTHING;
+      `
+    )
+  );
+
+  return insertedCustomers;
+}
+
 export async function GET() {
   try {
     await sql.begin(async (sql) => {
@@ -86,6 +139,8 @@ export async function GET() {
       await dropDatesTable();
       await seedDates();
       await seedEntries();
+      await seedUsers();
+      await seedVisitors();
     });
 
     return Response.json({ message: "Database seeded successfully" });
