@@ -122,7 +122,7 @@ async function seedVisitors() {
   const insertedCustomers = await Promise.all(
     visitors.map(
       (visitor) => sql`
-        INSERT INTO customers (id, name, email, image_url)
+        INSERT INTO visitors (id, name, email, image_url)
         VALUES (${visitor.id}, ${visitor.name}, ${visitor.email}, ${visitor.image_url})
         ON CONFLICT (id) DO NOTHING;
       `
