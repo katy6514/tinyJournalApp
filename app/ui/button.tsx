@@ -60,7 +60,7 @@ export function Button({
 
   return (
     <div className="flex justify-end gap-2">
-      <button onClick={onClick} className={combinedClasses}>
+      <button onClick={onClick} className={combinedClasses} type={type}>
         {content}
       </button>
     </div>

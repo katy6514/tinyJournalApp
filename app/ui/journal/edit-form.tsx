@@ -2,9 +2,7 @@
 
 import { useActionState } from "react";
 
-import Link from "next/link";
-
-import { Button } from "@/app/ui/button";
+import { FormButton, RedirectLink } from "@/app/ui/journal/buttons";
 import { updateEntry, EditState } from "@/app/lib/actions";
 import { JournalEntry } from "@/app/lib/definitions";
 
@@ -112,13 +110,8 @@ export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
         </div>
       </div>
       <div className="mt-6 flex justify-end gap-4">
-        <Link
-          href="/journal/listView"
-          className="flex h-10 items-center  bg-gray-100 px-4 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200"
-        >
-          Cancel
-        </Link>
-        <Button type="submit">Save Entry</Button>
+        <RedirectLink href="/journal/listView">Cancel</RedirectLink>
+        <FormButton type="submit">Save Entry</FormButton>
       </div>
     </form>
   );

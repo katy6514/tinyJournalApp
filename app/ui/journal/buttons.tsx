@@ -20,12 +20,28 @@ export function EditEntry({ id }: { id: string }) {
 
 export function FormButton({
   type,
+  children,
 }: {
   type: "submit" | "reset" | "button" | undefined;
+  children: string;
 }) {
   return (
     <Button type={type} variant="dark">
-      Save Entry
+      {children}
+    </Button>
+  );
+}
+
+export function RedirectLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: string;
+}) {
+  return (
+    <Button href={href} variant="light">
+      {children}
     </Button>
   );
 }
