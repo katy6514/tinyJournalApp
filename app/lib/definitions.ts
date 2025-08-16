@@ -9,3 +9,10 @@ export type JournalEntry = {
   state: string;
   has_text: boolean;
 };
+
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+};
