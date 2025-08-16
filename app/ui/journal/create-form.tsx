@@ -4,7 +4,7 @@ import { useActionState } from "react";
 
 import Link from "next/link";
 
-import { Button } from "@/app/ui/button";
+import { FormButton } from "@/app/ui/journal/buttons";
 import { createEntry, State } from "@/app/lib/actions";
 import { JournalEntry } from "@/app/lib/definitions";
 
@@ -142,7 +142,7 @@ export default function Form({
         >
           Cancel
         </Link>
-        <Button type="submit">Save Entry</Button>
+        <FormButton type="submit" />
       </div>
     </form>
   );

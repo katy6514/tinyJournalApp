@@ -1,40 +1,31 @@
-import { PencilIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
-// import { deleteInvoice } from "@/app/lib/actions";
+import { PencilIcon, PlusIcon } from "@heroicons/react/24/outline";
 
-import Link from "next/link";
+import { Button } from "../button";
 
 export function AddEntry() {
   return (
-    <Link
-      href="/journal/create"
-      className="flex h-10 items-center bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-500 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-    >
-      <span className="hidden md:block">Add Entry</span>{" "}
-      <PlusIcon className="h-5 md:ml-4" />
-    </Link>
+    <Button href={"/journal/create"} variant="dark" icon={<PlusIcon />}>
+      Add Entry
+    </Button>
   );
 }
 
 export function EditEntry({ id }: { id: string }) {
   return (
-    <Link
-      href={`/journal/${id}/edit`}
-      className="border p-2 h-10 w-10 hover:bg-gray-100"
-    >
-      <PencilIcon className="w-5" />
-    </Link>
+    <Button href={`/journal/${id}/edit`} icon={<PencilIcon />} variant="light">
+      Edit
+    </Button>
   );
 }
 
-// export function DeleteInvoice({ id }: { id: string }) {
-//   const deleteInvoiceWithId = deleteInvoice.bind(null, id);
-
-//   return (
-//     <form action={deleteInvoiceWithId}>
-//       <button type="submit" className=" border p-2 hover:bg-gray-100">
-//         <span className="sr-only">Delete</span>
-//         <TrashIcon className="w-5" />
-//       </button>
-//     </form>
-//   );
-// }
+export function FormButton({
+  type,
+}: {
+  type: "submit" | "reset" | "button" | undefined;
+}) {
+  return (
+    <Button type={type} variant="dark">
+      Save Entry
+    </Button>
+  );
+}

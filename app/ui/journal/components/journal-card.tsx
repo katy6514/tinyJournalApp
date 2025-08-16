@@ -26,7 +26,7 @@ export default function JournalCard({ entry }: { entry: JournalEntry }) {
       <div className="col-span-2 row-span-2  p-4 bg-white dark:bg-gray-800">
         <p className={`${lusitana.className} font-medium truncate`}>{text}</p>
       </div>
-      <div className="col-span-2 row-span-1 flex items-center justify-start">
+      <div className="col-span-2 row-span-1">
         <EditEntry id={id} />
       </div>
     </div>
