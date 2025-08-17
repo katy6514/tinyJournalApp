@@ -4,9 +4,9 @@ import {
   HomeIcon,
   Bars3BottomLeftIcon,
   CalendarIcon,
-  // CameraIcon,
-  // VideoCameraIcon,
-  // GlobeAmericasIcon
+  CameraIcon,
+  VideoCameraIcon,
+  GlobeAmericasIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -16,11 +16,11 @@ import clsx from "clsx";
 // Depending on the size of the application, this would be stored in a database.
 const links = [
   { name: "Home", href: "/journal", icon: HomeIcon },
-  //     {
-  //   name: 'The Map',
-  //   href: '/map',
-  //   icon: GlobeAmericasIcon,
-  // },
+  {
+    name: "The Map",
+    href: "/map",
+    icon: GlobeAmericasIcon,
+  },
   {
     name: "List View",
     href: "/journal/listView",
@@ -31,16 +31,16 @@ const links = [
     href: "/journal/calendarView",
     icon: CalendarIcon,
   },
-  //   {
-  //   name: 'Photo Album',
-  //   href: '/photos',
-  //   icon: CameraIcon,
-  // },
-  //   {
-  //   name: 'Youtube Uploads',
-  //   href: '/videos',
-  //   icon: VideoCameraIcon,
-  // },
+  {
+    name: "Photo Album",
+    href: "/photos",
+    icon: CameraIcon,
+  },
+  {
+    name: "Youtube Uploads",
+    href: "/videos",
+    icon: VideoCameraIcon,
+  },
 ];
 
 export default function NavLinks() {

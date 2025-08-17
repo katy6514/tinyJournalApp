@@ -7,19 +7,19 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 
   const entry = await fetchEntryByID(id);
 
-  const { date, date_id, text, legname, state } = entry;
+  //   const { date, date_id, text, legname, state } = entry;
 
   console.log({ id });
 
   return (
     <main>
       <h1 className={`${lusitana.className} mb-4 text-xl md:text-2xl`}>
-        single journal entry
-        {legname} - {state} on{" "}
-        {new Date(date + "T00:00:00").toLocaleDateString()}
+        single journal entry for {id}
+        {/* {legname} - {state} on{" "}
+        {new Date(date + "T00:00:00").toLocaleDateString()} */}
       </h1>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <p>{text}</p>
+        {/* <p>{text}</p> */}
       </div>
     </main>
   );
