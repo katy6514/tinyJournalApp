@@ -1,6 +1,5 @@
 "use client";
 
-import { EditEntry } from "@/app/ui/journal/buttons";
 import { lusitana } from "@/app/ui/fonts";
 
 import { JournalEntry } from "@/app/lib/definitions";
@@ -38,7 +37,6 @@ export default function JournalCard({ entry }: { entry: JournalEntry }) {
           {/* <Button onClick={() => setIsModalOpen(true)} variant="dark">
             View
           </Button> */}
-          <EditEntry id={id} />
         </div>
       </div>
     </>
