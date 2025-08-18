@@ -16,3 +16,12 @@ export type User = {
   email: string;
   password: string;
 };
+
+export type EntriesTable = {
+  date_id: string;
+  date: string;
+  id: string;
+  state: string;
+  legname: string;
+  text: string;
+};

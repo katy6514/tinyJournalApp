@@ -1,7 +1,7 @@
 // this file is for fetching data from the database
 
 import postgres from "postgres";
-import { JournalEntry } from "./definitions";
+import { JournalEntry, EntriesTable } from "./definitions";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
@@ -49,5 +49,35 @@ export async function fetchEntryByID(id: string) {
   } catch (error) {
     console.error("Database Error:", error);
     throw new Error("Failed to fetch entry.");
+  }
+}
+
+const ITEMS_PER_PAGE = 6;
+export async function fetchFilteredEntries(query: string, currentPage: number) {
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+
+  try {
+    const entries = await sql<EntriesTable[]>`
+      SELECT
+        dates.id AS date_id,
+        TO_CHAR(dates.date, 'YYYY-MM-DD'),
+        entries.id,
+        entries.state,
+        entries.legname,
+        entries.text
+      FROM entries
+      JOIN dates ON dates.id = entries.date_id
+      WHERE
+        entries.state ILIKE ${`%${query}%`} OR
+        entries.legname ILIKE ${`%${query}%`} OR
+        entries.text ILIKE ${`%${query}%`}
+      ORDER BY dates.id ASC
+      LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
+    `;
+
+    return entries;
+  } catch (error) {
+    console.error("Database Error:", error);
+    throw new Error("Failed to fetch entries.");
   }
 }
