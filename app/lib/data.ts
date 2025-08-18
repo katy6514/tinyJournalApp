@@ -1,7 +1,7 @@
 // this file is for fetching data from the database
 
 import postgres from "postgres";
-import { JournalEntry, EntriesTable } from "./definitions";
+import { JournalEntry } from "./definitions";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
@@ -57,7 +57,7 @@ export async function fetchFilteredEntries(query: string, currentPage: number) {
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
   try {
-    const entries = await sql<EntriesTable[]>`
+    const entries = await sql<JournalEntry[]>`
       SELECT
         dates.id AS date_id,
         TO_CHAR(dates.date, 'YYYY-MM-DD'),

@@ -22,15 +22,15 @@ const links = [
     icon: GlobeAmericasIcon,
   },
   {
-    name: "List View",
+    name: "The Journal",
     href: "/journal/listView",
     icon: Bars3BottomLeftIcon,
   },
-  {
-    name: "Calendar View",
-    href: "/journal/calendarView",
-    icon: CalendarIcon,
-  },
+  // {
+  //   name: "Calendar View",
+  //   href: "/journal/calendarView",
+  //   icon: CalendarIcon,
+  // },
   {
     name: "Photo Album",
     href: "/photos",

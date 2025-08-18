@@ -17,12 +17,12 @@ export type User = {
   password: string;
 };
 
-export type EntriesTable = {
-  date_id: string;
-  date: string;
-  id: string;
-  state: string;
-  legname: string;
-  text: string;
-  has_text: boolean;
-};
+// export type EntriesTable = {
+//   date_id: string;
+//   date: string;
+//   id: string;
+//   state: string;
+//   legname: string;
+//   text: string;
+//   has_text: boolean;
+// };

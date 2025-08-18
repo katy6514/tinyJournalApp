@@ -5,7 +5,6 @@ import { Suspense } from "react";
 
 import Pagination from "@/app/ui/journal/pagination";
 import Search from "@/app/ui/search";
-import EntriesTable from "@/app/ui/journal/table";
 
 import { fetchJournalsPages } from "@/app/lib/data";
 
@@ -29,13 +28,13 @@ export default async function Page(props: {
         <Search placeholder="Search entries..." />
       </div>
       <Suspense key={query + currentPage}>
-        <EntriesTable query={query} currentPage={currentPage} />
+        <JournalList query={query} currentPage={currentPage} />
       </Suspense>
       <div className="mt-5 flex w-full justify-center">
         <Pagination totalPages={totalPages} />
       </div>
       <AddEntry />
-      <JournalList />
+      {/* <JournalList /> */}
     </main>
   );
 }
