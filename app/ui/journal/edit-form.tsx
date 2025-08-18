@@ -110,7 +110,7 @@ export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
         </div>
       </div>
       <div className="mt-6 flex justify-end gap-4">
-        <RedirectLink href="/journal/listView">Cancel</RedirectLink>
+        <RedirectLink href={`/journal/${id}`}>Cancel</RedirectLink>
         <FormButton type="submit">Save Entry</FormButton>
       </div>
     </form>

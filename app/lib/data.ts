@@ -101,3 +101,22 @@ export async function fetchJournalsPages(query: string) {
     throw new Error("Failed to fetch total number of filtered entries.");
   }
 }
+
+export async function fetchPhotosForDateID(date_id: string) {
+  try {
+    const data = await sql` 
+      SELECT 
+        photos.*,
+        dates.id AS date_id
+      FROM photos 
+      JOIN dates ON dates.id = photos.date_id
+       WHERE photos.date_id = ${date_id}
+      ORDER BY photos.description;
+    `;
+
+    return data;
+  } catch (error) {
+    console.error("Database Error:", error);
+    throw new Error("Failed to fetch photos for the date_id.");
+  }
+}
