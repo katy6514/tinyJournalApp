@@ -49,11 +49,18 @@ export function haversineDistance([lon1, lat1], [lon2, lat2]) {
  */
 
 export function handleMouseOver(currentUser = null) {
+  // console.log("MOUSEOVER");
   return function handleMouseOver(event, d) {
+    console.log({ d });
     if (!d) {
       return;
     }
     const tooltip = document.getElementById("tooltip");
+    console.log({ tooltip });
+
+    // Remove hiding classes and add visible classes
+    tooltip.classList.remove("invisible", "opacity-0");
+    tooltip.classList.add("visible", "opacity-100");
 
     if (d.geometry && d.geometry.type) {
       const { type } = d.geometry;
@@ -93,5 +100,9 @@ export function handleMouseMove(event) {
 }
 
 export function handleMouseOut() {
-  document.getElementById("tooltip").style.display = "none";
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  // Add hiding classes and remove visible classes
+  tooltip.classList.add("invisible", "opacity-0");
+  tooltip.classList.remove("visible", "opacity-100");
 }

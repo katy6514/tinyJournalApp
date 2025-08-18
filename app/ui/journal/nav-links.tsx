@@ -18,7 +18,7 @@ const links = [
   { name: "Home", href: "/journal", icon: HomeIcon },
   {
     name: "The Map",
-    href: "/map",
+    href: "/journal/map",
     icon: GlobeAmericasIcon,
   },
   {

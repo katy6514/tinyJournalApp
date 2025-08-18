@@ -1,4 +1,4 @@
-// import { lusitana } from "@/app/ui/fonts";
+"use client";
 
 import React, { useRef, useEffect, useMemo } from "react";
 
@@ -21,6 +21,10 @@ import {
 export default function CDTmap() {
   const ref = useRef();
   const gRef = useRef(null);
+
+  const currentUser = {
+    email: "katy@gmail.com",
+  };
 
   // ✅ Define projection + path WITHIN component and memoize
   const projection = useMemo(() => {
@@ -83,7 +87,7 @@ export default function CDTmap() {
     *  Track mapping functionality
     ----------------------------------------------------- */
 
-    d3.json("/CDT_complete_tracks.json").then((data) => {
+    d3.json("/data/CDT_complete_tracks.json").then((data) => {
       g.selectAll(".trail")
         .data(data.features)
         .enter()
@@ -94,7 +98,9 @@ export default function CDTmap() {
         .attr("stroke", (d) => getAlternatingColor(d.properties))
         .attr("stroke-width", 2)
         .attr("fill", "none")
-        .on("mouseover", handleMouseOver(user))
+        .on("mouseover", function (event, d) {
+          handleMouseOver(currentUser)(event, d);
+        })
         .on("mousemove", handleMouseMove)
         .on("mouseout", handleMouseOut);
     });
@@ -103,7 +109,7 @@ export default function CDTmap() {
     *  State outline mapping functionality
     ----------------------------------------------------- */
     // geojson data from: https://github.com/johan/world.geo.json/tree/master
-    d3.json("CDTstates.json").then((stateData) => {
+    d3.json("/data/CDTstates.json").then((stateData) => {
       g.selectAll(".state")
         .data(stateData.features)
         .enter()
@@ -146,7 +152,7 @@ export default function CDTmap() {
     const square = d3.symbol().type(d3.symbolSquare).size(128);
     const triangle = d3.symbol().type(d3.symbolTriangle).size(128); // adjust size as needed
 
-    d3.json("cdtInreachData_withCoords.geojson").then((inReachdata) => {
+    d3.json("/data/cdtInreachData_withCoords.geojson").then((inReachdata) => {
       const points = inReachdata.features.filter(
         (d) =>
           d.geometry?.type === "Point" &&
@@ -182,7 +188,9 @@ export default function CDTmap() {
         })
         .attr("fill", colors.messages)
         .attr("stroke", "none")
-        .on("mouseover", handleMouseOver(user))
+        .on("mouseover", function (event, d) {
+          handleMouseOver(currentUser)(event, d);
+        })
         .on("mousemove", handleMouseMove)
         .on("mouseout", handleMouseOut);
 
@@ -199,7 +207,9 @@ export default function CDTmap() {
         })
         .attr("fill", colors.campSites)
         .attr("stroke", "none")
-        .on("mouseover", handleMouseOver(user))
+        .on("mouseover", function (event, d) {
+          handleMouseOver(currentUser)(event, d);
+        })
         .on("mousemove", handleMouseMove)
         .on("mouseout", handleMouseOut);
     });
@@ -208,7 +218,7 @@ export default function CDTmap() {
     *  Take the cleaned photo geojson data and plot it
     ----------------------------------------------------- */
 
-    d3.json("geoPhotos.geojson").then((photoData) => {
+    d3.json("/data/geoPhotos.geojson").then((photoData) => {
       const points = photoData.features.filter(
         (d) =>
           d.geometry?.type === "Photo" &&
@@ -229,7 +239,9 @@ export default function CDTmap() {
         .attr("r", 6)
         .attr("fill", colors.photos)
         .attr("stroke", "none")
-        .on("mouseover", handleMouseOver(user))
+        .on("mouseover", function (event, d) {
+          handleMouseOver(currentUser)(event, d);
+        })
         .on("mousemove", handleMouseMove)
         .on("mouseout", handleMouseOut);
     });
@@ -360,7 +372,7 @@ export default function CDTmap() {
       .text("Odd days")
       .style("font-size", "15px")
       .attr("alignment-baseline", "middle");
-  }, [path, projection, user]);
+  }, [path, projection]);
 
   return <svg ref={ref}></svg>;
 }

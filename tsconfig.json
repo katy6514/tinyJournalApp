@@ -27,9 +27,9 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "app/map/CDTmap.js",
-    "app/map/constants.js",
-    "app/map/utils.js"
+    "app/journal/map/CDTmap.jsDTmap.js",
+    "app/journal/map/constants.jstants.js",
+    "app/journal/map/utils.jsutils.js"
   ],
   "exclude": ["node_modules"]
 }
