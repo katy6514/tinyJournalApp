@@ -7,8 +7,8 @@ import { updateEntry, EditState } from "@/app/lib/actions";
 import { JournalEntry } from "@/app/lib/definitions";
 
 export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
-  const { id, date, legname, state, text } = entry[0];
-  const updateEntryWithId = updateEntry.bind(null, id);
+  const { entry_id, date, legname, state, text } = entry[0];
+  const updateEntryWithId = updateEntry.bind(null, entry_id);
 
   const initialState: EditState = { message: null, errors: {} };
 
@@ -110,7 +110,7 @@ export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
         </div>
       </div>
       <div className="mt-6 flex justify-end gap-4">
-        <RedirectLink href={`/journal/${id}`}>Cancel</RedirectLink>
+        <RedirectLink href={`/journal/${entry_id}`}>Cancel</RedirectLink>
         <FormButton type="submit">Save Entry</FormButton>
       </div>
     </form>

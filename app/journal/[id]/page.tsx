@@ -4,22 +4,24 @@ import { lusitana } from "@/app/ui/fonts";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 
 import { fetchEntryByID, fetchPhotosForDateID } from "@/app/lib/data";
+import { JournalEntry } from "@/app/lib/definitions";
 
 import { EditEntry } from "@/app/ui/journal/buttons";
 
 export default async function Page(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const id = params.id;
+  const entry_id = params.id;
 
-  const entries = await fetchEntryByID(id);
-  const entry = Array.isArray(entries) ? entries[0] : entries;
+  // console.log({ params });
 
-  const { date, date_id, text, legname, state } = entry || {};
+  const entries = await fetchEntryByID(entry_id);
+  const entry: JournalEntry = Array.isArray(entries) ? entries[0] : entries;
 
-  const photos = await fetchPhotosForDateID(date_id);
+  if (!entry) {
+    return <div>Entry not found</div>;
+  }
 
-  console.log({ id });
-  console.log({ photos });
+  const { date, date_id, text, legname, state, photos } = entry || {};
 
   return (
     <main>
@@ -28,18 +30,18 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
           { label: "Journal", href: "/journal/listView" },
           {
             label: "View Entry",
-            href: `/journal/${id}`,
+            href: `/journal/${entry_id}`,
             active: true,
           },
         ]}
       />
       <div className=" bg-gray-50 p-4 md:p-6">
         <h1 className={`${lusitana.className} mb-4 text-xl md:text-2xl`}>
-          single journal entry for {id}
+          single journal entry for {entry_id}
           {legname} - {state} on {date}
           {new Date(date + "T00:00:00").toLocaleDateString()}
         </h1>
-        <EditEntry id={id} />
+        <EditEntry id={entry_id} />
 
         <div className="">
           <p>{text}</p>
@@ -48,12 +50,12 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
           photos.map((photo) => {
             return (
               <Image
-                key={photo.id}
-                src={photo.src}
+                key={photo.photo_id}
+                src={photo.path}
                 width={photo.width}
                 height={photo.height}
                 className="block"
-                alt="Photo of Katy sitting on the ground in the Wind River Range, laughing at the camera"
+                alt=""
               />
             );
           })}

@@ -9,7 +9,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 
   const entry = await fetchEntryByID(id);
 
-  if (!entry || entry.length === 0) {
+  if (!entry) {
     notFound();
   }
 

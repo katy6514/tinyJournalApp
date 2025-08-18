@@ -1,12 +1,22 @@
 "use client";
 
+import Image from "next/image";
+
 import { lusitana } from "@/app/ui/fonts";
 
-import { JournalEntry } from "@/app/lib/definitions";
+import { JournalEntry, Photo } from "@/app/lib/definitions";
 import { Button } from "../../button";
 
-export default function JournalCard({ entry }: { entry: JournalEntry }) {
-  const { date, date_id, id, text, legname, state } = entry;
+export default function JournalCard({
+  entry,
+}: {
+  entry: JournalEntry & { photos: Photo[] };
+}) {
+  const { date, date_id, entry_id, text, legname, state, photos } = entry;
+
+  const photo = photos?.[0] as Photo | undefined;
+
+  // console.log({ photo });
 
   const timeZoneCorrectedDate = new Date(date + "T00:00:00").toDateString();
   return (
@@ -17,6 +27,15 @@ export default function JournalCard({ entry }: { entry: JournalEntry }) {
       >
         <div className="row-span-4 p-4 bg-white dark:bg-gray-700">
           eventual image
+          {photo && (
+            <Image
+              key={photo.photo_id}
+              src={photo.path}
+              width={photo.width}
+              height={photo.height}
+              alt={photo.title || ""}
+            />
+          )}
         </div>
         <div className="col-span-1 row-span-1 p-4 bg-gray-50 dark:bg-gray-800">
           <p className="text-sm font-semibold">
@@ -30,7 +49,7 @@ export default function JournalCard({ entry }: { entry: JournalEntry }) {
           <p className={`${lusitana.className} font-medium truncate`}>{text}</p>
         </div>
         <div className="col-span-2 row-span-1">
-          <Button href={`/journal/${id}`} variant="dark">
+          <Button href={`/journal/${entry_id}`} variant="dark">
             View
           </Button>
           {/* <!-- Modal toggle --> */}

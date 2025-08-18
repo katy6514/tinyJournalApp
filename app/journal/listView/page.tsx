@@ -1,4 +1,6 @@
 import { lusitana } from "@/app/ui/fonts";
+import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
+
 import JournalList from "@/app/ui/journal/journal-list";
 import { AddEntry } from "@/app/ui/journal/buttons";
 import { Suspense } from "react";
@@ -21,9 +23,17 @@ export default async function Page(props: {
 
   return (
     <main>
-      <h1 className={`${lusitana.className} mb-4 text-xl md:text-2xl`}>
-        List View
-      </h1>
+      <Breadcrumbs
+        breadcrumbs={[
+          // { label: "Journal", href: "/journal/listView" },
+          {
+            label: "All entries",
+            href: `/journal/listView`,
+            active: true,
+          },
+        ]}
+      />
+
       <div className="mt-4 flex items-center justify-between gap-2 md:mt-8">
         <Search placeholder="Search entries..." />
       </div>
@@ -34,7 +44,6 @@ export default async function Page(props: {
         <Pagination totalPages={totalPages} />
       </div>
       <AddEntry />
-      {/* <JournalList /> */}
     </main>
   );
 }

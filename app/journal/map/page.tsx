@@ -1,5 +1,3 @@
-// import { lusitana } from "@/app/ui/fonts";
-// import { fetchEntryByID } from "@/app/lib/data";
 import CDTmap from "./CDTmap";
 
 export default async function Page() {
