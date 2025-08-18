@@ -12,7 +12,7 @@ export default async function EntriesTable({
 }) {
   const entries = await fetchFilteredEntries(query, currentPage);
   console.log("table component");
-  console.log({ entries });
+  // console.log({ entries });
 
   return (
     <div>
@@ -29,7 +29,7 @@ export default async function EntriesTable({
           </div>
           <div className="flex w-full items-center justify-between pt-4">
             <div>
-              <p className="text-xl font-medium">{entry.legname}</p>
+              <p className="text-xs">{entry.text}</p>
             </div>
             <div className="flex justify-end gap-2">
               <EditEntry id={entry.id} />

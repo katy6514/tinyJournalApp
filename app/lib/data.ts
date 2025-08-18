@@ -81,3 +81,22 @@ export async function fetchFilteredEntries(query: string, currentPage: number) {
     throw new Error("Failed to fetch entries.");
   }
 }
+
+export async function fetchJournalsPages(query: string) {
+  try {
+    const data = await sql`SELECT COUNT(*)
+      FROM entries
+      JOIN dates ON dates.id = entries.date_id
+      WHERE
+        entries.state ILIKE ${`%${query}%`} OR
+        entries.legname ILIKE ${`%${query}%`} OR
+        entries.text ILIKE ${`%${query}%`}
+  `;
+
+    const totalPages = Math.ceil(Number(data[0].count) / ITEMS_PER_PAGE);
+    return totalPages;
+  } catch (error) {
+    console.error("Database Error:", error);
+    throw new Error("Failed to fetch total number of filtered entries.");
+  }
+}

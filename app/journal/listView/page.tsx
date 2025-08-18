@@ -7,6 +7,8 @@ import Pagination from "@/app/ui/journal/pagination";
 import Search from "@/app/ui/search";
 import EntriesTable from "@/app/ui/journal/table";
 
+import { fetchJournalsPages } from "@/app/lib/data";
+
 export default async function Page(props: {
   searchParams?: Promise<{
     query?: string;
@@ -16,6 +18,8 @@ export default async function Page(props: {
   const searchParams = await props.searchParams;
   const query = searchParams?.query || "";
   const currentPage = Number(searchParams?.page) || 1;
+  const totalPages = await fetchJournalsPages(query);
+
   return (
     <main>
       <h1 className={`${lusitana.className} mb-4 text-xl md:text-2xl`}>
@@ -27,6 +31,9 @@ export default async function Page(props: {
       <Suspense key={query + currentPage}>
         <EntriesTable query={query} currentPage={currentPage} />
       </Suspense>
+      <div className="mt-5 flex w-full justify-center">
+        <Pagination totalPages={totalPages} />
+      </div>
       <AddEntry />
       <JournalList />
     </main>
