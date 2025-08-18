@@ -49,9 +49,7 @@ export function haversineDistance([lon1, lat1], [lon2, lat2]) {
  */
 
 export function handleMouseOver(currentUser = null) {
-  // console.log("MOUSEOVER");
   return function handleMouseOver(event, d) {
-    console.log({ d });
     if (!d) {
       return;
     }
