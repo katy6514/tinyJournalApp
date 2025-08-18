@@ -64,7 +64,8 @@ export async function fetchFilteredEntries(query: string, currentPage: number) {
         entries.id,
         entries.state,
         entries.legname,
-        entries.text
+        entries.text,
+        CASE WHEN entries.text IS NOT NULL AND entries.text <> '' THEN true ELSE false END AS has_text
       FROM entries
       JOIN dates ON dates.id = entries.date_id
       WHERE

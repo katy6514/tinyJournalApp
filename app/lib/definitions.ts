@@ -24,4 +24,5 @@ export type EntriesTable = {
   state: string;
   legname: string;
   text: string;
+  has_text: boolean;
 };
