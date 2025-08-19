@@ -35,8 +35,6 @@ export async function fetchJournal(): Promise<JournalEntry[]> {
 // Fetch a single entry by ID, with photos
 // =======================================
 export async function fetchEntryByID(id: string): Promise<JournalEntry | null> {
-  console.log("fetchEntryByID called with:", id); // 👀 check this
-
   try {
     const data = await sql<JournalEntry[]>`
       SELECT

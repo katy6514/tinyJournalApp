@@ -15,8 +15,6 @@ export default async function Page({
 }) {
   const { entry_id } = params;
 
-  console.log({ params });
-
   const entries = await fetchEntryByID(entry_id);
   const entry: JournalEntry = Array.isArray(entries) ? entries[0] : entries;
 
