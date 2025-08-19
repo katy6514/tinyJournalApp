@@ -62,7 +62,6 @@ async function seedEntries() {
   for (const entry of entries) {
     const { uuid, creationDate, text } = entry;
     const entryDate = new Date(creationDate).toISOString().split("T")[0];
-    const entryText = text || "";
     const legName = "legName";
     const state = "state";
 
@@ -71,7 +70,7 @@ async function seedEntries() {
 
     await sql`
       INSERT INTO entries (id, date_id, legName, state, text)
-      VALUES (${uuid}, ${dateId}, ${legName}, ${state}, ${entryText})
+      VALUES (${uuid}, ${dateId}, ${legName}, ${state}, ${text || ""})
       ON CONFLICT (id) DO NOTHING;
     `;
   }

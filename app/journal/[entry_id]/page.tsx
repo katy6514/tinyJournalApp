@@ -34,7 +34,7 @@ export default async function Page(props: {
           },
         ]}
       />
-      <div className=" bg-gray-50 p-4 md:p-6">
+      <div className=" bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
         <h1 className={`${lusitana.className} mb-4 text-xl md:text-2xl`}>
           single journal entry for {entry_id}
           {legname} - {state} on {date}

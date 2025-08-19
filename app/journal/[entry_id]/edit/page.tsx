@@ -12,8 +12,6 @@ export default async function Page(props: {
   const entries = await fetchEntryByID(entry_id);
   const entry: JournalEntry = Array.isArray(entries) ? entries[0] : entries;
 
-  console.log({ entry });
-
   if (!entry) {
     notFound();
   }

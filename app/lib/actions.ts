@@ -38,7 +38,7 @@ export async function createEntry(prevState: State, formData: FormData) {
     date_id: formData.get("date_id"),
     state: formData.get("state"),
     legname: formData.get("legname"),
-    text: formData.get("entryText"),
+    text: formData.get("text"),
   });
 
   // If form validation fails, return errors early. Otherwise, continue.

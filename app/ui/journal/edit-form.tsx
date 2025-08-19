@@ -84,14 +84,14 @@ export default function EditEntryForm({ entry }: { entry: JournalEntry }) {
           {/* Journal Entry */}
           <div className="col-span-2 row-span-2">
             <label
-              htmlFor="entryText"
+              htmlFor="text"
               className="block mb-2 w-full text-sm font-medium text-gray-900 dark:text-white"
             >
               Journal Entry
             </label>
             <textarea
-              id="entryText"
-              name="entryText"
+              id="text"
+              name="text"
               className="block p-2.5 w-full h-full text-sm text-gray-900 bg-white  border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="Write your thoughts here..."
               defaultValue={text || ""}
