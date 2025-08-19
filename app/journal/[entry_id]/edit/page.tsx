@@ -2,15 +2,17 @@ import EditEntryForm from "@/app/ui/journal/edit-form";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 import { fetchEntryByID } from "@/app/lib/data";
 import { notFound } from "next/navigation";
+import { JournalEntry } from "@/app/lib/definitions";
 
-export default async function Page({
-  params,
-}: {
-  params: { entry_id: string };
+export default async function Page(props: {
+  params: Promise<{ entry_id: string }>;
 }) {
-  const { entry_id } = params;
+  const { entry_id } = await props.params; // <-- await here
 
-  const entry = await fetchEntryByID(entry_id);
+  const entries = await fetchEntryByID(entry_id);
+  const entry: JournalEntry = Array.isArray(entries) ? entries[0] : entries;
+
+  console.log({ entry });
 
   if (!entry) {
     notFound();

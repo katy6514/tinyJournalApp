@@ -54,7 +54,6 @@ export function handleMouseOver(currentUser = null) {
       return;
     }
     const tooltip = document.getElementById("tooltip");
-    console.log({ tooltip });
 
     // Remove hiding classes and add visible classes
     tooltip.classList.remove("invisible", "opacity-0");
