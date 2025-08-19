@@ -8,12 +8,10 @@ import { JournalEntry } from "@/app/lib/definitions";
 
 import { EditEntry } from "@/app/ui/journal/buttons";
 
-export default async function Page({
-  params,
-}: {
-  params: { entry_id: string };
+export default async function Page(props: {
+  params: Promise<{ entry_id: string }>;
 }) {
-  const { entry_id } = params;
+  const { entry_id } = await props.params;
 
   const entries = await fetchEntryByID(entry_id);
   const entry: JournalEntry = Array.isArray(entries) ? entries[0] : entries;
