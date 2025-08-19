@@ -6,8 +6,8 @@ import { FormButton, RedirectLink } from "@/app/ui/journal/buttons";
 import { updateEntry, EditState } from "@/app/lib/actions";
 import { JournalEntry } from "@/app/lib/definitions";
 
-export default function EditEntryForm({ entry }: { entry: JournalEntry[] }) {
-  const { entry_id, date, legname, state, text } = entry[0];
+export default function EditEntryForm({ entry }: { entry: JournalEntry }) {
+  const { entry_id, date, legname, state, text } = entry;
   const updateEntryWithId = updateEntry.bind(null, entry_id);
 
   const initialState: EditState = { message: null, errors: {} };

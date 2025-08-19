@@ -16,7 +16,7 @@ export async function fetchJournal(): Promise<JournalEntry[]> {
       SELECT 
         TO_CHAR(d.date, 'YYYY-MM-DD') AS date,
         d.id AS date_id,
-        e.id,
+        e.id AS entry_id,
         e.text,
         e.legname,
         e.state,
@@ -42,7 +42,7 @@ export async function fetchEntryByID(id: string): Promise<JournalEntry | null> {
       SELECT
         d.id AS date_id,
         TO_CHAR(d.date, 'YYYY-MM-DD') AS date,
-        e.id,
+        e.id AS entry_id,
         e.state,
         e.legname,
         e.text,

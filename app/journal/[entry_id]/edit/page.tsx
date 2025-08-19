@@ -3,11 +3,14 @@ import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 import { fetchEntryByID } from "@/app/lib/data";
 import { notFound } from "next/navigation";
 
-export default async function Page(props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
-  const id = params.id;
+export default async function Page({
+  params,
+}: {
+  params: { entry_id: string };
+}) {
+  const { entry_id } = params;
 
-  const entry = await fetchEntryByID(id);
+  const entry = await fetchEntryByID(entry_id);
 
   if (!entry) {
     notFound();
@@ -20,7 +23,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
           { label: "Journal", href: "/journal/listView" },
           {
             label: "Edit Entry",
-            href: `/journal/${id}/edit`,
+            href: `/journal/${entry_id}/edit`,
             active: true,
           },
         ]}

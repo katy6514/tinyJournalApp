@@ -10,6 +10,7 @@ import { Button } from "../../button";
 export default function JournalCard({ entry }: { entry: JournalEntry }) {
   const { date, date_id, entry_id, text, legname, state, photos } = entry;
 
+  console.log({ entry_id });
   const photo = photos?.[0];
 
   // Safer date formatting

@@ -8,11 +8,14 @@ import { JournalEntry } from "@/app/lib/definitions";
 
 import { EditEntry } from "@/app/ui/journal/buttons";
 
-export default async function Page(props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
-  const entry_id = params.id;
+export default async function Page({
+  params,
+}: {
+  params: { entry_id: string };
+}) {
+  const { entry_id } = params;
 
-  // console.log({ params });
+  console.log({ params });
 
   const entries = await fetchEntryByID(entry_id);
   const entry: JournalEntry = Array.isArray(entries) ? entries[0] : entries;
@@ -41,7 +44,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
           {legname} - {state} on {date}
           {new Date(date + "T00:00:00").toLocaleDateString()}
         </h1>
-        <EditEntry id={entry_id} />
+        <EditEntry entry_id={entry_id} />
 
         <div className="">
           <p>{text}</p>

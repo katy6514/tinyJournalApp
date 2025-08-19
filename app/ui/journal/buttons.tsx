@@ -10,9 +10,13 @@ export function AddEntry() {
   );
 }
 
-export function EditEntry({ id }: { id: string }) {
+export function EditEntry({ entry_id }: { entry_id: string }) {
   return (
-    <Button href={`/journal/${id}/edit`} icon={<PencilIcon />} variant="light">
+    <Button
+      href={`/journal/${entry_id}/edit`}
+      icon={<PencilIcon />}
+      variant="light"
+    >
       Edit
     </Button>
   );

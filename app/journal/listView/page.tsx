@@ -25,7 +25,7 @@ export default async function Page(props: {
     <main>
       <Breadcrumbs
         breadcrumbs={[
-          // { label: "Journal", href: "/journal/listView" },
+          { label: "Journal", href: "/journal/listView" },
           {
             label: "All entries",
             href: `/journal/listView`,
