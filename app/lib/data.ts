@@ -79,7 +79,7 @@ export async function fetchEntryByID(id: string): Promise<JournalEntry | null> {
 export async function fetchFilteredEntriesWithPhotos(
   query: string,
   currentPage: number
-) {
+): Promise<JournalEntry[]> {
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
   try {
     const entries = await sql<JournalEntry[]>`

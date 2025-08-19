@@ -1,6 +1,3 @@
-import Image from "next/image";
-import { EditEntry } from "@/app/ui/journal/buttons";
-// import { formatDateToLocal, formatCurrency } from "@/app/lib/utils";
 import { fetchFilteredEntriesWithPhotos } from "@/app/lib/data";
 import JournalCard from "./components/journal-card";
 
@@ -13,12 +10,10 @@ export default async function JournalList({
 }) {
   const entries = await fetchFilteredEntriesWithPhotos(query, currentPage);
 
-  // console.log({ entries });
-
   return (
     <div>
       {entries.map((entry, i) => {
-        return <JournalCard entry={entry} key={i} />;
+        return <JournalCard entry={entry} key={entry.entry_id} />;
       })}
     </div>
   );
