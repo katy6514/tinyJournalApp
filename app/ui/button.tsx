@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { twMerge } from "tailwind-merge";
+import { sourceSans } from "@/app/ui/fonts";
 
 type ButtonVariant = "dark" | "light" | "error" | "outlined";
 
@@ -16,8 +17,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
 }
 
-const baseClasses =
-  "flex items-center justify-center  px-4 py-2 text-sm font-medium w-auto inline-flex transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:opacity-50 disabled:cursor-not-allowed";
+const baseClasses = `flex items-center ${sourceSans.className} justify-center px-6 py-3 text-sm font-medium w-auto inline-flex transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:opacity-50 disabled:cursor-not-allowed`;
 
 const variantClasses: Record<ButtonVariant, string> = {
   dark: "text-white bg-gray-800 border-black hover:bg-black",
@@ -39,10 +39,13 @@ export function Button({
 }: ButtonProps) {
   const variantClass = variantClasses[variant];
 
+  if (typeof children === "string") {
+  }
+
   const content = (
     <>
       {icon && <span className="w-5 h-5 mr-2.5">{icon}</span>}
-      {children}
+      {typeof children === "string" ? children.toUpperCase() : children}
     </>
   );
 
