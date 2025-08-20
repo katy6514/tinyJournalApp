@@ -10,7 +10,7 @@ A full-stack application I'm building to complete my journal for my Continental 
 - 🗺️ Map visualization (D3.js) for geotagged photos and trail data
 - 🔐 User authentication (username + password)
 - ⚡ Server actions for seamless form handling and validation
-- 🎨 Styled with Tailwind CSS
+- 🎨 Styled with Tailwind CSS + shadcn/ui components
 
 ## 🛠️ Tech Stack
 

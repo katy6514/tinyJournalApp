@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { notoSerif, geistSans } from "@/app/ui/fonts";
+import { notoSerif, notoSans } from "@/app/ui/fonts";
 
 export default function Home() {
   return (
@@ -7,7 +7,7 @@ export default function Home() {
       <div className="flex h-20 shrink-0 items-end  bg-linear-to-bl from-violet-500 to-fuchsia-500 p-4 md:h-52">
         {/* <AcmeLogo /> */}
         <h1
-          className={`text-2xl font-bold text-white md:text-4xl ${geistSans.className} antialiased`}
+          className={`text-2xl font-bold text-white md:text-4xl ${notoSans.className} antialiased`}
         >
           My CDT Journal
         </h1>
