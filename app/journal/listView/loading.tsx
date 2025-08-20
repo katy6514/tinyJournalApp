@@ -1,5 +1,14 @@
-import { JournalCardSkeleton } from "@/app/ui/skeletons";
+import {
+  BreadcrumbSkeleton,
+  SearchSkeleton,
+  JournalCardSkeleton,
+} from "@/app/ui/skeletons";
 
 export default function Loading() {
-  return <JournalCardSkeleton />;
+  return (
+    <>
+      <BreadcrumbSkeleton /> <SearchSkeleton />
+      <JournalCardSkeleton />
+    </>
+  );
 }

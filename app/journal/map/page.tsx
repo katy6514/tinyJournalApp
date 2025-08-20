@@ -1,9 +1,19 @@
 import CDTmap from "./CDTmap";
+import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 
 export default async function Page() {
   return (
     <main>
-      <h2>The Map</h2>
+      <Breadcrumbs
+        breadcrumbs={[
+          { label: "Journal", href: "/journal/listView" },
+          {
+            label: "The Map",
+            href: `/journal/map`,
+            active: true,
+          },
+        ]}
+      />
       <CDTmap />
       <div>
         <section>
