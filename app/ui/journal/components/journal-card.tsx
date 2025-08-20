@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 
-import { playfairDisplay } from "@/app/ui/fonts";
+import { notoSerif } from "@/app/ui/fonts";
 
 import { JournalEntry, Photo } from "@/app/lib/definitions";
 import { Button } from "../../button";
@@ -42,7 +42,7 @@ export default function JournalCard({ entry }: { entry: JournalEntry }) {
         <p className="text-sm text-gray-500">{formattedDate}</p>
       </div>
       <section className="col-span-2 row-span-2 h-auto p-4 bg-white dark:bg-gray-800">
-        <p className={`${playfairDisplay.className} font-medium line-clamp-4`}>
+        <p className={`${notoSerif.className} font-medium line-clamp-4`}>
           {text}
         </p>
       </section>

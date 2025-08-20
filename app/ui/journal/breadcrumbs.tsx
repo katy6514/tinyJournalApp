@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 import Link from "next/link";
-import { playfairDisplay } from "@/app/ui/fonts";
+import { notoSans } from "@/app/ui/fonts";
 
 interface Breadcrumb {
   label: string;
@@ -15,9 +15,7 @@ export default function Breadcrumbs({
 }) {
   return (
     <nav aria-label="Breadcrumb" className="mb-6 block">
-      <ol
-        className={clsx(playfairDisplay.className, "flex text-xl md:text-2xl")}
-      >
+      <ol className={clsx(notoSans.className, "flex text-xl md:text-2xl")}>
         {breadcrumbs.map((breadcrumb, index) => (
           <li
             key={`${breadcrumb.href}-${index}`}

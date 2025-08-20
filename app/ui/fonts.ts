@@ -1,8 +1,8 @@
-import { Inter, Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import { Inter, Geist, Noto_Sans, Noto_Serif } from "next/font/google";
 
 export const inter = Inter({ subsets: ["latin"] });
 
-export const playfairDisplay = Playfair_Display({
+export const notoSerif = Noto_Serif({
   subsets: ["latin"],
   weight: "400",
 });
@@ -12,7 +12,7 @@ export const geistSans = Geist({
   subsets: ["latin"],
 });
 
-export const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+export const notoSans = Noto_Sans({
   subsets: ["latin"],
+  weight: "400",
 });

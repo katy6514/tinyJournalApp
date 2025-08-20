@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import { playfairDisplay } from "@/app/ui/fonts";
+import { notoSerif } from "@/app/ui/fonts";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 
 import { fetchEntryByID, fetchPhotosForDateID } from "@/app/lib/data";
@@ -35,7 +35,7 @@ export default async function Page(props: {
         ]}
       />
       <div className=" bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
-        <h1 className={`${playfairDisplay.className} mb-4 text-xl md:text-2xl`}>
+        <h1 className={`${notoSerif.className} mb-4 text-xl md:text-2xl`}>
           single journal entry for {entry_id}
           {legname} - {state} on {date}
           {new Date(date + "T00:00:00").toLocaleDateString()}
@@ -43,7 +43,7 @@ export default async function Page(props: {
         <EditEntry entry_id={entry_id} />
 
         <div className="">
-          <p className={`${playfairDisplay.className}`}>{text}</p>
+          <p className={`${notoSerif.className}`}>{text}</p>
         </div>
         {photos &&
           photos.map((photo) => {
