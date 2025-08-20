@@ -8,6 +8,7 @@ import {
   CameraIcon,
   VideoCameraIcon,
   GlobeAmericasIcon,
+  CommandLineIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -16,7 +17,7 @@ import clsx from "clsx";
 // Map of links to display in the side navigation.
 // Depending on the size of the application, this would be stored in a database.
 const links = [
-  { name: "Home", href: "/journal", icon: HomeIcon },
+  { name: "About", href: "/journal", icon: HomeIcon },
   {
     name: "The Map",
     href: "/journal/map",
@@ -34,13 +35,18 @@ const links = [
   // },
   {
     name: "Photo Album",
-    href: "/photos",
+    href: "/journal/photoAlbum",
     icon: CameraIcon,
   },
+  // {
+  //   name: "Youtube Uploads",
+  //   href: "/videos",
+  //   icon: VideoCameraIcon,
+  // },
   {
-    name: "Youtube Uploads",
-    href: "/videos",
-    icon: VideoCameraIcon,
+    name: "Dev Journal",
+    href: "/journal/devJournal",
+    icon: CommandLineIcon,
   },
 ];
 

@@ -177,3 +177,22 @@ export async function fetchPhotosForDateID(date_id: string) {
     throw new Error("Failed to fetch photos for the date_id.");
   }
 }
+
+// ==========================
+// Fetch photos for a given date
+// ==========================
+export async function fetchPhotos() {
+  try {
+    const result = await sql`
+      SELECT 
+        p.*
+      FROM photos p
+      ORDER BY p.description;
+    `;
+
+    return result;
+  } catch (error) {
+    console.error("Database Error (fetchPhotos):", error);
+    throw new Error("Failed to fetch photos.");
+  }
+}
