@@ -24,6 +24,9 @@ export default async function Page() {
       <div className="flex flex-col md:flex-row md:items-start gap-6">
         {/* Text Section */}
         <div className="md:w-2/3 text-gray-800 space-y-4">
+          <h3 className="text-lg font-semibold mb-2">
+            The Continental Divide Trail
+          </h3>
           <p>
             In the summer of 2024, I started a ~3000 mile long journey on the
             Continental Divide Trail down the Rocky Mountains. I started in
@@ -38,6 +41,7 @@ export default async function Page() {
             very much a work in progress, and something I'm playing around with
             in my spare time.
           </p>
+          <h3 className="text-lg font-semibold mb-2">GPS Device</h3>
           <p>
             I carried a Garmin Inreach Mini 2 on my trip. Most messages I sent
             also contained location. These are mapped above in the data vis as
@@ -48,6 +52,7 @@ export default async function Page() {
             family. When analyzing my Garmin data I flagged these preset
             messages and color coded them blue in the datavis.
           </p>
+          <h3 className="text-lg font-semibold mb-2">CalTopo</h3>
           <p>
             My daily miles hiked, routes generated after the hike with CalTopo.
             These are mapped in the datavis in alternating blue and orange
