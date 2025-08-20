@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { lusitana, geistSans } from "@/app/ui/fonts";
+import { playfairDisplay, geistSans } from "@/app/ui/fonts";
 
 export default function Home() {
   return (
@@ -16,7 +16,7 @@ export default function Home() {
         <div className="flex flex-col justify-center gap-6  bg-gray-50 px-6 py-10 md:w-2/5 md:px-20">
           <div className="relative w-0 h-0 border-l-[15px] border-r-[15px] border-b-[26px] border-l-transparent border-r-transparent border-b-black" />
           <p
-            className={`text-xl text-gray-800 md:text-3xl md:leading-normal ${lusitana.className} antialiased`}
+            className={`text-xl text-gray-800 md:text-3xl md:leading-normal ${playfairDisplay.className} antialiased`}
           >
             <strong>Welcome to Acme.</strong> This is the example for the{" "}
             <a href="https://nextjs.org/learn/" className="text-blue-500">

@@ -1,4 +1,4 @@
-import { lusitana } from "@/app/ui/fonts";
+import { playfairDisplay } from "@/app/ui/fonts";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 
 import JournalList from "@/app/ui/journal/journal-list";

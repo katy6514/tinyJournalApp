@@ -1,12 +1,12 @@
 // import { Card } from '@/app/ui/journal/cards';
 // import RevenueChart from '@/app/ui/dashboard/revenue-chart';
 // import LatestInvoices from '@/app/ui/dashboard/latest-invoices';
-import { lusitana } from "@/app/ui/fonts";
+import { playfairDisplay } from "@/app/ui/fonts";
 
 export default async function Page() {
   return (
     <main>
-      <h1 className={`${lusitana.className} mb-4 text-xl md:text-2xl`}>
+      <h1 className={`${playfairDisplay.className} mb-4 text-xl md:text-2xl`}>
         About
       </h1>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
