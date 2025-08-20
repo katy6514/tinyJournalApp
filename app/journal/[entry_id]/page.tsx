@@ -2,11 +2,13 @@ import Image from "next/image";
 
 import { notoSerif } from "@/app/ui/fonts";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
+import { Button } from "@/app/ui/button";
+import { PencilIcon } from "@heroicons/react/24/outline";
 
 import { fetchEntryByID, fetchPhotosForDateID } from "@/app/lib/data";
 import { JournalEntry } from "@/app/lib/definitions";
 
-import { EditEntry } from "@/app/ui/journal/buttons";
+// import { EditEntry } from "@/app/ui/journal/buttons";
 
 export default async function Page(props: {
   params: Promise<{ entry_id: string }>;
@@ -40,7 +42,14 @@ export default async function Page(props: {
           {legname} - {state} on {date}
           {new Date(date + "T00:00:00").toLocaleDateString()}
         </h1>
-        <EditEntry entry_id={entry_id} />
+        {/* <EditEntry entry_id={entry_id} /> */}
+        <Button
+          href={`/journal/${entry_id}/edit`}
+          icon={<PencilIcon />}
+          variant="light"
+        >
+          Edit
+        </Button>
 
         <div className="">
           <p className={`${notoSerif.className}`}>{text}</p>

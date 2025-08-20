@@ -1,8 +1,10 @@
 import { notoSerif } from "@/app/ui/fonts";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
+import { Button } from "@/app/ui/button";
+
+import { PlusIcon } from "@heroicons/react/24/outline";
 
 import JournalList from "@/app/ui/journal/journal-list";
-import { AddEntry } from "@/app/ui/journal/buttons";
 import { Suspense } from "react";
 
 import Pagination from "@/app/ui/journal/pagination";
@@ -33,7 +35,6 @@ export default async function Page(props: {
           },
         ]}
       />
-
       <div className="mt-4 flex items-center justify-between gap-2 pb-8 md:mt-8">
         <Search placeholder="Search entries..." />
       </div>
@@ -43,7 +44,9 @@ export default async function Page(props: {
       <div className="mt-5 flex w-full justify-center">
         <Pagination totalPages={totalPages} />
       </div>
-      <AddEntry />
+      <Button href={"/journal/create"} variant="dark" icon={<PlusIcon />}>
+        Add Entry
+      </Button>{" "}
     </main>
   );
 }
