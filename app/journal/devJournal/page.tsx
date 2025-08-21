@@ -9,7 +9,7 @@ type PhaseProps = {
 const Phase: React.FC<PhaseProps> = ({ title, items }) => (
   <div className="mb-8">
     <h2 className="text-xl font-semibold mb-2">{title}</h2>
-    <ul className="list-disc list-inside space-y-1 text-gray-700">
+    <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
       {items.map((item, i) => (
         <li key={i}>{item}</li>
       ))}
@@ -31,9 +31,9 @@ export default function DevelopmentJourney() {
         ]}
       />
       <div className="max-w-3xl mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6">
+        {/* <h1 className="text-3xl font-bold mb-6">
           📜 Trail Journal App – Development Journey
-        </h1>
+        </h1> */}
 
         <Phase
           title="Phase 1: D3 Map Exploration"
@@ -109,7 +109,7 @@ export default function DevelopmentJourney() {
           ]}
         />
 
-        <div className="mt-10 p-4 bg-green-50 border border-green-200 rounded-lg">
+        <div className="mt-10 p-4 bg-green-50 dark:bg-gray-700 border border-green-200 rounded-lg">
           <p className="font-semibold">✅ Current Status:</p>
           <p>
             Trail Journal App is a full-stack journaling platform with entries,

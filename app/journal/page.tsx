@@ -23,7 +23,7 @@ export default async function Page() {
       {/* <div className="max-w-5xl mx-auto p-6"> */}
       <div className="flex flex-col md:flex-row md:items-start gap-6">
         {/* Text Section */}
-        <div className="md:w-2/3 text-gray-800 space-y-4">
+        <div className="md:w-2/3 text-gray-800 dark:text-gray-50 space-y-4">
           <h3 className="text-lg font-semibold mb-2">
             The Continental Divide Trail
           </h3>
