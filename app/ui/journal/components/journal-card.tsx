@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 
 import { notoSerif } from "@/app/ui/fonts";
 
@@ -20,8 +21,8 @@ export default function JournalCard({ entry }: { entry: JournalEntry }) {
   });
 
   return (
-    <article className="grid grid-cols-3 grid-rows-4 gap-4 mb-8 pr-4 bg-gray-50 dark:bg-gray-600">
-      <div className="row-span-4 bg-white dark:bg-gray-700">
+    <article className="grid grid-cols-3 grid-rows-2 gap-4 mb-8 pr-4 bg-gray-50 dark:bg-gray-600">
+      <div className="row-span-2 bg-white dark:bg-gray-700">
         {photo && (
           <Image
             key={photo.photo_id}
@@ -33,24 +34,16 @@ export default function JournalCard({ entry }: { entry: JournalEntry }) {
           />
         )}
       </div>
-      <header className="col-span-1 row-span-1 p-4 bg-gray-50 dark:bg-gray-800">
-        <p className="text-sm font-semibold">
-          {legname} - {state}
-        </p>
-      </header>
-      <div className="col-span-1 row-span-1 p-4 bg-gray-50 dark:bg-gray-800">
+      <header className="col-span-2 row-span-1 p-4 mt-4 bg-gray-50 dark:bg-gray-800">
+        <h3 className="text-lg font-semibold">{legname}</h3>
+        <p className="text-md font-semibold">{state}</p>
         <p className="text-sm text-gray-500">{formattedDate}</p>
-      </div>
-      <section className="col-span-2 row-span-2 h-auto p-4 bg-white dark:bg-gray-800">
+      </header>
+      <section className="col-span-2 row-span-1 h-auto p-4 mb-4 bg-white dark:bg-gray-800">
         <p className={`${notoSerif.className} font-medium line-clamp-4`}>
           {text}
         </p>
       </section>
-      <footer className="col-span-2 row-span-1">
-        <Button href={`/journal/${entry_id}`} variant="dark">
-          View
-        </Button>
-      </footer>
     </article>
   );
 }

@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import { notoSerif } from "@/app/ui/fonts";
+import { notoSans, notoSerif } from "@/app/ui/fonts";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 import { Button } from "@/app/ui/button";
 import { PencilIcon } from "@heroicons/react/24/outline";
@@ -24,6 +24,12 @@ export default async function Page(props: {
 
   const { date, date_id, text, legname, state, photos } = entry || {};
 
+  const formattedDate = new Date(date).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
     <main>
       <Breadcrumbs
@@ -37,11 +43,15 @@ export default async function Page(props: {
         ]}
       />
       <div className=" bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
-        <h1 className={`${notoSerif.className} mb-4 text-xl md:text-2xl`}>
-          single journal entry for {entry_id}
-          {legname} - {state} on {date}
-          {new Date(date + "T00:00:00").toLocaleDateString()}
+        <h1 className={`${notoSans.className} mb-4 text-xl md:text-2xl`}>
+          {legname}
         </h1>
+        <h2 className={`${notoSans.className} mb-4 text-lg md:text-xl`}>
+          {state}
+        </h2>
+        <h2 className={`${notoSans.className} mb-4 text-md md:text-lg`}>
+          {formattedDate}
+        </h2>
         {/* <EditEntry entry_id={entry_id} /> */}
         <Button
           href={`/journal/${entry_id}/edit`}
