@@ -28,3 +28,12 @@ export type User = {
   email: string;
   password: string;
 };
+
+export const colors = {
+  oddDays: "#6CCFF6",
+  campSites: "#337357",
+  messages: "#F9A620",
+  evenDays: "#2E2D4D",
+  photos: "#E26D5A",
+  black: "#000000",
+};
