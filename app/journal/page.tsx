@@ -89,6 +89,7 @@ export default async function Page() {
             height={700}
             alt="Photo of Katy nearing the top of a mountain pass in the Wind River Range near sunrise, many mountains and lakes behind her"
             className="rounded-lg object-cover w-full h-auto shadow-md"
+            unoptimized
           />
         </div>
       </div>

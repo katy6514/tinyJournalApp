@@ -22,6 +22,7 @@ export default function Home() {
           height={700}
           alt="Photo of Katy nearing the top of a mountain pass in the Wind River Range near sunrise, many mountains and lakes behind her"
           className="object-cover w-full h-screen items-center"
+          unoptimized
         />
       </div>
     </main>
