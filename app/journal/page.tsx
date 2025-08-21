@@ -43,27 +43,37 @@ export default async function Page() {
           </p>
           <h3 className="text-lg font-semibold mb-2">GPS Device</h3>
           <p>
-            I carried a Garmin Inreach Mini 2 on my trip. Most messages I sent
-            also contained location. These are mapped above in the data vis as
-            red dots. You can hover to see the date the message was sent.
+            I carried a Garmin Inreach Mini 2 on my trip in case of emergencies
+            but also to keep loved ones at home updated on my progress (and to
+            assure them I was still having fun). After my trip was over, I
+            exorted my data from Garmin's website and wrote a script to extract
+            the subset of data I wanted to map, including date, time, lat, long,
+            and message content. I then mapped these in the data vis.{" "}
           </p>
           <p>
-            Every night once I found my campsite, I sent a preset message to
-            family. When analyzing my Garmin data I flagged these preset
-            messages and color coded them blue in the datavis.
+            Every night on the trail, I also sent a preset message along the
+            lines of "camped here for the night!" I was able to filter these
+            messages out and mapped those with a different symbol in the data
+            visualization.
+          </p>
+          <h3 className="text-lg font-semibold mb-2">Photos</h3>
+          <p>
+            I used Exif to extract location data from my photos, similar to the
+            data I extracted from my GPS device. I then mapped these photos in
+            the data visualization, using the date and time of the photo to
+            determine which day it was taken on. Using the each photo's mappe
           </p>
           <h3 className="text-lg font-semibold mb-2">CalTopo</h3>
           <p>
-            My daily miles hiked, routes generated after the hike with CalTopo.
-            These are mapped in the datavis in alternating blue and orange
-            lines. Hover over the leg in the datavis to see the name (or at
-            least what I'm calling it). I saved the location of my nightly
-            campsites with my Garmin. I did not record my walks each day with
-            the Garmin because I didn't want to drain the battery. Instead I
-            used the saved locations of my campsites and recreated the route I
-            took each day with Caltopo. I then exported those tracks as GeoJSON
-            and uploaded them here.
+            I did not use my GPS device to track my daily mileage as this would
+            run through the devices battery. Instead, after the trail I used
+            CalTopo to track the course of my progress each day based on the
+            locations of my campsites. I then exported these tracks as GeoJSON
+            and uploaded them to the data vis, alternating the colors to
+            distinguish between individual days.
           </p>
+          <h3 className="text-lg font-semibold mb-2">Thanks for visiting!</h3>
+
           <p>
             Wanna Get in Touch? Want to talk about the trail? Gear? Code? A job?
             :D Shoot me an email at katy6514 [at] gmail [dot] com. I'd love to

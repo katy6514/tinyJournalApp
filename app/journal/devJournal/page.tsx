@@ -59,7 +59,6 @@ export default function DevelopmentJourney() {
           items={[
             "Chose PostgreSQL as the database.",
             "Defined schema: users, dates, entries, photos.",
-            "Set up db-migrate for database migrations.",
             "Debugged Postgres role/permissions locally until stable.",
           ]}
         />
