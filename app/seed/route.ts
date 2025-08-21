@@ -11,8 +11,8 @@ const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 async function dropTables() {
   console.log("Dropping tables...");
   // await sql`DROP TABLE IF EXISTS photos CASCADE;`;
-  await sql`DROP TABLE IF EXISTS entries CASCADE;`;
-  await sql`DROP TABLE IF EXISTS dates CASCADE;`;
+  // await sql`DROP TABLE IF EXISTS entries CASCADE;`;
+  // await sql`DROP TABLE IF EXISTS dates CASCADE;`;
   await sql`DROP TABLE IF EXISTS users CASCADE;`;
   await sql`DROP TABLE IF EXISTS visitors CASCADE;`;
 }
@@ -76,28 +76,28 @@ async function seedEntries() {
   }
 }
 /* ---------- CREATE + SEED USERS ---------- */
-async function seedUsers() {
-  console.log("Seeding users...");
-  await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`;
+// async function seedUsers() {
+//   console.log("Seeding users...");
+//   await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`;
 
-  await sql`
-    CREATE TABLE users (
-      id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
-      email TEXT NOT NULL UNIQUE,
-      password TEXT NOT NULL
-    );
-  `;
+//   await sql`
+//     CREATE TABLE users (
+//       id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+//       name VARCHAR(255) NOT NULL,
+//       email TEXT NOT NULL UNIQUE,
+//       password TEXT NOT NULL
+//     );
+//   `;
 
-  for (const user of users) {
-    const hashedPassword = await bcrypt.hash(user.password, 10);
-    await sql`
-      INSERT INTO users (id, name, email, password)
-      VALUES (${user.id}, ${user.name}, ${user.email}, ${hashedPassword})
-      ON CONFLICT (id) DO NOTHING;
-    `;
-  }
-}
+//   for (const user of users) {
+//     const hashedPassword = await bcrypt.hash(user.password, 10);
+//     await sql`
+//       INSERT INTO users (id, name, email, password)
+//       VALUES (${user.id}, ${user.name}, ${user.email}, ${hashedPassword})
+//       ON CONFLICT (id) DO NOTHING;
+//     `;
+//   }
+// }
 /* ---------- CREATE + SEED VISITORS ---------- */
 async function seedVisitors() {
   console.log("Seeding visitors...");
@@ -173,9 +173,9 @@ async function seedPhotos() {
 export async function GET() {
   try {
     await dropTables(); // clean start
-    await seedDates();
-    await seedEntries();
-    await seedUsers();
+    // await seedDates();
+    // await seedEntries();
+    // await seedUsers();
     await seedVisitors();
     // await seedPhotos();
 
