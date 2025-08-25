@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { sourceSans } from "@/app/ui/fonts";
 import { Button } from "./ui/button";
+import passPic from "../public/passPic.jpg";
 
 export default function Home() {
   return (
@@ -17,12 +18,11 @@ export default function Home() {
       </div>
       <div className="basis-1/2">
         <Image
-          src="/passPic.jpg"
+          src={passPic}
           width={394}
           height={700}
           alt="Photo of Katy nearing the top of a mountain pass in the Wind River Range near sunrise, many mountains and lakes behind her"
           className="object-cover w-full h-screen items-center"
-          unoptimized
         />
       </div>
     </main>

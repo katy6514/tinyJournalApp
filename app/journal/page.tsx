@@ -3,6 +3,8 @@
 // import LatestInvoices from '@/app/ui/dashboard/latest-invoices';
 import Image from "next/image";
 
+import smile from "../../public/smile.jpg";
+
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 
 import { sourceSans } from "@/app/ui/fonts";
@@ -84,12 +86,11 @@ export default async function Page() {
         {/* Image Section */}
         <div className="md:w-1/3 flex-shrink-0">
           <Image
-            src="/smile.jpg"
+            src={smile}
             width={394}
             height={700}
-            alt="Photo of Katy nearing the top of a mountain pass in the Wind River Range near sunrise, many mountains and lakes behind her"
+            alt="Photo of Katy laughing sitting on the ground"
             className="rounded-lg object-cover w-full h-auto shadow-md"
-            unoptimized
           />
         </div>
       </div>
