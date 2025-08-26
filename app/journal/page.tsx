@@ -1,6 +1,3 @@
-// import { Card } from '@/app/ui/journal/cards';
-// import RevenueChart from '@/app/ui/dashboard/revenue-chart';
-// import LatestInvoices from '@/app/ui/dashboard/latest-invoices';
 import Image from "next/image";
 
 import smile from "../../public/smile.jpg";

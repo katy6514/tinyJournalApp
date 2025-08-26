@@ -13,7 +13,7 @@ async function dropTables() {
   // await sql`DROP TABLE IF EXISTS photos CASCADE;`;
   // await sql`DROP TABLE IF EXISTS entries CASCADE;`;
   // await sql`DROP TABLE IF EXISTS dates CASCADE;`;
-  await sql`DROP TABLE IF EXISTS users CASCADE;`;
+  // await sql`DROP TABLE IF EXISTS users CASCADE;`;
   await sql`DROP TABLE IF EXISTS visitors CASCADE;`;
 }
 
