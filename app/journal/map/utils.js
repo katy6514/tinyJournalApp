@@ -69,7 +69,7 @@ export function handleMouseOver(currentUser = null) {
 
         // Only show full message if correct user
         const displayText =
-          currentUser && currentUser.email === "katy@gmail.com"
+          currentUser && currentUser.email === "katy6514@gmail.com"
             ? MessageText
             : "Message hidden";
         tooltip.innerHTML = `<p>${displayText}</p><p>Date: ${messageDateString}</p>`;

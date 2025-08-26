@@ -22,9 +22,7 @@ export default function CDTmap() {
   const ref = useRef();
   const gRef = useRef(null);
 
-  const currentUser = {
-    email: "katy@gmail.com",
-  };
+  const currentUser = undefined;
 
   // ✅ Define projection + path WITHIN component and memoize
   const projection = useMemo(() => {
