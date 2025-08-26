@@ -12,8 +12,8 @@ export default function Home() {
         >
           My CDT Journal
         </h1>
-        <Button href="/login" variant="outlined" className="m-20">
-          Log in
+        <Button href="/journal" variant="outlined" className="m-20">
+          Welcome
         </Button>
       </div>
       <div className="basis-1/2">
