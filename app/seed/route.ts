@@ -3,6 +3,8 @@ import bcrypt from "bcrypt";
 
 import { entries } from "./cleanedEntries";
 import { photos } from "./photoArray";
+import { calTopoTracks } from "./calTopoTracks";
+
 import { users, visitors } from "../lib/placeholder-data";
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
@@ -14,7 +16,8 @@ async function dropTables() {
   // await sql`DROP TABLE IF EXISTS entries CASCADE;`;
   // await sql`DROP TABLE IF EXISTS dates CASCADE;`;
   // await sql`DROP TABLE IF EXISTS users CASCADE;`;
-  await sql`DROP TABLE IF EXISTS visitors CASCADE;`;
+  // await sql`DROP TABLE IF EXISTS visitors CASCADE;`;
+  await sql`DROP TABLE IF EXISTS legs CASCADE;`;
 }
 
 /* ---------- CREATE + SEED DATES ---------- */
@@ -44,6 +47,7 @@ async function seedDates() {
     `;
   }
 }
+
 /* ---------- CREATE + SEED ENTRIES ---------- */
 async function seedEntries() {
   console.log("Seeding entries...");
@@ -121,7 +125,7 @@ async function seedVisitors() {
   }
 }
 
-/* ---------- CREATE + SEED PHOTOS ---------- */
+/* ---------- CREATE + SEED PHOTOS TABLE ---------- */
 async function seedPhotos() {
   console.log("Seeding photos...");
 
@@ -166,8 +170,34 @@ async function seedPhotos() {
   }
 }
 
-//   date_id INT NOT NULL REFERENCES dates(id) ON DELETE CASCADE,
-// date_id INTEGER REFERENCES dates(id),
+/* ---------- CREATE + SEED LEG TABLE ---------- */
+async function seedLegs() {
+  console.log("Seeding legs...");
+
+  await sql`
+    CREATE TABLE legs (
+      id INT PRIMARY KEY,
+      name TEXT NOT NULL,
+      coordinates JSONB NOT NULL  
+    );
+  `;
+  for (const track of calTopoTracks) {
+    const {
+      geometry: { coordinates },
+      properties: { title, description },
+    } = track;
+
+    const titleINT = parseInt(title);
+
+    await sql`INSERT INTO legs (id, name, coordinates)
+          VALUES (
+        ${titleINT},
+        ${description},
+        ${coordinates}
+      )
+      ON CONFLICT (id) DO NOTHING;`;
+  }
+}
 
 /* ---------- MAIN SEED RUNNER ---------- */
 export async function GET() {
@@ -176,7 +206,8 @@ export async function GET() {
     // await seedDates();
     // await seedEntries();
     // await seedUsers();
-    await seedVisitors();
+    // await seedVisitors();
+    await seedLegs();
     // await seedPhotos();
 
     return Response.json({ message: "Database seeded successfully" });
