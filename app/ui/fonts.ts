@@ -8,7 +8,7 @@ import {
 
 export const sourceSans = Source_Sans_3({
   subsets: ["latin"],
-  weight: "300",
+  weight: ["300", "700", "900"],
 });
 
 export const mulish = Mulish({
