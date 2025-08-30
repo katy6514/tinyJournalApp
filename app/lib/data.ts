@@ -120,19 +120,6 @@ export async function fetchFilteredEntriesWithPhotos(
     throw new Error("Failed to fetch entries.");
   }
 }
-// Fetch one entry with photos
-// export async function fetchEntryWithPhotos(id: string) {
-//   const entry = await db.query(`SELECT * FROM entries WHERE id = $1`, [id]);
-
-//   if (!entry) return null;
-
-//   const photos = await db.query(
-//     `SELECT * FROM photos WHERE date_id = $1`,
-//     [entry.date_id]
-//   );
-
-//   return { ...entry, photos };
-// }
 
 // =====================================
 // Fetch page count for filtered entries
@@ -194,5 +181,45 @@ export async function fetchPhotos() {
   } catch (error) {
     console.error("Database Error (fetchPhotos):", error);
     throw new Error("Failed to fetch photos.");
+  }
+}
+
+import { Leg, DateRow } from "@/app/lib/definitions";
+
+// ==========================
+// Fetch legs
+// ==========================
+export async function fetchLegs(): Promise<Leg[]> {
+  try {
+    const result = await sql<Leg[]>`
+      SELECT
+        l.*
+      FROM legs l
+      ORDER BY l.id;
+    `;
+
+    return result;
+  } catch (error) {
+    console.error("Database Error (fetchLegs):", error);
+    throw new Error("Failed to fetch legs.");
+  }
+}
+
+// ==========================
+// Fetch dates
+// ==========================
+export async function fetchDates(): Promise<DateRow[]> {
+  try {
+    const result = await sql<DateRow[]>`
+      SELECT 
+        d.*
+      FROM dates d
+      ORDER BY d.date;
+    `;
+
+    return result;
+  } catch (error) {
+    console.error("Database Error (fetchDates):", error);
+    throw new Error("Failed to fetch dates.");
   }
 }

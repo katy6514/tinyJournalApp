@@ -29,6 +29,18 @@ export type User = {
   password: string;
 };
 
+export type Leg = {
+  id: string;
+  name: string;
+  coordinates: number[];
+  date_id?: string;
+};
+
+export type DateRow = {
+  id: string;
+  date: string;
+};
+
 export const colors = {
   oddDays: "#6CCFF6",
   campSites: "#337357",

@@ -126,3 +126,24 @@ export async function authenticate(
     throw error;
   }
 }
+
+export async function updateLegWithDate(formData: FormData) {
+  const rawFormData = {
+    legId: formData.get("legId"),
+    dateId: formData.get("dateId"),
+  };
+  // Test it out:
+  console.log(rawFormData);
+
+  const { legId, dateId } = rawFormData;
+
+  try {
+    await sql`
+    UPDATE legs SET date_id = ${dateId} WHERE id =  ${legId};
+  `;
+  } catch (error) {
+    console.error(error);
+  }
+  revalidatePath("/journal/listView");
+  redirect("/journal/listView");
+}
