@@ -50,11 +50,11 @@ export const colors = {
   black: "black",
 };
 
-export const navigationColors = {
-  oddDays: { dark: "sky-700", mid: "sky-500", light: "sky-200" },
-  campSites: { dark: "emerald-700", mid: "emerald-500", light: "emerald-200" },
-  messages: { dark: "amber-700", mid: "amber-500", light: "amber-200" },
-  evenDays: { dark: "blue-700", mid: "blue-500", light: "blue-200" },
-  photos: { dark: "red-700", mid: "red-500", light: "red-200" },
-  black: "black",
-};
+// export const navigationColors = {
+//   oddDays: { dark: "sky-700", mid: "sky-500", light: "sky-200" },
+//   campSites: { dark: "emerald-700", mid: "emerald-500", light: "emerald-200" },
+//   messages: { dark: "amber-700", mid: "amber-500", light: "amber-200" },
+//   evenDays: { dark: "blue-700", mid: "blue-500", light: "blue-200" },
+//   photos: { dark: "red-700", mid: "red-500", light: "red-200" },
+//   black: "black",
+// };

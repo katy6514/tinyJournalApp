@@ -1,7 +1,7 @@
 "use client";
 import { sourceSans } from "@/app/ui/fonts";
 
-import { navigationColors } from "@/app/lib/definitions";
+// import { navigationColors } from "@/app/lib/definitions";
 
 import {
   HomeIcon,
