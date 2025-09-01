@@ -42,10 +42,19 @@ export type DateRow = {
 };
 
 export const colors = {
-  oddDays: "#6CCFF6",
-  campSites: "#337357",
-  messages: "#F9A620",
-  evenDays: "#2E2D4D",
-  photos: "#E26D5A",
-  black: "#000000",
+  oddDays: "sky-300",
+  campSites: "emerald-700",
+  messages: "amber-500",
+  evenDays: "blue-950",
+  photos: "red-400",
+  black: "black",
+};
+
+export const navigationColors = {
+  oddDays: { dark: "sky-700", mid: "sky-500", light: "sky-200" },
+  campSites: { dark: "emerald-700", mid: "emerald-500", light: "emerald-200" },
+  messages: { dark: "amber-700", mid: "amber-500", light: "amber-200" },
+  evenDays: { dark: "blue-700", mid: "blue-500", light: "blue-200" },
+  photos: { dark: "red-700", mid: "red-500", light: "red-200" },
+  black: "black",
 };

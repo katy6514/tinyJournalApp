@@ -3,6 +3,12 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* --oddDays: #6ccff6;
+  --campSites: #337357;
+  --messages: #f9a620;
+  --evenDays: #2e2d4d;
+  --photos: #e26d5a;
+  --black: #000000; */
 }
 
 /* @theme inline {
