@@ -39,9 +39,6 @@ export function Button({
 }: ButtonProps) {
   const variantClass = variantClasses[variant];
 
-  if (typeof children === "string") {
-  }
-
   const content = (
     <>
       {icon && <span className="w-5 h-5 mr-2.5">{icon}</span>}
@@ -69,18 +66,3 @@ export function Button({
     </div>
   );
 }
-
-// usage examples:
-
-// // Standard button
-// <Button onClick={() => console.log("Clicked!")}>Click me</Button>
-
-// // With icon
-// <Button icon={<MyIcon />} onClick={doSomething}>
-//   Save
-// </Button>
-
-// // As a link
-// <Button href="/about" icon={<ArrowRight />}>
-//   Learn More
-// </Button>

@@ -2,9 +2,11 @@
 
 import { useActionState } from "react";
 
-import { FormButton, RedirectLink } from "@/app/ui/journal/buttons";
+import { FormButton } from "@/app/ui/journal/buttons";
 import { createEntry, State } from "@/app/lib/actions";
 import { JournalEntry } from "@/app/lib/definitions";
+
+import { Button } from "../button";
 
 export default function Form({
   emptyEntries,
@@ -134,7 +136,9 @@ export default function Form({
         </div>
       </div>
       <div className="mt-6 flex justify-end gap-4">
-        <RedirectLink href="/journal/listView">Cancel</RedirectLink>
+        <Button href="/journal/listView" variant="light">
+          Cancel
+        </Button>
         <FormButton type="submit">Save Entry</FormButton>
       </div>
     </form>

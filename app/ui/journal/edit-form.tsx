@@ -2,7 +2,9 @@
 
 import { useActionState } from "react";
 
-import { FormButton, RedirectLink } from "@/app/ui/journal/buttons";
+import { Button } from "../button";
+
+import { FormButton } from "@/app/ui/journal/buttons";
 import { updateEntry, EditState } from "@/app/lib/actions";
 import { JournalEntry } from "@/app/lib/definitions";
 
@@ -110,7 +112,9 @@ export default function EditEntryForm({ entry }: { entry: JournalEntry }) {
         </div>
       </div>
       <div className="mt-6 flex justify-end gap-4">
-        <RedirectLink href={`/journal/${entry_id}`}>Cancel</RedirectLink>
+        <Button href={`/journal/${entry_id}`} variant="light">
+          Cancel
+        </Button>
         <FormButton type="submit">Save Entry</FormButton>
       </div>
     </form>
