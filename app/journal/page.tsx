@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import smile from "../../public/smile.jpg";
+import smile from "@/public/smile.jpg";
 
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 

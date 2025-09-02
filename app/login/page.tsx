@@ -2,7 +2,7 @@ import Image from "next/image";
 
 import LoginForm from "@/app/ui/login-form";
 import { Suspense } from "react";
-import titcombBasin from "../../public/titcombBasin.jpg";
+import titcombBasin from "@/public/titcombBasin.jpg";
 
 export default function LoginPage() {
   return (
