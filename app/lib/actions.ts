@@ -132,10 +132,14 @@ export async function updateLegWithDate(formData: FormData) {
     legId: formData.get("legId"),
     dateId: formData.get("dateId"),
   };
+
+  // Narrow the types
+  const legId = rawFormData.legId as string;
+  const dateId = rawFormData.dateId as string;
   // Test it out:
   console.log(rawFormData);
 
-  const { legId, dateId } = rawFormData;
+  // const { legId, dateId } = rawFormData;
 
   try {
     await sql`
