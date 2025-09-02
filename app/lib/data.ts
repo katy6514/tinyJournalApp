@@ -208,14 +208,17 @@ export async function fetchLegs(): Promise<Leg[]> {
 // ==========================
 // Fetch dates
 // ==========================
-export async function fetchDates(): Promise<DateRow[]> {
+
+export async function fetchDates() {
   try {
-    const result = await sql<DateRow[]>`
-      SELECT 
-        d.*
-      FROM dates d
-      ORDER BY d.date;
+    const rawResult = await sql`
+      SELECT d.* FROM dates d ORDER BY d.date;
     `;
+
+    const result = rawResult.map((r) => ({
+      id: r.id,
+      date: r.date.toISOString().split("T")[0], // YYYY-MM-DD
+    }));
 
     return result;
   } catch (error) {

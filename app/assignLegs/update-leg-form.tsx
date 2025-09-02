@@ -38,7 +38,7 @@ export default function AssignDateForm({
         <option value="">Select a date</option>
         {dates.map((d) => (
           <option key={d.id} value={d.id}>
-            {d.date.toLocaleDateString()}
+            {d.date}
           </option>
         ))}
       </select>
