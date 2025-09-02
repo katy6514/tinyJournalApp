@@ -48,6 +48,7 @@ export function Button({
 
   const combinedClasses = twMerge(baseClasses, variantClass, className);
 
+  // if the "button" has an href, it's a link
   if (href) {
     return (
       <div className="flex justify-end gap-2">

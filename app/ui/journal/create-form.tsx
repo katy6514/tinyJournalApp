@@ -2,11 +2,12 @@
 
 import { useActionState } from "react";
 
-import { FormButton } from "@/app/ui/journal/buttons";
 import { createEntry, State } from "@/app/lib/actions";
 import { JournalEntry } from "@/app/lib/definitions";
 
-import { Button } from "../button";
+import { Button } from "../components/button";
+
+import { Select, Input, TextArea, Label } from "../components/inputs";
 
 export default function Form({
   emptyEntries,
@@ -24,16 +25,10 @@ export default function Form({
         <div className="grid gap-6 mb-6 grid-cols-2 grid-rows-4">
           {/* DATE SELECTION */}
           <div className="col-span-2 md:col-span-1  row-span-1">
-            <label
-              htmlFor="date"
-              className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-            >
-              Select an empty date
-            </label>
-            <select
+            <Label htmlFor="date">Select an empty date</Label>
+            <Select
               id="date"
               name="date_id"
-              className="bg-white border border-gray-300 text-gray-900 text-sm  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               aria-describedby="date-error"
               required
             >
@@ -43,7 +38,7 @@ export default function Form({
                   {entry.date}
                 </option>
               ))}
-            </select>
+            </Select>
             <div id="date-error" aria-live="polite" aria-atomic="true">
               {formState.errors?.date_id &&
                 formState.errors.date_id.map((error: string) => (
@@ -56,18 +51,12 @@ export default function Form({
 
           {/* STATE */}
           <div className="col-span-2 md:col-span-1  row-span-1">
-            <label
-              htmlFor="state"
-              className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-            >
-              State
-            </label>
-            <input
+            <Label htmlFor="state">State</Label>
+            <Input
               id="state"
               name="state"
               type="text"
               placeholder="NM/CO/WY/ID/MT"
-              className="bg-white border border-gray-300 text-gray-900 text-sm  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               aria-describedby="state-error"
               required
             />
@@ -83,17 +72,11 @@ export default function Form({
 
           {/* LEGNAME */}
           <div className="col-span-2 row-span-1">
-            <label
-              htmlFor="legname"
-              className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-            >
-              LegName
-            </label>
-            <input
+            <Label htmlFor="legname">LegName</Label>
+            <Input
               type="text"
               id="legname"
               name="legname"
-              className="bg-white border border-gray-300 text-gray-900 text-sm  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="Title"
               aria-describedby="legname-error"
               required
@@ -110,20 +93,14 @@ export default function Form({
 
           {/* JOURNAL ENTRY */}
           <div className="col-span-2 row-span-2">
-            <label
-              htmlFor="text"
-              className="block mb-2 w-full text-sm font-medium text-gray-900 dark:text-white"
-            >
-              Journal Entry
-            </label>
-            <textarea
+            <Label htmlFor="text">Journal Entry</Label>
+            <TextArea
               id="text"
               name="text"
-              className="block p-2.5 w-full h-full text-sm text-gray-900 bg-white  border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="Write your thoughts here..."
               aria-describedby="entry-error"
               required
-            ></textarea>
+            ></TextArea>
             <div id="entry-error" aria-live="polite" aria-atomic="true">
               {formState.errors?.text &&
                 formState.errors.text.map((error: string) => (
@@ -139,7 +116,7 @@ export default function Form({
         <Button href="/journal/listView" variant="light">
           Cancel
         </Button>
-        <FormButton type="submit">Save Entry</FormButton>
+        <Button type="submit">Save Entry</Button>
       </div>
     </form>
   );

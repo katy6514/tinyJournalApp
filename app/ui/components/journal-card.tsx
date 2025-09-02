@@ -6,7 +6,7 @@ import Link from "next/link";
 import { notoSerif } from "@/app/ui/fonts";
 
 import { JournalEntry, Photo } from "@/app/lib/definitions";
-import { Button } from "../../button";
+import { Button } from "../../components/button";
 
 export default function JournalCard({ entry }: { entry: JournalEntry }) {
   const { date, date_id, entry_id, text, legname, state, photos } = entry;

@@ -1,6 +1,6 @@
 import { notoSerif } from "@/app/ui/fonts";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
-import { Button } from "@/app/ui/button";
+import { Button } from "@/app/ui/components/button";
 
 import { PlusIcon } from "@heroicons/react/24/outline";
 

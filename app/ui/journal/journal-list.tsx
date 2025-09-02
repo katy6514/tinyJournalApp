@@ -1,5 +1,5 @@
 import { fetchFilteredEntriesWithPhotos } from "@/app/lib/data";
-import JournalCard from "./components/journal-card";
+import JournalCard from "../components/journal-card";
 import Link from "next/link";
 
 export default async function JournalList({

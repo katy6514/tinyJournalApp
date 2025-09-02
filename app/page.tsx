@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { sourceSans } from "@/app/ui/fonts";
-import { Button } from "./ui/button";
+import { Button } from "./ui/components/button";
 import passPic from "../public/passPic.jpg";
 
 export default function Home() {
