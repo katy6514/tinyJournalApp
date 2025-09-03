@@ -178,6 +178,26 @@ export async function fetchPhotosForDateID(date_id: string) {
 // ==========================
 // Fetch photos for a given date
 // ==========================
+export async function fetchLegForDateID(date_id: string) {
+  try {
+    const result = await sql`
+      SELECT 
+        l.*,
+        d.id AS date_id
+      FROM legs l
+      JOIN dates d ON d.id = l.date_id
+      WHERE l.date_id = ${date_id};
+    `;
+    return result[0];
+  } catch (error) {
+    console.error("Database Error (fetchLegForDateID):", error);
+    throw new Error("Failed to fetch leg for the date_id.");
+  }
+}
+
+// ==========================
+// Fetch photos for a given date
+// ==========================
 export async function fetchPhotos() {
   try {
     const result = await sql`

@@ -7,7 +7,7 @@ import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 import { Button } from "@/app/ui/components/button";
 import { PencilIcon } from "@heroicons/react/24/outline";
 
-import { fetchEntryByID, fetchPhotosForDateID } from "@/app/lib/data";
+import { fetchEntryByID, fetchLegForDateID } from "@/app/lib/data";
 import { JournalEntry } from "@/app/lib/definitions";
 
 // import { EditEntry } from "@/app/ui/journal/buttons";
@@ -25,6 +25,10 @@ export default async function Page(props: {
   }
 
   const { date, date_id, text, legname, state, photos } = entry || {};
+
+  const { name } = await fetchLegForDateID(date_id);
+
+  console.log({ name });
 
   const formattedDate = format(parseISO(date), "MMMM d, yyyy");
 
@@ -44,6 +48,11 @@ export default async function Page(props: {
         <h1 className={`${notoSans.className} mb-4 text-xl md:text-2xl`}>
           {legname}
         </h1>
+        <h2
+          className={`${notoSans.className} mb-4 text-blue-500 text-lg md:text-xl`}
+        >
+          fetched LegName: {name}
+        </h2>
         <h2 className={`${notoSans.className} mb-4 text-lg md:text-xl`}>
           {state}
         </h2>
