@@ -64,7 +64,12 @@ export async function fetchEntryByID(id: string): Promise<JournalEntry | null> {
       GROUP BY d.id, d.date, e.id, e.state, e.legname, e.text
     `;
 
-    return data[0]; // one entry per ID
+    const result = data.map((entry) => ({
+      ...entry,
+      date: entry.date.split("T")[0], // Convert to 'YYYY-MM-DD' format
+    }));
+
+    return result[0]; // one entry per ID
   } catch (error) {
     console.error("Database Error (fetchEntryByID):", error);
     throw new Error("Failed to fetch entry.");

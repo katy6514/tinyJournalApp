@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { parseISO, format } from "date-fns";
 
 import { notoSerif } from "@/app/ui/fonts";
 
@@ -13,12 +14,7 @@ export default function JournalCard({ entry }: { entry: JournalEntry }) {
 
   const photo = photos?.[0];
 
-  // Safer date formatting
-  const formattedDate = new Date(date).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const formattedDate = format(parseISO(date), "MMMM d, yyyy");
 
   return (
     <article className="grid grid-cols-3 grid-rows-2 gap-4 mb-8 pr-4 bg-gray-50 dark:bg-gray-600">

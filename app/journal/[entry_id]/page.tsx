@@ -1,5 +1,7 @@
 import Image from "next/image";
 
+import { parseISO, format } from "date-fns";
+
 import { notoSans, notoSerif } from "@/app/ui/fonts";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 import { Button } from "@/app/ui/components/button";
@@ -24,11 +26,7 @@ export default async function Page(props: {
 
   const { date, date_id, text, legname, state, photos } = entry || {};
 
-  const formattedDate = new Date(date).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const formattedDate = format(parseISO(date), "MMMM d, yyyy");
 
   return (
     <main>
