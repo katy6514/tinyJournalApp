@@ -85,7 +85,7 @@ export async function fetchFilteredEntriesWithPhotos(
 ): Promise<JournalEntry[]> {
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
   try {
-    const entries = await sql<JournalEntry[]>`
+    const data = await sql<JournalEntry[]>`
       SELECT
         e.id AS entry_id,
         e.text,
@@ -119,7 +119,12 @@ export async function fetchFilteredEntriesWithPhotos(
       LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset};
     `;
 
-    return entries;
+    const result = data.map((entry) => ({
+      ...entry,
+      date: entry.date.split("T")[0], // Convert to 'YYYY-MM-DD' format
+    }));
+
+    return result;
   } catch (error) {
     console.error("Database Error:", error);
     throw new Error("Failed to fetch entries.");
