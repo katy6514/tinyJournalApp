@@ -217,7 +217,7 @@ export async function fetchPhotos() {
 import { Leg, DateRow } from "@/app/lib/definitions";
 
 // ==========================
-// Fetch legs
+// Fetch legs, THIS IS TEMP FOR ASSIGNING LEGS TO DATES
 // ==========================
 export async function fetchLegs(): Promise<Leg[]> {
   try {
@@ -225,6 +225,7 @@ export async function fetchLegs(): Promise<Leg[]> {
       SELECT
         l.*
       FROM legs l
+      WHERE l.date_id IS NULL
       ORDER BY l.id;
     `;
 
@@ -236,13 +237,23 @@ export async function fetchLegs(): Promise<Leg[]> {
 }
 
 // ==========================
-// Fetch dates
+// Fetch dates, , THIS IS TEMP FOR ASSIGNING LEGS TO DATES
 // ==========================
+
+// SELECT
+//     d.*
+//   FROM dates d
+//   ORDER BY d.date;
 
 export async function fetchDates() {
   try {
     const rawResult = await sql`
-      SELECT d.* FROM dates d ORDER BY d.date;
+      SELECT 
+        d.*
+      FROM dates d
+      LEFT JOIN legs l ON d.id = l.date_id
+      WHERE l.date_id IS NULL
+      ORDER BY d.date;
     `;
 
     const result = rawResult.map((r) => ({
