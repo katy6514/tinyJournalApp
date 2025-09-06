@@ -40,7 +40,7 @@ export default async function Page() {
             very much a work in progress, and something I'm playing around with
             in my spare time.
           </p>
-          <h3 className="text-lg font-semibold mb-2">GPS Device</h3>
+          {/* <h3 className="text-lg font-semibold mb-2">GPS Device</h3>
           <p>
             I carried a Garmin Inreach Mini 2 on my trip in case of emergencies
             but also to keep loved ones at home updated on my progress (and to
@@ -70,6 +70,12 @@ export default async function Page() {
             locations of my campsites. I then exported these tracks as GeoJSON
             and uploaded them to the data vis, alternating the colors to
             distinguish between individual days.
+          </p> */}
+          {/* <h3 className="text-lg font-semibold mb-2">Thanks for visiting!</h3> */}
+
+          <p>
+            If you're curious about the process of building this app, check out
+            the Dev Journal linked in the sidebar.
           </p>
           <h3 className="text-lg font-semibold mb-2">Thanks for visiting!</h3>
 
