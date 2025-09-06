@@ -26,9 +26,7 @@ export default async function Page(props: {
 
   const { date, date_id, text, legname, state, photos } = entry || {};
 
-  const { name } = await fetchLegForDateID(date_id);
-
-  console.log({ name });
+  // const { name } = await fetchLegForDateID(date_id);
 
   const formattedDate = format(parseISO(date), "MMMM d, yyyy");
 
@@ -48,11 +46,13 @@ export default async function Page(props: {
         <h1 className={`${notoSans.className} mb-4 text-xl md:text-2xl`}>
           {legname}
         </h1>
-        <h2
-          className={`${notoSans.className} mb-4 text-blue-500 text-lg md:text-xl`}
-        >
-          fetched LegName: {name}
-        </h2>
+        {/* {name && (
+          <h2
+            className={`${notoSans.className} mb-4 text-blue-500 text-lg md:text-xl`}
+          >
+            fetched LegName: {name}
+          </h2>
+        )} */}
         <h2 className={`${notoSans.className} mb-4 text-lg md:text-xl`}>
           {state}
         </h2>
