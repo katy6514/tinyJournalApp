@@ -64,6 +64,7 @@ export default function DevelopmentJourney() {
             "Defined schema: users, dates, entries, photos, tracks/legs.",
             "Aggregated photos into an array per daily entry using json_agg.",
             "Built SQL queries to fetch journal entries by date and photos taken on same date.",
+            "Created a form, used only by me to assign CAL-topo generated legs to dates, creating relationships between the two database tables, removing dates and legs as they were assigned to eachother with the use of SQL anti-joins",
           ]}
         />
 
@@ -74,6 +75,8 @@ export default function DevelopmentJourney() {
             "Set up create and edit routes for journal entries using React Server Actions.",
             "Used Typsescript to ensure end-to-end type safety.",
             "Styled with shadcn/ui + Tailwind for clean, consistent UI.",
+            "For the create entry form, pre-populate the date drop down with dates that have no associated entry yet, this journal will only ever have one entry per date.",
+            "Added loading skeletons for better UX during data fetches.",
           ]}
         />
 
