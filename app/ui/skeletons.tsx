@@ -1,19 +1,19 @@
 // Loading animation
 const shimmer = `before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent`;
 
-const white = "bg-white dark:bg-gray-800";
-const gray50 = "bg-gray-50 dark:bg-gray-700";
-const gray100 = "bg-gray-100 dark:bg-gray-600";
-const gray150 = "bg-gray-150 dark:bg-gray-500";
+const bgWhite = "bg-white dark:bg-gray-800";
+const bgGray50 = "bg-gray-50 dark:bg-gray-700";
+const bgGray100 = "bg-gray-100 dark:bg-gray-600";
+const bgGray200 = "bg-gray-200 dark:bg-gray-500";
 
 export function BreadcrumbSkeleton() {
-  return <div className={`h-10 w-20 rounded-md ${gray150}`} />;
+  return <div className={`h-10 w-20 rounded-md ${bgGray200}`} />;
 }
 
 export function SearchSkeleton() {
   return (
     <div
-      className={`${shimmer} grid grid-cols-3 grid-rows-3 gap-4 mb-8 pr-4 ${gray50}`}
+      className={`${shimmer} grid grid-cols-3 grid-rows-3 gap-4 mb-8 pr-4 ${bgGray50}`}
     ></div>
   );
 }
@@ -21,12 +21,14 @@ export function SearchSkeleton() {
 export function JournalCardSkeleton() {
   return (
     <div
-      className={`${shimmer} grid grid-cols-3 grid-rows-3 gap-4 mb-8 pr-4 ${gray50}`}
+      className={`before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent grid grid-cols-3 grid-rows-2 gap-4 mb-8 pr-4 ${bgGray50}`}
     >
-      <div className={`row-span-3 ${gray100}`}>
-        <div className="flex items-center justify-center w-full h-full bg-gray-300 rounded-sm sm:w-96 dark:bg-gray-700">
+      <div className={`row-span-3 ${bgGray100}`}>
+        <div
+          className={`flex items-center justify-center w-full h-full ${bgGray200}`}
+        >
           <svg
-            className="w-10 h-10 text-gray-200 dark:text-gray-600"
+            className="w-10 h-10 text-gray-100 dark:text-gray-600"
             aria-hidden="true"
             xmlns="http://www.w3.org/2000/svg"
             fill="currentColor"
@@ -36,16 +38,12 @@ export function JournalCardSkeleton() {
           </svg>
         </div>
       </div>
-      <div className={`col-span-1 row-span-1 p-4 ${gray50}`}>
-        <div className={`h-15 w-50 rounded-md ${gray150}`} />
+      <div className={`col-span-2 row-span-1 p-4 mt-4 ${bgGray50}`}>
+        <div className={`h-8 w-80 mb-2 rounded-md ${bgGray200}`} />
+        <div className={`h-5 w-50 mb-2 rounded-md ${bgGray200}`} />
+        <div className={`h-4 w-30 mb-2 rounded-md ${bgGray200}`} />
       </div>
-      <div className={`col-span-1 row-span-1 p-4 ${gray50}`}>
-        <div className={`h-7 w-20 rounded-md ${gray150}`} />
-      </div>
-      <div className={`col-span-2 row-span-1 h-auto p-4 ${white}`}></div>
-      <div className="col-span-2 row-span-1">
-        <div className={`h-10 w-20 rounded-md ${gray150}`} />
-      </div>
+      <div className={`col-span-2 row-span-1 h-auto p-4 ${bgWhite}`} />
     </div>
   );
 }
