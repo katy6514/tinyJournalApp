@@ -226,7 +226,7 @@ export async function fetchLegs(): Promise<Leg[]> {
         l.*
       FROM legs l
       WHERE l.date_id IS NULL
-      ORDER BY l.id;
+      ORDER BY l.legnum ASC;
     `;
 
     return result;
