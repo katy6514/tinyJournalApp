@@ -179,7 +179,8 @@ async function seedLegs() {
     id SERIAL PRIMARY KEY,
       legNum NUMERIC(4,1) NOT NULL,
       name TEXT NOT NULL,
-      coordinates JSONB NOT NULL  
+      coordinates JSONB NOT NULL,  
+      date_id INT
     );
   `;
   for (const track of calTopoTracks) {
@@ -190,11 +191,12 @@ async function seedLegs() {
 
     const titleFLT = parseFloat(title);
 
-    await sql`INSERT INTO legs (legNum, name, coordinates)
+    await sql`INSERT INTO legs (legNum, name, coordinates, date_id)
           VALUES (
         ${titleFLT},
         ${description},
-        ${coordinates}
+        ${coordinates},
+        null
       )
       ON CONFLICT (id) DO NOTHING;`;
   }
