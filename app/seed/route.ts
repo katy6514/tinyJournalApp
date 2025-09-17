@@ -176,7 +176,8 @@ async function seedLegs() {
 
   await sql`
     CREATE TABLE legs (
-      id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
+      legNum NUMERIC(4,1) NOT NULL,
       name TEXT NOT NULL,
       coordinates JSONB NOT NULL  
     );
@@ -187,11 +188,11 @@ async function seedLegs() {
       properties: { title, description },
     } = track;
 
-    const titleINT = parseInt(title);
+    const titleFLT = parseFloat(title);
 
-    await sql`INSERT INTO legs (id, name, coordinates)
+    await sql`INSERT INTO legs (legNum, name, coordinates)
           VALUES (
-        ${titleINT},
+        ${titleFLT},
         ${description},
         ${coordinates}
       )
