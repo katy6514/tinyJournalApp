@@ -31,6 +31,7 @@ export type User = {
 
 export type Leg = {
   id: string;
+  legnum: number;
   name: string;
   coordinates: number[];
   date_id?: string;
