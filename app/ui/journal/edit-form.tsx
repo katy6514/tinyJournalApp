@@ -97,7 +97,9 @@ export default function EditEntryForm({ entry }: { entry: JournalEntry }) {
         <Button href={`/journal/${entry_id}`} variant="light">
           Cancel
         </Button>
-        <Button type="submit">Save Entry</Button>
+        <Button variant="dark" type="submit">
+          Save Entry
+        </Button>
       </div>
     </form>
   );

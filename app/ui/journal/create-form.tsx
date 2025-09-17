@@ -116,7 +116,9 @@ export default function Form({
         <Button href="/journal/listView" variant="light">
           Cancel
         </Button>
-        <Button type="submit">Save Entry</Button>
+        <Button variant="dark" type="submit">
+          Save Entry
+        </Button>
       </div>
     </form>
   );
