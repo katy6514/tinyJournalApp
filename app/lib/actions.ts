@@ -144,6 +144,6 @@ export async function updateLegWithDate(formData: FormData) {
   } catch (error) {
     console.error(error);
   }
-  revalidatePath("/journal/listView");
-  redirect("/journal/listView");
+  revalidatePath("/assignLegs");
+  redirect("/assignLegs");
 }
