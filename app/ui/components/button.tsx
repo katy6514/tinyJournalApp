@@ -14,7 +14,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   onClick?: () => void;
   className?: string;
   type?: "submit" | "reset" | "button" | undefined;
-  variant?: ButtonVariant;
+  variant: ButtonVariant;
 }
 
 const baseClasses = `flex items-center ${sourceSans.className} justify-center px-6 py-3 text-sm font-medium w-auto inline-flex transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:opacity-50 disabled:cursor-not-allowed`;
