@@ -1,10 +1,16 @@
 import Form from "@/app/ui/journal/create-form";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
-import { fetchJournal } from "@/app/lib/data";
+import { fetchJournal, fetchAssignedLegs } from "@/app/lib/data";
 
 export default async function Page() {
-  const journalEntries = await fetchJournal();
+  const [journalEntries, assignedLegs] = await Promise.all([
+    fetchJournal(),
+    fetchAssignedLegs(),
+  ]);
   const emptyEntries = journalEntries.filter((entry) => !entry.has_text);
+  const legNameByDateId: Record<string, string> = Object.fromEntries(
+    assignedLegs.map((l) => [l.date_id, l.name])
+  );
 
   return (
     <main>
@@ -18,7 +24,7 @@ export default async function Page() {
           },
         ]}
       />
-      <Form emptyEntries={emptyEntries} />
+      <Form emptyEntries={emptyEntries} legNameByDateId={legNameByDateId} />
     </main>
   );
 }

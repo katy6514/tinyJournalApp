@@ -217,6 +217,22 @@ export async function fetchPhotos() {
 import { Leg, DateRow } from "@/app/lib/definitions";
 
 // ==========================
+// Fetch leg name for each date that has one assigned
+// ==========================
+export async function fetchAssignedLegs(): Promise<
+  { date_id: string; name: string }[]
+> {
+  try {
+    return await sql<{ date_id: string; name: string }[]>`
+      SELECT date_id, name FROM legs WHERE date_id IS NOT NULL;
+    `;
+  } catch (error) {
+    console.error("Database Error (fetchAssignedLegs):", error);
+    throw new Error("Failed to fetch assigned legs.");
+  }
+}
+
+// ==========================
 // Fetch legs, THIS IS TEMP FOR ASSIGNING LEGS TO DATES
 // ==========================
 export async function fetchLegs(): Promise<Leg[]> {

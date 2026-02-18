@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { createEntry, State } from "@/app/lib/actions";
 import { JournalEntry } from "@/app/lib/definitions";
@@ -11,14 +11,16 @@ import { Select, Input, TextArea, Label } from "../components/inputs";
 
 export default function Form({
   emptyEntries,
+  legNameByDateId,
 }: {
   emptyEntries: JournalEntry[];
+  legNameByDateId: Record<string, string>;
 }) {
   const initialState: State = { message: null, errors: {} };
 
   const [formState, formAction] = useActionState(createEntry, initialState);
+  const [legname, setLegname] = useState("");
 
-  //   console.log({ emptyEntries });
   return (
     <form action={formAction}>
       <div className=" bg-gray-50 p-4 md:p-6">
@@ -31,6 +33,7 @@ export default function Form({
               name="date_id"
               aria-describedby="date-error"
               required
+              onChange={(e) => setLegname(legNameByDateId[e.target.value] ?? "")}
             >
               <option value="">Select a date</option>
               {emptyEntries.map((entry) => (
@@ -80,6 +83,8 @@ export default function Form({
               placeholder="Title"
               aria-describedby="legname-error"
               required
+              value={legname}
+              onChange={(e) => setLegname(e.target.value)}
             />
             <div id="legname-error" aria-live="polite" aria-atomic="true">
               {formState.errors?.legname &&

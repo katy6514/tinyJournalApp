@@ -37,6 +37,7 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   required?: boolean;
   children: React.ReactNode;
   ariaDescribedby?: string;
+  onChange?: React.ChangeEventHandler<HTMLSelectElement>;
 }
 
 export function Select({
@@ -46,6 +47,7 @@ export function Select({
   required,
   className = "",
   ariaDescribedby,
+  onChange,
 }: SelectProps) {
   const combinedClasses = twMerge(baseClasses, selectClasses, className);
 
@@ -56,6 +58,7 @@ export function Select({
       required={required}
       className={combinedClasses}
       aria-describedby={ariaDescribedby}
+      onChange={onChange}
     >
       {children}
     </select>
@@ -121,6 +124,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   placeholder?: string;
   defaultValue?: string;
   ariaDescribedby?: string;
+  onChange?: React.ChangeEventHandler<HTMLInputElement>;
 }
 
 export function Input({
@@ -133,6 +137,7 @@ export function Input({
   placeholder,
   defaultValue,
   ariaDescribedby,
+  onChange,
 }: InputProps) {
   const combinedClasses = twMerge(baseClasses, inputClasses, className);
 
@@ -147,6 +152,7 @@ export function Input({
       placeholder={placeholder}
       defaultValue={defaultValue}
       aria-describedby={ariaDescribedby}
+      onChange={onChange}
     />
   );
 }
