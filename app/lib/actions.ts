@@ -52,14 +52,10 @@ export async function createEntry(prevState: State, formData: FormData) {
   // Prepare data for insertion into the database
   const { date_id, legname, state, text } = validatedFields.data;
 
-  try {
-    await sql`
+  await sql`
     INSERT INTO entries (date_id, legname, state, text)
     VALUES (${date_id}, ${legname}, ${state}, ${text})
   `;
-  } catch (error) {
-    console.error(error);
-  }
   revalidatePath("/journal/listView");
   redirect("/journal/listView");
 }
@@ -95,15 +91,11 @@ export async function updateEntry(
 
   const { state, legname, text } = validatedFields.data;
 
-  try {
-    await sql`
+  await sql`
     UPDATE entries
     SET state = ${state}, legname = ${legname}, text = ${text}
     WHERE id = ${id}
   `;
-  } catch (error) {
-    console.error(error);
-  }
   revalidatePath("/journal/listView");
   redirect("/journal/listView");
 }
@@ -137,13 +129,9 @@ export async function updateLegWithDate(formData: FormData) {
   const legId = rawFormData.legId as string;
   const dateId = rawFormData.dateId as string;
 
-  try {
-    await sql`
+  await sql`
     UPDATE legs SET date_id = ${dateId} WHERE id =  ${legId};
   `;
-  } catch (error) {
-    console.error(error);
-  }
   revalidatePath("/assignLegs");
   redirect("/assignLegs");
 }
