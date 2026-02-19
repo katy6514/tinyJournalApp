@@ -35,7 +35,12 @@ export default async function Page(props: {
           },
         ]}
       />
-      <div className="mt-4 flex items-center justify-between gap-2 pb-8 md:mt-8">
+      <div className="my-4 flex justify-end md:my-8">
+        <Button href={"/journal/create"} variant="dark" icon={<PlusIcon />}>
+          Add Entry
+        </Button>
+      </div>
+      <div className="flex items-center gap-2 pb-8">
         <Search placeholder="Search entries..." />
       </div>
       <Suspense key={query + currentPage}>
