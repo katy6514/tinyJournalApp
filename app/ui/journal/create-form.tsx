@@ -55,14 +55,19 @@ export default function Form({
           {/* STATE */}
           <div className="col-span-2 md:col-span-1  row-span-1">
             <Label htmlFor="state">State</Label>
-            <Input
+            <Select
               id="state"
               name="state"
-              type="text"
-              placeholder="NM/CO/WY/ID/MT"
               aria-describedby="state-error"
               required
-            />
+            >
+              <option value="">Select a state</option>
+              <option value="Montana">Montana</option>
+              <option value="Idaho">Idaho</option>
+              <option value="Wyoming">Wyoming</option>
+              <option value="Colorado">Colorado</option>
+              <option value="New Mexico">New Mexico</option>
+            </Select>
             <div id="state-error" aria-live="polite" aria-atomic="true">
               {formState.errors?.state &&
                 formState.errors.state.map((error: string) => (
