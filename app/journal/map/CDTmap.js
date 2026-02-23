@@ -59,15 +59,13 @@ export default function CDTmap() {
       .on("zoom", (event) => {
         g.attr("transform", event.transform);
         g.selectAll("circle").attr("r", 6 / event.transform.k);
-        g.selectAll("text").attr("font-size", 12 / event.transform.k);
-        g.selectAll("line").attr("stroke-width", 1 / event.transform.k);
-
+      })
+      .on("end", (event) => {
         const newSize = 128 / (event.transform.k * event.transform.k);
-
         g.selectAll(".campPoints").attr("d", triangle.size(newSize));
         g.selectAll(".messagePoints").attr("d", square.size(newSize));
         g.selectAll(".cityPoints").attr("d", cross.size(newSize));
-        g.selectAll(".trail").attr("stroke-width", 2 / event.transform.k);
+        g.selectAll("text").attr("font-size", 12 / event.transform.k);
       });
 
     svg.call(zoom);
@@ -98,6 +96,7 @@ export default function CDTmap() {
         .attr("fill", "none")
         .attr("stroke", (d) => getAlternatingColor(d.properties))
         .attr("stroke-width", 2)
+        .attr("vector-effect", "non-scaling-stroke")
         .on("mouseover", function (event, d) {
           handleMouseOver(currentUser)(event, d);
         })
@@ -259,7 +258,8 @@ export default function CDTmap() {
       .attr("x2", (d) => projection([d.lon, d.lat])[0] + d.dx)
       .attr("y2", (d) => projection([d.lon, d.lat])[1] + d.dy)
       .attr("stroke", "black")
-      .attr("stroke-width", 1);
+      .attr("stroke-width", 1)
+      .attr("vector-effect", "non-scaling-stroke");
 
     cityGroup
       .selectAll("text")
