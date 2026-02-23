@@ -35,12 +35,12 @@ export type Leg = {
   legnum: number;
   name: string;
   coordinates: number[];
-  date_id?: string;
 };
 
 export type DateRow = {
   id: string;
   date: string;
+  leg_id?: number;
 };
 
 export const colors = {

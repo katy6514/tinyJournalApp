@@ -109,7 +109,7 @@ export async function fetchFilteredEntries(
     FROM entries e
     JOIN dates d ON d.id = e.date_id
     LEFT JOIN photos p ON p.date_id = d.id
-    LEFT JOIN legs l ON l.date_id = d.id
+    LEFT JOIN legs l ON l.id = d.leg_id
     WHERE
       e.state ILIKE ${`%${query}%`} OR
       e.legname ILIKE ${`%${query}%`} OR
@@ -149,12 +149,12 @@ export async function fetchPhotosForDateID(date_id: string) {
 export async function fetchLegForDateID(date_id: string) {
   try {
     const result = await sql`
-      SELECT 
+      SELECT
         l.*,
         d.id AS date_id
       FROM legs l
-      JOIN dates d ON d.id = l.date_id
-      WHERE l.date_id = ${date_id};
+      JOIN dates d ON d.leg_id = l.id
+      WHERE d.id = ${date_id};
     `;
     return result[0];
   } catch (error) {
@@ -192,7 +192,10 @@ export async function fetchAssignedLegs(): Promise<
 > {
   try {
     return await sql<{ date_id: string; name: string }[]>`
-      SELECT date_id, name FROM legs WHERE date_id IS NOT NULL;
+      SELECT d.id AS date_id, l.name
+      FROM dates d
+      JOIN legs l ON l.id = d.leg_id
+      WHERE d.leg_id IS NOT NULL;
     `;
   } catch (error) {
     console.error("Database Error (fetchAssignedLegs):", error);
@@ -206,10 +209,11 @@ export async function fetchAssignedLegs(): Promise<
 export async function fetchLegs(): Promise<Leg[]> {
   try {
     const result = await sql<Leg[]>`
-      SELECT
-        l.*
+      SELECT l.*
       FROM legs l
-      WHERE l.date_id IS NULL
+      WHERE
+        NOT EXISTS (SELECT 1 FROM dates d WHERE d.leg_id = l.id)
+        OR l.name = 'Zero Day'
       ORDER BY l.legnum ASC;
     `;
 
@@ -232,11 +236,9 @@ export async function fetchLegs(): Promise<Leg[]> {
 export async function fetchDates() {
   try {
     const rawResult = await sql`
-      SELECT 
-        d.*
+      SELECT d.*
       FROM dates d
-      LEFT JOIN legs l ON d.id = l.date_id
-      WHERE l.date_id IS NULL
+      WHERE d.leg_id IS NULL
       ORDER BY d.date;
     `;
 
