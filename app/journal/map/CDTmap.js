@@ -78,9 +78,6 @@ export default function CDTmap() {
       }
     });
 
-    const square = d3.symbol().type(d3.symbolSquare).size(128);
-    const triangle = d3.symbol().type(d3.symbolTriangle).size(128);
-
     Promise.all([
       d3.json("/data/CDT_complete_tracks.json"),
       d3.json("/data/CDTstates.json"),
@@ -237,8 +234,6 @@ export default function CDTmap() {
     ----------------------------------------------------- */
 
     const cityGroup = g.append("g").attr("class", "cities");
-
-    const cross = d3.symbol().type(d3.symbolCross).size(128); // adjust size as needed
 
     cityGroup
       .selectAll(".cityPoints")
