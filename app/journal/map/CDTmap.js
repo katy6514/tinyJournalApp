@@ -81,13 +81,22 @@ export default function CDTmap() {
       }
     });
 
-    /* -----------------------------------------------------
-    *  Track mapping functionality
-    ----------------------------------------------------- */
+    const square = d3.symbol().type(d3.symbolSquare).size(128);
+    const triangle = d3.symbol().type(d3.symbolTriangle).size(128);
 
-    d3.json("/data/CDT_complete_tracks.json").then((data) => {
+    Promise.all([
+      d3.json("/data/CDT_complete_tracks.json"),
+      d3.json("/data/CDTstates.json"),
+      d3.json("/data/cdtInreachData_withCoords.geojson"),
+      d3.json("/data/geoPhotos.geojson"),
+    ]).then(([trackData, stateData, inReachData, photoData]) => {
+
+      /* -----------------------------------------------------
+      *  Track mapping functionality
+      ----------------------------------------------------- */
+
       g.selectAll(".trail")
-        .data(data.features)
+        .data(trackData.features)
         .enter()
         .append("path")
         .attr("class", "trail")
@@ -95,19 +104,16 @@ export default function CDTmap() {
         .attr("fill", "none")
         .attr("stroke", (d) => getAlternatingColor(d.properties))
         .attr("stroke-width", 2)
-        .attr("fill", "none")
         .on("mouseover", function (event, d) {
           handleMouseOver(currentUser)(event, d);
         })
         .on("mousemove", handleMouseMove)
         .on("mouseout", handleMouseOut);
-    });
 
-    /* -----------------------------------------------------
-    *  State outline mapping functionality
-    ----------------------------------------------------- */
-    // geojson data from: https://github.com/johan/world.geo.json/tree/master
-    d3.json("/data/CDTstates.json").then((stateData) => {
+      /* -----------------------------------------------------
+      *  State outline mapping functionality
+      ----------------------------------------------------- */
+      // geojson data from: https://github.com/johan/world.geo.json/tree/master
       g.selectAll(".state")
         .data(stateData.features)
         .enter()
@@ -117,7 +123,6 @@ export default function CDTmap() {
         .attr("stroke", "gray")
         .attr("stroke-width", "1px")
         .attr("d", path)
-        // .lower()
         .on("click", function (event, d) {
           event.stopPropagation();
 
@@ -141,24 +146,17 @@ export default function CDTmap() {
               d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
             );
         });
-    });
 
-    /* -----------------------------------------------------
-    *  Plotting Garmin Data
-    ----------------------------------------------------- */
+      /* -----------------------------------------------------
+      *  Plotting Garmin Data
+      ----------------------------------------------------- */
 
-    const square = d3.symbol().type(d3.symbolSquare).size(128);
-    const triangle = d3.symbol().type(d3.symbolTriangle).size(128); // adjust size as needed
-
-    d3.json("/data/cdtInreachData_withCoords.geojson").then((inReachdata) => {
-      const points = inReachdata.features.filter(
+      const validPoints = inReachData.features.filter(
         (d) =>
           d.geometry?.type === "Point" &&
           Array.isArray(d.geometry.coordinates) &&
-          d.geometry.coordinates.length === 2
-      );
-      const validPoints = points.filter((d) =>
-        projection(d.geometry.coordinates)
+          d.geometry.coordinates.length === 2 &&
+          projection(d.geometry.coordinates)
       );
 
       const campSites = [];
@@ -171,8 +169,6 @@ export default function CDTmap() {
           messageSites.push(d);
         }
       });
-
-      // Plot the message sites using squares
 
       g.selectAll(".messagePoints")
         .data(messageSites)
@@ -192,7 +188,6 @@ export default function CDTmap() {
         .on("mousemove", handleMouseMove)
         .on("mouseout", handleMouseOut);
 
-      // Plot the campsites using a triangle symbol
       g.selectAll(".campPoints")
         .data(campSites)
         .enter()
@@ -210,21 +205,17 @@ export default function CDTmap() {
         })
         .on("mousemove", handleMouseMove)
         .on("mouseout", handleMouseOut);
-    });
 
-    /* -----------------------------------------------------
-    *  Take the cleaned photo geojson data and plot it
-    ----------------------------------------------------- */
+      /* -----------------------------------------------------
+      *  Take the cleaned photo geojson data and plot it
+      ----------------------------------------------------- */
 
-    d3.json("/data/geoPhotos.geojson").then((photoData) => {
-      const points = photoData.features.filter(
+      const validPhotoPoints = photoData.features.filter(
         (d) =>
           d.geometry?.type === "Point" &&
           Array.isArray(d.geometry.coordinates) &&
-          d.geometry.coordinates.length === 2
-      );
-      const validPhotoPoints = points.filter((d) =>
-        projection(d.geometry.coordinates)
+          d.geometry.coordinates.length === 2 &&
+          projection(d.geometry.coordinates)
       );
 
       g.selectAll(".photoPoints")
