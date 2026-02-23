@@ -58,10 +58,10 @@ export default function CDTmap() {
       .scaleExtent([1, 500])
       .on("zoom", (event) => {
         g.attr("transform", event.transform);
-        g.selectAll("circle").attr("r", 6 / event.transform.k);
       })
       .on("end", (event) => {
         const newSize = 128 / (event.transform.k * event.transform.k);
+        g.selectAll("circle").attr("r", 6 / event.transform.k);
         g.selectAll(".campPoints").attr("d", triangle.size(newSize));
         g.selectAll(".messagePoints").attr("d", square.size(newSize));
         g.selectAll(".cityPoints").attr("d", cross.size(newSize));
