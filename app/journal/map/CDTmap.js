@@ -84,26 +84,6 @@ export default function CDTmap() {
     ]).then(([trackData, stateData, inReachData, photoData]) => {
 
       /* -----------------------------------------------------
-      *  Track mapping functionality
-      ----------------------------------------------------- */
-
-      g.selectAll(".trail")
-        .data(trackData.features)
-        .enter()
-        .append("path")
-        .attr("class", "trail")
-        .attr("d", d3.geoPath().projection(projection))
-        .attr("fill", "none")
-        .attr("stroke", (d) => getAlternatingColor(d.properties))
-        .attr("stroke-width", 2)
-        .attr("vector-effect", "non-scaling-stroke")
-        .on("mouseover", function (event, d) {
-          handleMouseOver(currentUser)(event, d);
-        })
-        .on("mousemove", handleMouseMove)
-        .on("mouseout", handleMouseOut);
-
-      /* -----------------------------------------------------
       *  State outline mapping functionality
       ----------------------------------------------------- */
       // geojson data from: https://github.com/johan/world.geo.json/tree/master
@@ -221,6 +201,26 @@ export default function CDTmap() {
         .attr("r", 6)
         .attr("fill", colors.photos)
         .attr("stroke", "none")
+        .on("mouseover", function (event, d) {
+          handleMouseOver(currentUser)(event, d);
+        })
+        .on("mousemove", handleMouseMove)
+        .on("mouseout", handleMouseOut);
+
+      /* -----------------------------------------------------
+      *  Track mapping functionality (rendered last = on top)
+      ----------------------------------------------------- */
+
+      g.selectAll(".trail")
+        .data(trackData.features)
+        .enter()
+        .append("path")
+        .attr("class", "trail")
+        .attr("d", d3.geoPath().projection(projection))
+        .attr("fill", "none")
+        .attr("stroke", (d) => getAlternatingColor(d.properties))
+        .attr("stroke-width", 2)
+        .attr("vector-effect", "non-scaling-stroke")
         .on("mouseover", function (event, d) {
           handleMouseOver(currentUser)(event, d);
         })
