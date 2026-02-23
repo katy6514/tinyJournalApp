@@ -48,6 +48,10 @@ export default function CDTmap() {
     const g = svg.append("g").attr("class", "mapLayer");
     gRef.current = g; // ✅ store g in a ref for later access
 
+    const square = d3.symbol().type(d3.symbolSquare).size(128);
+    const triangle = d3.symbol().type(d3.symbolTriangle).size(128);
+    const cross = d3.symbol().type(d3.symbolCross).size(128);
+
     // Add zoom behavior
     const zoom = d3
       .zoom()
@@ -60,16 +64,9 @@ export default function CDTmap() {
 
         const newSize = 128 / (event.transform.k * event.transform.k);
 
-        const zoomableSquare = d3.symbol().type(d3.symbolSquare).size(newSize);
-        const zoomableTriangle = d3
-          .symbol()
-          .type(d3.symbolTriangle)
-          .size(newSize);
-        const zoomableCross = d3.symbol().type(d3.symbolCross).size(newSize); // adjust size as needed
-
-        g.selectAll(".campPoints").attr("d", zoomableTriangle);
-        g.selectAll(".messagePoints").attr("d", zoomableSquare);
-        g.selectAll(".cityPoints").attr("d", zoomableCross);
+        g.selectAll(".campPoints").attr("d", triangle.size(newSize));
+        g.selectAll(".messagePoints").attr("d", square.size(newSize));
+        g.selectAll(".cityPoints").attr("d", cross.size(newSize));
         g.selectAll(".trail").attr("stroke-width", 2 / event.transform.k);
       });
 
