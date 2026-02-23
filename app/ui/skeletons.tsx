@@ -1,4 +1,5 @@
-// Loading animation
+// Loading animation — requires @keyframes shimmer defined in globals.css
+// Container must have `relative overflow-hidden` for before: pseudo-element to work
 const shimmer = `before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent`;
 
 const bgWhite = "bg-white dark:bg-gray-800";
@@ -7,43 +8,46 @@ const bgGray100 = "bg-gray-100 dark:bg-gray-600";
 const bgGray200 = "bg-gray-200 dark:bg-gray-500";
 
 export function BreadcrumbSkeleton() {
-  return <div className={`h-10 w-20 rounded-md ${bgGray200}`} />;
+  return (
+    <div className={`${shimmer} relative overflow-hidden h-8 w-48 rounded-md ${bgGray200}`} />
+  );
+}
+
+export function ButtonSkeleton() {
+  return (
+    <div className={`${shimmer} relative overflow-hidden h-10 w-32 rounded-md ${bgGray200}`} />
+  );
 }
 
 export function SearchSkeleton() {
   return (
-    <div
-      className={`${shimmer} grid grid-cols-3 grid-rows-3 gap-4 mb-8 pr-4 ${bgGray50}`}
-    ></div>
+    <div className={`${shimmer} relative overflow-hidden h-10 w-full rounded-md ${bgGray200}`} />
+  );
+}
+
+export function PaginationSkeleton() {
+  return (
+    <div className={`${shimmer} relative overflow-hidden h-10 w-64 rounded-md ${bgGray200}`} />
   );
 }
 
 export function JournalCardSkeleton() {
   return (
-    <div
-      className={`before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent grid grid-cols-3 grid-rows-2 gap-4 mb-8 pr-4 ${bgGray50}`}
-    >
-      <div className={`row-span-3 ${bgGray100}`}>
-        <div
-          className={`flex items-center justify-center w-full h-full ${bgGray200}`}
-        >
-          <svg
-            className="w-10 h-10 text-gray-100 dark:text-gray-600"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="currentColor"
-            viewBox="0 0 20 18"
-          >
-            <path d="M18 0H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2Zm-5.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm4.376 10.481A1 1 0 0 1 16 15H4a1 1 0 0 1-.895-1.447l3.5-7A1 1 0 0 1 7.468 6a.965.965 0 0 1 .9.5l2.775 4.757 1.546-1.887a1 1 0 0 1 1.618.1l2.541 4a1 1 0 0 1 .028 1.011Z" />
-          </svg>
-        </div>
-      </div>
+    <div className={`${shimmer} relative overflow-hidden shadow-lg grid grid-cols-3 grid-rows-2 gap-4 mb-8 pr-4 ${bgGray50}`}>
+      {/* photo column */}
+      <div className={`row-span-2 ${bgGray200}`} />
+      {/* header */}
       <div className={`col-span-2 row-span-1 p-4 mt-4 ${bgGray50}`}>
-        <div className={`h-8 w-80 mb-2 rounded-md ${bgGray200}`} />
-        <div className={`h-5 w-50 mb-2 rounded-md ${bgGray200}`} />
-        <div className={`h-4 w-30 mb-2 rounded-md ${bgGray200}`} />
+        <div className={`h-5 w-3/4 mb-3 rounded-md ${bgGray200}`} />
+        <div className={`h-4 w-1/3 mb-2 rounded-md ${bgGray200}`} />
+        <div className={`h-3 w-1/4 rounded-md ${bgGray200}`} />
       </div>
-      <div className={`col-span-2 row-span-1 h-auto p-4 ${bgWhite}`} />
+      {/* text body */}
+      <div className={`col-span-2 row-span-1 p-4 mb-4 ${bgWhite}`}>
+        <div className={`h-3 w-full mb-2 rounded-md ${bgGray100}`} />
+        <div className={`h-3 w-full mb-2 rounded-md ${bgGray100}`} />
+        <div className={`h-3 w-2/3 rounded-md ${bgGray100}`} />
+      </div>
     </div>
   );
 }
