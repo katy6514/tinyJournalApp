@@ -18,13 +18,16 @@ export default function JournalCard({ entry }: { entry: JournalEntry }) {
 
   return (
     <article className="shadow-lg grid grid-cols-3 grid-rows-2 gap-4 mb-8 pr-4 bg-gray-50 dark:bg-gray-600">
-      <div className="row-span-3 bg-white dark:bg-gray-700">
+      <div className="row-span-3 bg-white dark:bg-gray-700 overflow-hidden">
         <Image
           src={photo ? photo.path : "/ContinentalDivideTrailLogo.png"}
           width={photo ? photo.width : 400}
           height={photo ? photo.height : 400}
           alt={photo ? (photo.title || photo.description || "") : "Continental Divide Trail"}
-          className="object-cover w-full h-full"
+          className={photo
+            ? "object-cover w-full h-full"
+            : "object-cover w-full h-full grayscale scale-150 translate-x-[20%] opacity-50"
+          }
         />
       </div>
       <header className="col-span-2 row-span-1 p-4 mt-4 bg-gray-50 dark:bg-gray-800">
