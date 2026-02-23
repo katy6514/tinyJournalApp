@@ -22,34 +22,34 @@
 // };
 
 export const generatePagination = (currentPage: number, totalPages: number) => {
-  // If the total number of pages is 7 or less,
-  // display all pages without any ellipsis.
-  if (totalPages <= 7) {
+  // If total pages fits within the max window size, show all with no ellipsis.
+  if (totalPages <= 9) {
     return Array.from({ length: totalPages }, (_, i) => i + 1);
   }
 
-  // If the current page is among the first 3 pages,
-  // show the first 3, an ellipsis, and the last 2 pages.
-  if (currentPage <= 3) {
-    return [1, 2, 3, "...", totalPages - 1, totalPages];
+  // Show a window of ±2 pages around the current page, with first/last anchors.
+  const windowStart = Math.max(1, currentPage - 2);
+  const windowEnd = Math.min(totalPages, currentPage + 2);
+
+  const pages: (number | string)[] = [];
+
+  // Prepend first page (and ellipsis if there's a gap)
+  if (windowStart > 2) {
+    pages.push(1, "...");
+  } else if (windowStart === 2) {
+    pages.push(1);
   }
 
-  // If the current page is among the last 3 pages,
-  // show the first 2, an ellipsis, and the last 3 pages.
-  if (currentPage >= totalPages - 2) {
-    return [1, 2, "...", totalPages - 2, totalPages - 1, totalPages];
+  for (let i = windowStart; i <= windowEnd; i++) {
+    pages.push(i);
   }
 
-  // If the current page is somewhere in the middle,
-  // show the first page, an ellipsis, the current page and its neighbors,
-  // another ellipsis, and the last page.
-  return [
-    1,
-    "...",
-    currentPage - 1,
-    currentPage,
-    currentPage + 1,
-    "...",
-    totalPages,
-  ];
+  // Append last page (and ellipsis if there's a gap)
+  if (windowEnd < totalPages - 1) {
+    pages.push("...", totalPages);
+  } else if (windowEnd === totalPages - 1) {
+    pages.push(totalPages);
+  }
+
+  return pages;
 };
