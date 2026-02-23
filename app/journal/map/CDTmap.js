@@ -212,7 +212,7 @@ export default function CDTmap() {
 
       const validPhotoPoints = photoData.features.filter(
         (d) =>
-          d.geometry?.type === "Point" &&
+          d.geometry?.type === "Photo" &&
           Array.isArray(d.geometry.coordinates) &&
           d.geometry.coordinates.length === 2 &&
           projection(d.geometry.coordinates)
