@@ -104,15 +104,17 @@ export async function fetchFilteredEntries(
         ) FILTER (WHERE p.id IS NOT NULL),
         '[]'
       ) AS photos,
+      l.name AS assigned_leg_name,
       COUNT(*) OVER () AS total_count
     FROM entries e
     JOIN dates d ON d.id = e.date_id
     LEFT JOIN photos p ON p.date_id = d.id
+    LEFT JOIN legs l ON l.date_id = d.id
     WHERE
       e.state ILIKE ${`%${query}%`} OR
       e.legname ILIKE ${`%${query}%`} OR
       e.text ILIKE ${`%${query}%`}
-    GROUP BY e.id, d.id, d.date, e.text, e.legname, e.state
+    GROUP BY e.id, d.id, d.date, e.text, e.legname, e.state, l.name
     ORDER BY d.id ASC
     LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
   `;

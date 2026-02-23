@@ -10,7 +10,7 @@ import { JournalEntry, Photo } from "@/app/lib/definitions";
 import { Button } from "@/app/ui/components/button";
 
 export default function JournalCard({ entry }: { entry: JournalEntry }) {
-  const { date, date_id, entry_id, text, legname, state, photos } = entry;
+  const { date, date_id, entry_id, text, legname, state, photos, assigned_leg_name } = entry;
 
   const photo = photos?.[0];
 
@@ -34,6 +34,9 @@ export default function JournalCard({ entry }: { entry: JournalEntry }) {
         <h3 className="text-lg font-semibold">{legname}</h3>
         <p className="text-md font-semibold">{state}</p>
         <p className="text-sm text-gray-500">{formattedDate}</p>
+        <p className="text-xs text-yellow-600 mt-1">
+          {assigned_leg_name ? `Leg: ${assigned_leg_name}` : "no leg assigned for this date"}
+        </p>
       </header>
       <section className="col-span-2 row-span-1 h-auto p-4 mb-4 bg-white dark:bg-gray-800">
         <p className={`${notoSerif.className} font-medium line-clamp-4`}>

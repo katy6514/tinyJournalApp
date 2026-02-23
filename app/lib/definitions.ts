@@ -20,6 +20,7 @@ export type JournalEntry = {
   state: string;
   has_text: boolean;
   photos: Photo[];
+  assigned_leg_name?: string | null;
 };
 
 export type User = {
