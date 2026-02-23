@@ -1,29 +1,19 @@
-import { fetchFilteredEntriesWithPhotos } from "@/app/lib/data";
+import { JournalEntry } from "@/app/lib/definitions";
 import JournalCard from "../components/journal-card";
 import Link from "next/link";
 
-export default async function JournalList({
-  query,
-  currentPage,
-}: {
-  query: string;
-  currentPage: number;
-}) {
-  const entries = await fetchFilteredEntriesWithPhotos(query, currentPage);
-
+export default function JournalList({ entries }: { entries: JournalEntry[] }) {
   return (
     <div>
-      {entries.map((entry, i) => {
-        return (
-          <Link
-            href={`/journal/${entry.entry_id}`}
-            className="block"
-            key={entry.entry_id}
-          >
-            <JournalCard entry={entry} />
-          </Link>
-        );
-      })}
+      {entries.map((entry) => (
+        <Link
+          href={`/journal/${entry.entry_id}`}
+          className="block"
+          key={entry.entry_id}
+        >
+          <JournalCard entry={entry} />
+        </Link>
+      ))}
     </div>
   );
 }

@@ -77,82 +77,50 @@ export async function fetchEntryByID(id: string): Promise<JournalEntry | null> {
 }
 
 // ==============================================
-// Fetch paginated + filtered entries with photos
+// Fetch paginated + filtered entries with photos and total page count
 // ==============================================
-export async function fetchFilteredEntriesWithPhotos(
+export async function fetchFilteredEntries(
   query: string,
   currentPage: number
-): Promise<JournalEntry[]> {
+): Promise<{ entries: JournalEntry[]; totalPages: number }> {
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-  try {
-    const data = await sql<JournalEntry[]>`
-      SELECT
-        e.id AS entry_id,
-        e.text,
-        e.legname,
-        e.state,
-        TO_CHAR(d.date, 'YYYY-MM-DD') AS date,
-        d.id AS date_id,
-        CASE WHEN e.text IS NOT NULL AND e.text <> '' THEN true ELSE false END AS has_text,
-    COALESCE(
-          json_agg(
-            json_build_object(
-              'photo_id', p.id,
-              'path', p.src,
-              'description', p.description,
-              'title', p.title,
-              'width', p.width,
-              'height', p.height
-            ) ORDER BY p.description 
-          ) FILTER (WHERE p.id IS NOT NULL),
-          '[]'
-        ) AS photos
-      FROM entries e
-      JOIN dates d ON d.id = e.date_id
-      LEFT JOIN photos p ON p.date_id = d.id
-      WHERE
-        e.state ILIKE ${`%${query}%`} OR
-        e.legname ILIKE ${`%${query}%`} OR
-        e.text ILIKE ${`%${query}%`}
-      GROUP BY e.id, d.id, d.date, e.text, e.legname, e.state
-      ORDER BY d.id ASC
-      LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset};
-    `;
+  const data = await sql<(JournalEntry & { total_count: string })[]>`
+    SELECT
+      e.id AS entry_id,
+      e.text,
+      e.legname,
+      e.state,
+      TO_CHAR(d.date, 'YYYY-MM-DD') AS date,
+      d.id AS date_id,
+      CASE WHEN e.text IS NOT NULL AND e.text <> '' THEN true ELSE false END AS has_text,
+      COALESCE(
+        json_agg(
+          json_build_object(
+            'photo_id', p.id,
+            'path', p.src,
+            'description', p.description,
+            'title', p.title,
+            'width', p.width,
+            'height', p.height
+          ) ORDER BY p.description
+        ) FILTER (WHERE p.id IS NOT NULL),
+        '[]'
+      ) AS photos,
+      COUNT(*) OVER () AS total_count
+    FROM entries e
+    JOIN dates d ON d.id = e.date_id
+    LEFT JOIN photos p ON p.date_id = d.id
+    WHERE
+      e.state ILIKE ${`%${query}%`} OR
+      e.legname ILIKE ${`%${query}%`} OR
+      e.text ILIKE ${`%${query}%`}
+    GROUP BY e.id, d.id, d.date, e.text, e.legname, e.state
+    ORDER BY d.id ASC
+    LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
+  `;
 
-    const result = data.map((entry) => ({
-      ...entry,
-      date: entry.date.split("T")[0], // Convert to 'YYYY-MM-DD' format
-    }));
-
-    return result;
-  } catch (error) {
-    console.error("Database Error:", error);
-    throw new Error("Failed to fetch entries.");
-  }
-}
-
-// =====================================
-// Fetch page count for filtered entries
-// =====================================
-export async function fetchJournalsPages(query: string) {
-  try {
-    const data = await sql`
-      SELECT COUNT(DISTINCT e.id) AS total
-      FROM entries e
-      JOIN dates d ON d.id = e.date_id
-      LEFT JOIN photos p ON p.date_id = d.id
-      WHERE
-        e.state ILIKE ${`%${query}%`} OR
-        e.legname ILIKE ${`%${query}%`} OR
-        e.text ILIKE ${`%${query}%`}
-    `;
-
-    const totalPages = Math.ceil(Number(data[0].total) / ITEMS_PER_PAGE);
-    return totalPages;
-  } catch (error) {
-    console.error("Database Error:", error);
-    throw new Error("Failed to fetch total number of filtered entries.");
-  }
+  const totalPages = Math.ceil(Number(data[0]?.total_count ?? 0) / ITEMS_PER_PAGE);
+  return { entries: data, totalPages };
 }
 
 // ==========================

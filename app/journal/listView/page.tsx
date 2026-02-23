@@ -1,16 +1,14 @@
-import { notoSerif } from "@/app/ui/fonts";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 import { Button } from "@/app/ui/components/button";
 
 import { PlusIcon } from "@heroicons/react/24/outline";
 
 import JournalList from "@/app/ui/journal/journal-list";
-import { Suspense } from "react";
 
 import Pagination from "@/app/ui/journal/pagination";
 import Search from "@/app/ui/search";
 
-import { fetchJournalsPages } from "@/app/lib/data";
+import { fetchFilteredEntries } from "@/app/lib/data";
 
 export default async function Page(props: {
   searchParams?: Promise<{
@@ -21,7 +19,7 @@ export default async function Page(props: {
   const searchParams = await props.searchParams;
   const query = searchParams?.query || "";
   const currentPage = Number(searchParams?.page) || 1;
-  const totalPages = await fetchJournalsPages(query);
+  const { entries, totalPages } = await fetchFilteredEntries(query, currentPage);
 
   return (
     <main>
@@ -43,9 +41,7 @@ export default async function Page(props: {
       <div className="flex items-center gap-2 pb-8">
         <Search placeholder="Search entries..." />
       </div>
-      <Suspense key={query + currentPage}>
-        <JournalList query={query} currentPage={currentPage} />
-      </Suspense>
+      <JournalList entries={entries} />
       <div className="mt-5 flex w-full justify-center">
         <Pagination totalPages={totalPages} />
       </div>
