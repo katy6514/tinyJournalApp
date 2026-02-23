@@ -219,7 +219,7 @@ export default function CDTmap() {
     d3.json("/data/geoPhotos.geojson").then((photoData) => {
       const points = photoData.features.filter(
         (d) =>
-          d.geometry?.type === "Photo" &&
+          d.geometry?.type === "Point" &&
           Array.isArray(d.geometry.coordinates) &&
           d.geometry.coordinates.length === 2
       );
