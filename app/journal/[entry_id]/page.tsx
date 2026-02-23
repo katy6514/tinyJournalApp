@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 import { parseISO, format } from "date-fns";
 
 import { notoSans, notoSerif } from "@/app/ui/fonts";
@@ -7,8 +5,9 @@ import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 import { Button } from "@/app/ui/components/button";
 import { PencilIcon } from "@heroicons/react/24/outline";
 
-import { fetchEntryByID, fetchLegForDateID } from "@/app/lib/data";
+import { fetchEntryByID } from "@/app/lib/data";
 import { JournalEntry } from "@/app/lib/definitions";
+import EntryPhotos from "@/app/ui/journal/entry-photos";
 
 // import { EditEntry } from "@/app/ui/journal/buttons";
 
@@ -71,19 +70,7 @@ export default async function Page(props: {
         <div className="">
           <p className={`${notoSerif.className}`}>{text}</p>
         </div>
-        {photos &&
-          photos.map((photo) => {
-            return (
-              <Image
-                key={photo.photo_id}
-                src={photo.path}
-                width={photo.width}
-                height={photo.height}
-                className="block"
-                alt=""
-              />
-            );
-          })}
+        <EntryPhotos photos={photos} />
       </div>
     </main>
   );
