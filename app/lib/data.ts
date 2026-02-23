@@ -1,9 +1,7 @@
 // this file is for fetching data from the database
 
-import postgres from "postgres";
 import { JournalEntry } from "./definitions";
-
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
+import sql from "./db";
 
 const ITEMS_PER_PAGE = 6;
 
