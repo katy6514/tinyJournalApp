@@ -12,9 +12,11 @@ import { Select, Input, TextArea, Label } from "../components/inputs";
 export default function Form({
   emptyEntries,
   legNameByDateId,
+  returnPage,
 }: {
   emptyEntries: JournalEntry[];
   legNameByDateId: Record<string, string>;
+  returnPage: string;
 }) {
   const initialState: State = { message: null, errors: {} };
 
@@ -23,6 +25,7 @@ export default function Form({
 
   return (
     <form action={formAction}>
+      <input type="hidden" name="returnPage" value={returnPage} />
       <div className=" bg-gray-50 p-4 md:p-6">
         <div className="grid gap-6 mb-6 grid-cols-2 grid-rows-4">
           {/* DATE SELECTION */}

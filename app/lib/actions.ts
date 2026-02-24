@@ -49,13 +49,14 @@ export async function createEntry(prevState: State, formData: FormData) {
 
   // Prepare data for insertion into the database
   const { date_id, legname, state, text } = validatedFields.data;
+  const returnPage = formData.get("returnPage") || "1";
 
   await sql`
     INSERT INTO entries (date_id, legname, state, text)
     VALUES (${date_id}, ${legname}, ${state}, ${text})
   `;
   revalidatePath("/journal/listView");
-  redirect("/journal/listView");
+  redirect(`/journal/listView?page=${returnPage}`);
 }
 
 export type EditState = {

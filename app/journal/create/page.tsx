@@ -2,7 +2,12 @@ import Form from "@/app/ui/journal/create-form";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 import { fetchJournal, fetchAssignedLegs } from "@/app/lib/data";
 
-export default async function Page() {
+export default async function Page(props: {
+  searchParams?: Promise<{ returnPage?: string }>;
+}) {
+  const searchParams = await props.searchParams;
+  const returnPage = searchParams?.returnPage || "1";
+
   const [journalEntries, assignedLegs] = await Promise.all([
     fetchJournal(),
     fetchAssignedLegs(),
@@ -24,7 +29,7 @@ export default async function Page() {
           },
         ]}
       />
-      <Form emptyEntries={emptyEntries} legNameByDateId={legNameByDateId} />
+      <Form emptyEntries={emptyEntries} legNameByDateId={legNameByDateId} returnPage={returnPage} />
     </main>
   );
 }

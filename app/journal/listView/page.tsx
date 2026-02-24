@@ -34,7 +34,7 @@ export default async function Page(props: {
         ]}
       />
       <div className="my-4 flex justify-end md:my-8">
-        <Button href={"/journal/create"} variant="dark" icon={<PlusIcon />}>
+        <Button href={`/journal/create?returnPage=${currentPage}`} variant="dark" icon={<PlusIcon />}>
           Add Entry
         </Button>
       </div>
