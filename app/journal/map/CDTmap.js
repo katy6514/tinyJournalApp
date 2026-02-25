@@ -227,12 +227,7 @@ export default function CDTmap() {
         .attr("fill", "none")
         .attr("stroke", (d) => getAlternatingColor(d.properties))
         .attr("stroke-width", 2)
-        .attr("vector-effect", "non-scaling-stroke")
-        .on("mouseover", function (event, d) {
-          handleMouseOver(currentUser)(event, d);
-        })
-        .on("mousemove", handleMouseMove)
-        .on("mouseout", handleMouseOut);
+        .attr("vector-effect", "non-scaling-stroke");
 
       /* -----------------------------------------------------
       *  Leg labels (visible when zoom k > 15)
