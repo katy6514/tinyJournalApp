@@ -68,7 +68,7 @@ export default async function Page(props: {
         </Button>
 
         <div className="">
-          <p className={`${notoSerif.className}`}>{text}</p>
+          <p className={`${notoSerif.className} whitespace-pre-wrap`}>{text}</p>
         </div>
         <EntryPhotos photos={photos} />
       </div>
