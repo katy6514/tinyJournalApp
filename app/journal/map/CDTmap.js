@@ -61,8 +61,6 @@ export default function CDTmap() {
       })
 
       .on("end", (event) => {
-        console.log(event.transform.k);
-
         const newSize = 128 / (event.transform.k * event.transform.k);
         g.selectAll("circle").attr("r", 6 / event.transform.k);
         g.selectAll(".campPoints").attr("d", triangle.size(newSize));
