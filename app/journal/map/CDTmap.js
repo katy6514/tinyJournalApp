@@ -59,13 +59,19 @@ export default function CDTmap() {
       .on("zoom", (event) => {
         g.attr("transform", event.transform);
       })
+
       .on("end", (event) => {
+        console.log(event.transform.k);
+
         const newSize = 128 / (event.transform.k * event.transform.k);
         g.selectAll("circle").attr("r", 6 / event.transform.k);
         g.selectAll(".campPoints").attr("d", triangle.size(newSize));
         g.selectAll(".messagePoints").attr("d", square.size(newSize));
         g.selectAll(".cityPoints").attr("d", cross.size(newSize));
-        g.selectAll("text").attr("font-size", 12 / event.transform.k);
+        g.selectAll(".city_labels").attr("font-size", 12 / event.transform.k);
+        g.selectAll(".leg-label")
+          .attr("display", event.transform.k > 15 ? null : "none")
+          .attr("font-size", 12 / event.transform.k);
       });
 
     svg.call(zoom);
@@ -82,7 +88,6 @@ export default function CDTmap() {
       d3.json("/data/cdtInreachData_withCoords.geojson"),
       d3.json("/data/geoPhotos.geojson"),
     ]).then(([trackData, stateData, inReachData, photoData]) => {
-
       /* -----------------------------------------------------
       *  State outline mapping functionality
       ----------------------------------------------------- */
@@ -107,7 +112,7 @@ export default function CDTmap() {
           const y = (y0 + y1) / 2;
           const scale = Math.max(
             1,
-            Math.min(8, 0.9 / Math.max(dx / width, dy / height))
+            Math.min(8, 0.9 / Math.max(dx / width, dy / height)),
           );
           const translate = [width / 2 - scale * x, height / 2 - scale * y];
 
@@ -116,7 +121,9 @@ export default function CDTmap() {
             .duration(750)
             .call(
               zoom.transform,
-              d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
+              d3.zoomIdentity
+                .translate(translate[0], translate[1])
+                .scale(scale),
             );
         });
 
@@ -129,7 +136,7 @@ export default function CDTmap() {
           d.geometry?.type === "Point" &&
           Array.isArray(d.geometry.coordinates) &&
           d.geometry.coordinates.length === 2 &&
-          projection(d.geometry.coordinates)
+          projection(d.geometry.coordinates),
       );
 
       const campSites = [];
@@ -188,7 +195,7 @@ export default function CDTmap() {
           d.geometry?.type === "Photo" &&
           Array.isArray(d.geometry.coordinates) &&
           d.geometry.coordinates.length === 2 &&
-          projection(d.geometry.coordinates)
+          projection(d.geometry.coordinates),
       );
 
       g.selectAll(".photoPoints")
@@ -226,6 +233,32 @@ export default function CDTmap() {
         })
         .on("mousemove", handleMouseMove)
         .on("mouseout", handleMouseOut);
+
+      /* -----------------------------------------------------
+      *  Leg labels (visible when zoom k > 15)
+      ----------------------------------------------------- */
+
+      g.selectAll(".leg-label")
+        .data(trackData.features)
+        .enter()
+        .append("text")
+        .attr("class", "leg-label")
+        .attr("display", "none")
+        .attr("x", (d) => {
+          const coords = d.geometry.coordinates;
+          const mid = coords[Math.floor(coords.length / 2)];
+          return projection(mid)[0];
+        })
+        .attr("y", (d) => {
+          const coords = d.geometry.coordinates;
+          const mid = coords[Math.floor(coords.length / 2)];
+          return projection(mid)[1];
+        })
+        .text((d) => `${d.properties.title} - ${d.properties.description}`)
+        .attr("font-size", 12)
+        .attr("fill", "black")
+        .attr("stroke", "none")
+        .attr("text-anchor", "middle");
     });
 
     /* -----------------------------------------------------
