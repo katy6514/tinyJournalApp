@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect, useMemo } from "react";
+import { useSession } from "next-auth/react";
 
 import * as d3 from "d3";
 
@@ -22,7 +23,8 @@ export default function CDTmap() {
   const ref = useRef();
   const gRef = useRef(null);
 
-  const currentUser = undefined;
+  const { data: session } = useSession();
+  const currentUser = session?.user ?? null;
 
   // ✅ Define projection + path WITHIN component and memoize
   const projection = useMemo(() => {

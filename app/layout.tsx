@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notoSerif } from "@/app/ui/fonts";
+import Providers from "@/app/ui/providers";
 
 import "@/app/globals.css";
 
@@ -15,7 +16,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${notoSerif.className} antialiased`}>{children}</body>
+      <body className={`${notoSerif.className} antialiased`}>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }
