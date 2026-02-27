@@ -27,6 +27,7 @@ export default function CDTmap() {
   const currentUserRef = useRef(null);
   currentUserRef.current = session?.user ?? null;
 
+
   // ✅ Define projection + path WITHIN component and memoize
   const projection = useMemo(() => {
     return d3
@@ -36,6 +37,44 @@ export default function CDTmap() {
   }, []);
 
   const path = useMemo(() => d3.geoPath().projection(projection), [projection]);
+
+  function showMessagePanel(event, d, currentUser) {
+    const panel = document.getElementById("message-panel");
+    const messageDate = new Date(d.properties.GPSTime);
+    const dateStr = messageDate.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const timeStr = messageDate.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+    const isOwner = currentUser?.email === "katy6514@gmail.com";
+    const messageText = isOwner ? d.properties.MessageText : "Message hidden";
+    panel.innerHTML = `
+      <p style="font-weight:600;margin-bottom:8px;">Garmin Message</p>
+      <p><strong>Date:</strong> ${dateStr}</p>
+      <p><strong>Time:</strong> ${timeStr}</p>
+      <p><strong>To:</strong> ${d.properties.Recipients}</p>
+      <p style="margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;">${messageText}</p>
+    `;
+    panel.style.display = "block";
+    panel.style.left = event.pageX + 15 + "px";
+    panel.style.top = event.pageY - 50 + "px";
+  }
+
+  function moveMessagePanel(event) {
+    const panel = document.getElementById("message-panel");
+    panel.style.left = event.pageX + 15 + "px";
+    panel.style.top = event.pageY - 50 + "px";
+  }
+
+  function hideMessagePanel() {
+    const panel = document.getElementById("message-panel");
+    panel.style.display = "none";
+  }
 
   useEffect(() => {
     const svg = d3
@@ -164,10 +203,10 @@ export default function CDTmap() {
         .attr("fill", colors.messages)
         .attr("stroke", "none")
         .on("mouseover", function (event, d) {
-          handleMouseOver(currentUserRef.current)(event, d);
+          showMessagePanel(event, d, currentUserRef.current);
         })
-        .on("mousemove", handleMouseMove)
-        .on("mouseout", handleMouseOut);
+        .on("mousemove", moveMessagePanel)
+        .on("mouseout", hideMessagePanel);
 
       g.selectAll(".campPoints")
         .data(campSites)
@@ -182,10 +221,10 @@ export default function CDTmap() {
         .attr("fill", colors.campSites)
         .attr("stroke", "none")
         .on("mouseover", function (event, d) {
-          handleMouseOver(currentUserRef.current)(event, d);
+          showMessagePanel(event, d, currentUserRef.current);
         })
-        .on("mousemove", handleMouseMove)
-        .on("mouseout", handleMouseOut);
+        .on("mousemove", moveMessagePanel)
+        .on("mouseout", hideMessagePanel);
 
       /* -----------------------------------------------------
       *  Take the cleaned photo geojson data and plot it
@@ -384,5 +423,27 @@ export default function CDTmap() {
       .attr("alignment-baseline", "middle");
   }, [path, projection]);
 
-  return <svg ref={ref}></svg>;
+  return (
+    <div>
+      <svg ref={ref}></svg>
+      <div
+        id="message-panel"
+        style={{
+          display: "none",
+          position: "fixed",
+          zIndex: 50,
+          backgroundColor: "white",
+          border: "1px solid #e5e7eb",
+          borderRadius: "8px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+          padding: "12px 16px",
+          fontSize: "14px",
+          color: "#4b5563",
+          maxWidth: "320px",
+          pointerEvents: "none",
+          lineHeight: "1.6",
+        }}
+      />
+    </div>
+  );
 }
