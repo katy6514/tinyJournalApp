@@ -24,7 +24,8 @@ export default function CDTmap() {
   const gRef = useRef(null);
 
   const { data: session } = useSession();
-  const currentUser = session?.user ?? null;
+  const currentUserRef = useRef(null);
+  currentUserRef.current = session?.user ?? null;
 
   // ✅ Define projection + path WITHIN component and memoize
   const projection = useMemo(() => {
@@ -163,7 +164,7 @@ export default function CDTmap() {
         .attr("fill", colors.messages)
         .attr("stroke", "none")
         .on("mouseover", function (event, d) {
-          handleMouseOver(currentUser)(event, d);
+          handleMouseOver(currentUserRef.current)(event, d);
         })
         .on("mousemove", handleMouseMove)
         .on("mouseout", handleMouseOut);
@@ -181,7 +182,7 @@ export default function CDTmap() {
         .attr("fill", colors.campSites)
         .attr("stroke", "none")
         .on("mouseover", function (event, d) {
-          handleMouseOver(currentUser)(event, d);
+          handleMouseOver(currentUserRef.current)(event, d);
         })
         .on("mousemove", handleMouseMove)
         .on("mouseout", handleMouseOut);
@@ -209,7 +210,7 @@ export default function CDTmap() {
         .attr("fill", colors.photos)
         .attr("stroke", "none")
         .on("mouseover", function (event, d) {
-          handleMouseOver(currentUser)(event, d);
+          handleMouseOver(currentUserRef.current)(event, d);
         })
         .on("mousemove", handleMouseMove)
         .on("mouseout", handleMouseOut);
