@@ -81,9 +81,20 @@ export function handleMouseOver(currentUser = null) {
         tooltip.innerHTML = ` <p>Leg #${legNum}: ${legName}<p>`;
         tooltip.style.display = "block";
       } else if (type === "Photo") {
-        // Photopoint, display it
         const { path, dateTime } = d.properties;
-        tooltip.innerHTML = `<img src="${path}" width="550"><br /><p> Date: ${dateTime}</p>`;
+        const normalized = dateTime.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
+        const photoDate = new Date(normalized);
+        const dateStr = photoDate.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+        const timeStr = photoDate.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+        tooltip.innerHTML = `<img src="${path}" width="550"><br /><p><strong>Date:</strong> ${dateStr}</p><p><strong>Time:</strong> ${timeStr}</p>`;
         tooltip.style.display = "block";
       }
     }
