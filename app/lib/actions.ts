@@ -118,6 +118,108 @@ export async function authenticate(
   }
 }
 
+export async function importLegsFromGeoJSON(
+  _prevState: { message: string | null },
+  formData: FormData
+) {
+  const file = formData.get("geojson") as File;
+
+  if (!file || file.size === 0) {
+    return { message: "File is required." };
+  }
+
+  let geojson;
+  try {
+    const text = await file.text();
+    geojson = JSON.parse(text);
+  } catch {
+    return { message: "Invalid JSON file." };
+  }
+
+  if (!Array.isArray(geojson.features)) {
+    return { message: "Invalid GeoJSON: missing features array." };
+  }
+
+  const features = geojson.features.filter(
+    (f: any) =>
+      f.geometry?.type === "LineString" &&
+      Array.isArray(f.geometry.coordinates) &&
+      f.properties?.title != null
+  );
+
+  if (features.length === 0) {
+    return { message: "No valid LineString features found in file." };
+  }
+
+  for (const feature of features) {
+    const legnum = parseFloat(feature.properties.title);
+    const name = feature.properties.description ?? "";
+    const coordinates = feature.geometry.coordinates;
+
+    await sql`
+      INSERT INTO legs (legnum, name, coordinates)
+      VALUES (${legnum}, ${name}, ${JSON.stringify(coordinates)}::jsonb)
+    `;
+  }
+
+  revalidatePath("/uploadTrack");
+  return { message: `Successfully imported ${features.length} leg(s).` };
+}
+
+export async function createLeg(
+  _prevState: { message: string | null },
+  formData: FormData
+) {
+  const legnum = Number(formData.get("legnum"));
+  const name = formData.get("name") as string;
+  const file = formData.get("coordinates") as File;
+
+  if (!legnum || !name || !file || file.size === 0) {
+    return { message: "All fields are required." };
+  }
+
+  let coordinates;
+  try {
+    const text = await file.text();
+    coordinates = JSON.parse(text);
+  } catch {
+    return { message: "Invalid JSON file." };
+  }
+
+  await sql`
+    INSERT INTO legs (legnum, name, coordinates)
+    VALUES (${legnum}, ${name}, ${JSON.stringify(coordinates)}::jsonb)
+  `;
+  revalidatePath("/uploadTrack");
+  return { message: "Leg created successfully." };
+}
+
+export async function updateLegCoordinates(
+  _prevState: { message: string | null },
+  formData: FormData
+) {
+  const legId = formData.get("legId") as string;
+  const file = formData.get("coordinates") as File;
+
+  if (!legId || !file || file.size === 0) {
+    return { message: "All fields are required." };
+  }
+
+  let coordinates;
+  try {
+    const text = await file.text();
+    coordinates = JSON.parse(text);
+  } catch {
+    return { message: "Invalid JSON file." };
+  }
+
+  await sql`
+    UPDATE legs SET coordinates = ${JSON.stringify(coordinates)}::jsonb WHERE id = ${legId}
+  `;
+  revalidatePath("/uploadTrack");
+  return { message: "Coordinates updated successfully." };
+}
+
 export async function updateLegWithDate(formData: FormData) {
   const rawFormData = {
     legId: formData.get("legId"),

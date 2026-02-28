@@ -1,7 +1,11 @@
+import Link from "next/link";
 import CDTmap from "./CDTmap";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
+import { auth } from "@/auth";
 
 export default async function Page() {
+  const session = await auth();
+
   return (
     <main>
       <Breadcrumbs
@@ -14,6 +18,16 @@ export default async function Page() {
           },
         ]}
       />
+      {session && (
+        <div className="flex justify-end px-4 py-2">
+          <Link
+            href="/uploadTrack"
+            className="text-sm font-medium text-blue-600 hover:text-blue-800 underline"
+          >
+            Upload Track Data
+          </Link>
+        </div>
+      )}
       <CDTmap />
       <div>
         <section>

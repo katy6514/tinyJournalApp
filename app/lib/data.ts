@@ -224,6 +224,13 @@ export async function fetchLegs(): Promise<Leg[]> {
   }
 }
 
+export async function fetchAllLegs(): Promise<Leg[]> {
+  const result = await sql<Leg[]>`
+    SELECT l.* FROM legs l ORDER BY l.legnum ASC
+  `;
+  return result;
+}
+
 // ==========================
 // Fetch dates, , THIS IS TEMP FOR ASSIGNING LEGS TO DATES
 // ==========================
