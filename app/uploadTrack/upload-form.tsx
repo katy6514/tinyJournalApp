@@ -1,15 +1,15 @@
 "use client";
 
 import { useActionState } from "react";
-import { createLeg, updateLegCoordinates, importLegsFromGeoJSON, backfillMileage } from "@/app/lib/actions";
-import { Leg } from "@/app/lib/definitions";
+import { createLeg, updateLegCoordinates, importLegsFromGeoJSON, backfillMileage, updateLegWithDate } from "@/app/lib/actions";
+import { Leg, DateRow } from "@/app/lib/definitions";
 import { Label, Input, Select } from "@/app/ui/components/inputs";
 import { Button } from "@/app/ui/components/button";
 
 const baseFileInputClasses =
   "block w-full text-sm text-gray-900 border border-gray-300 bg-white p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white";
 
-export default function UploadTrackForm({ legs }: { legs: Leg[] }) {
+export default function UploadTrackForm({ legs, dates }: { legs: Leg[]; dates: DateRow[] }) {
   const [createState, createAction] = useActionState(createLeg, { message: "" });
   const [updateState, updateAction] = useActionState(updateLegCoordinates, { message: "" });
   const [importState, importAction] = useActionState(importLegsFromGeoJSON, { message: "" });
@@ -165,6 +165,42 @@ export default function UploadTrackForm({ legs }: { legs: Leg[] }) {
           <div className="flex justify-end">
             <Button variant="dark" type="submit">
               Update Coordinates
+            </Button>
+          </div>
+        </form>
+      </section>
+
+      {/* ── Assign Leg to Date ── */}
+      <section>
+        <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4 pb-2 border-b border-gray-200">
+          Assign Leg to Date
+        </h2>
+        <form action={updateLegWithDate} className="space-y-4">
+          <div>
+            <Label htmlFor="assign-leg">Select Leg</Label>
+            <Select id="assign-leg" name="legId" required>
+              <option value="">Select a leg</option>
+              {legs.map((leg) => (
+                <option key={leg.id} value={leg.id}>
+                  {leg.legnum} — {leg.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="assign-date">Select Date</Label>
+            <Select id="assign-date" name="dateId" required>
+              <option value="">Select a date</option>
+              {dates.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.date}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="flex justify-end">
+            <Button variant="dark" type="submit">
+              Assign
             </Button>
           </div>
         </form>

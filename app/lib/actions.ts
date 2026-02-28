@@ -288,6 +288,6 @@ export async function updateLegWithDate(formData: FormData) {
   await sql`
     UPDATE dates SET leg_id = ${legId} WHERE id = ${dateId};
   `;
-  revalidatePath("/assignLegs");
-  redirect("/assignLegs");
+  revalidatePath("/uploadTrack");
+  redirect("/uploadTrack");
 }
