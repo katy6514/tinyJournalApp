@@ -1,11 +1,12 @@
 import { parseISO, format } from "date-fns";
+import Link from "next/link";
 
 import { notoSans, notoSerif } from "@/app/ui/fonts";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 import { Button } from "@/app/ui/components/button";
 import { PencilIcon } from "@heroicons/react/24/outline";
 
-import { fetchEntryByID, fetchLegForDateID } from "@/app/lib/data";
+import { fetchEntryByID, fetchLegForDateID, fetchAdjacentEntries } from "@/app/lib/data";
 import { JournalEntry } from "@/app/lib/definitions";
 import EntryPhotos from "@/app/ui/journal/entry-photos";
 import EntryMiniMap from "@/app/ui/journal/entry-mini-map";
@@ -26,7 +27,10 @@ export default async function Page(props: {
 
   const { date, date_id, text, legname, state, photos } = entry || {};
 
-  const leg = await fetchLegForDateID(date_id);
+  const [leg, adjacent] = await Promise.all([
+    fetchLegForDateID(date_id),
+    fetchAdjacentEntries(entry_id),
+  ]);
 
   let legGeoJSON = null;
   if (leg?.coordinates) {
@@ -62,6 +66,29 @@ export default async function Page(props: {
           },
         ]}
       />
+      <div className="flex justify-between px-4 py-2 text-sm">
+        {adjacent.prev ? (
+          <Link
+            href={`/journal/${adjacent.prev.entry_id}`}
+            className="text-blue-600 hover:underline dark:text-blue-400"
+          >
+            ← prev day: {format(parseISO(adjacent.prev.date), "MMMM d, yyyy")}
+          </Link>
+        ) : (
+          <span />
+        )}
+        {adjacent.next ? (
+          <Link
+            href={`/journal/${adjacent.next.entry_id}`}
+            className="text-blue-600 hover:underline dark:text-blue-400"
+          >
+            next day: {format(parseISO(adjacent.next.date), "MMMM d, yyyy")} →
+          </Link>
+        ) : (
+          <span />
+        )}
+      </div>
+
       <div className=" bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
         <h1 className={`${notoSans.className} mb-4 text-xl md:text-2xl`}>
           {legname}

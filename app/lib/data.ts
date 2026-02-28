@@ -224,6 +224,51 @@ export async function fetchLegs(): Promise<Leg[]> {
   }
 }
 
+// ==========================
+// Fetch prev/next entry IDs and dates relative to a given entry
+// ==========================
+export async function fetchAdjacentEntries(entry_id: string): Promise<{
+  prev: { entry_id: string; date: string } | null;
+  next: { entry_id: string; date: string } | null;
+}> {
+  const result = await sql<
+    {
+      prev_entry_id: string | null;
+      prev_date: string | null;
+      next_entry_id: string | null;
+      next_date: string | null;
+    }[]
+  >`
+    WITH ordered AS (
+      SELECT
+        e.id AS entry_id,
+        LAG(e.id) OVER (ORDER BY d.date) AS prev_entry_id,
+        LAG(TO_CHAR(d.date, 'YYYY-MM-DD')) OVER (ORDER BY d.date) AS prev_date,
+        LEAD(e.id) OVER (ORDER BY d.date) AS next_entry_id,
+        LEAD(TO_CHAR(d.date, 'YYYY-MM-DD')) OVER (ORDER BY d.date) AS next_date
+      FROM entries e
+      JOIN dates d ON d.id = e.date_id
+    )
+    SELECT prev_entry_id, prev_date, next_entry_id, next_date
+    FROM ordered
+    WHERE entry_id = ${entry_id}
+  `;
+
+  const row = result[0];
+  if (!row) return { prev: null, next: null };
+
+  return {
+    prev:
+      row.prev_entry_id && row.prev_date
+        ? { entry_id: row.prev_entry_id, date: row.prev_date }
+        : null,
+    next:
+      row.next_entry_id && row.next_date
+        ? { entry_id: row.next_entry_id, date: row.next_date }
+        : null,
+  };
+}
+
 export async function fetchAllLegs(): Promise<Leg[]> {
   const result = await sql<Leg[]>`
     SELECT l.* FROM legs l ORDER BY l.legnum ASC
