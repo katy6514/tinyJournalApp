@@ -160,10 +160,15 @@ export async function importLegsFromGeoJSON(
     return { message: "Invalid GeoJSON: missing features array." };
   }
 
-  const features = geojson.features.filter(
-    (f: any) =>
+  type GeoFeature = {
+    geometry: { type: string; coordinates: number[][] };
+    properties: { title: string; description?: string };
+  };
+
+  const features = (geojson.features as GeoFeature[]).filter(
+    (f) =>
       f.geometry?.type === "LineString" &&
-      Array.isArray(f.geometry.coordinates) &&
+      Array.isArray(f.geometry?.coordinates) &&
       f.properties?.title != null
   );
 
