@@ -51,19 +51,15 @@ export function Button({
   // if the "button" has an href, it's a link
   if (href) {
     return (
-      <div className="flex justify-end gap-2">
-        <Link href={href} className={combinedClasses}>
-          {content}
-        </Link>
-      </div>
+      <Link href={href} className={combinedClasses}>
+        {content}
+      </Link>
     );
   }
 
   return (
-    <div className="flex justify-end gap-2">
-      <button onClick={onClick} className={combinedClasses} type={type}>
-        {content}
-      </button>
-    </div>
+    <button onClick={onClick} className={combinedClasses} type={type}>
+      {content}
+    </button>
   );
 }
