@@ -115,10 +115,15 @@ export default async function Page(props: {
           Edit
         </Button>
 
-        <EntryMiniMap legGeoJSON={legGeoJSON} date={date} />
-
-        <div className="">
-          <p className={`${notoSerif.className} whitespace-pre-wrap`}>{text}</p>
+        <div className="flex gap-4 items-start">
+          <div className="flex-1 min-w-0">
+            <p className={`${notoSerif.className} whitespace-pre-wrap`}>{text}</p>
+          </div>
+          {legGeoJSON && (
+            <div className="w-[40%] shrink-0">
+              <EntryMiniMap legGeoJSON={legGeoJSON} date={date} />
+            </div>
+          )}
         </div>
         <EntryPhotos photos={photos} />
       </div>

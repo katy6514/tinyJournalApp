@@ -17,8 +17,8 @@ export default function EntryMiniMap({ legGeoJSON, date }) {
 
     const svg = d3
       .select(ref.current)
-      .attr("width", MAP_WIDTH)
-      .attr("height", MAP_HEIGHT);
+      .attr("viewBox", `0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`)
+      .attr("width", "100%");
 
     svg.selectAll("*").remove();
 
@@ -112,8 +112,8 @@ export default function EntryMiniMap({ legGeoJSON, date }) {
   if (!legGeoJSON) return null;
 
   return (
-    <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
-      <svg ref={ref} className="w-full" />
+    <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+      <svg ref={ref} />
     </div>
   );
 }
