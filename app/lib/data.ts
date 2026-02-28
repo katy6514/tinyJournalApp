@@ -225,6 +225,31 @@ export async function fetchLegs(): Promise<Leg[]> {
 }
 
 // ==========================
+// Fetch journal entries that have no text yet
+// ==========================
+export async function fetchEmptyEntries(): Promise<JournalEntry[]> {
+  try {
+    return await sql<JournalEntry[]>`
+      SELECT
+        TO_CHAR(d.date, 'YYYY-MM-DD') AS date,
+        d.id AS date_id,
+        e.id AS entry_id,
+        e.text,
+        e.legname,
+        e.state,
+        false AS has_text
+      FROM dates d
+      LEFT JOIN entries e ON d.id = e.date_id
+      WHERE e.text IS NULL OR e.text = ''
+      ORDER BY d.date
+    `;
+  } catch (error) {
+    console.error("Database Error (fetchEmptyEntries):", error);
+    throw new Error("Failed to fetch empty entries.");
+  }
+}
+
+// ==========================
 // Fetch prev/next entry IDs and dates relative to a given entry
 // ==========================
 export async function fetchAdjacentEntries(entry_id: string): Promise<{

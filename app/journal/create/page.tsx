@@ -1,6 +1,6 @@
 import Form from "@/app/ui/journal/create-form";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
-import { fetchJournal, fetchAssignedLegs } from "@/app/lib/data";
+import { fetchEmptyEntries, fetchAssignedLegs } from "@/app/lib/data";
 
 export default async function Page(props: {
   searchParams?: Promise<{ returnPage?: string }>;
@@ -8,11 +8,10 @@ export default async function Page(props: {
   const searchParams = await props.searchParams;
   const returnPage = searchParams?.returnPage || "1";
 
-  const [journalEntries, assignedLegs] = await Promise.all([
-    fetchJournal(),
+  const [emptyEntries, assignedLegs] = await Promise.all([
+    fetchEmptyEntries(),
     fetchAssignedLegs(),
   ]);
-  const emptyEntries = journalEntries.filter((entry) => !entry.has_text);
   const legNameByDateId: Record<string, string> = Object.fromEntries(
     assignedLegs.map((l) => [l.date_id, l.name])
   );
