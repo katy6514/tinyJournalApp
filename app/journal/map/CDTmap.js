@@ -124,7 +124,7 @@ export default function CDTmap() {
 
     Promise.all([
       d3.json("/api/legs"),
-      d3.json("/data/CDTstates.json"),
+      d3.json("/api/states"),
       d3.json("/data/cdtInreachData_withCoords.geojson"),
       d3.json("/data/geoPhotos.geojson"),
     ]).then(([trackData, stateData, inReachData, photoData]) => {
