@@ -123,7 +123,7 @@ export default function CDTmap() {
     });
 
     Promise.all([
-      d3.json("/data/CDT_complete_tracks.json"),
+      d3.json("/api/legs"),
       d3.json("/data/CDTstates.json"),
       d3.json("/data/cdtInreachData_withCoords.geojson"),
       d3.json("/data/geoPhotos.geojson"),
@@ -259,7 +259,7 @@ export default function CDTmap() {
       ----------------------------------------------------- */
 
       g.selectAll(".trail")
-        .data(trackData.features)
+        .data(trackData.features.filter((d) => Array.isArray(d.geometry?.coordinates) && d.geometry.coordinates.length > 0))
         .enter()
         .append("path")
         .attr("class", "trail")
@@ -273,8 +273,15 @@ export default function CDTmap() {
       *  Leg labels (visible when zoom k > 15)
       ----------------------------------------------------- */
 
+      const validTrackFeatures = trackData.features.filter((d) => {
+        const coords = d.geometry?.coordinates;
+        if (!Array.isArray(coords) || coords.length === 0) return false;
+        const mid = coords[Math.floor(coords.length / 2)];
+        return projection(mid) !== null;
+      });
+
       g.selectAll(".leg-label")
-        .data(trackData.features)
+        .data(validTrackFeatures)
         .enter()
         .append("text")
         .attr("class", "leg-label")
