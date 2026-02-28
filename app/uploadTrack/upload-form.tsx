@@ -10,9 +10,9 @@ const baseFileInputClasses =
   "block w-full text-sm text-gray-900 border border-gray-300 bg-white p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white";
 
 export default function UploadTrackForm({ legs }: { legs: Leg[] }) {
-  const [createState, createAction] = useActionState(createLeg, { message: null });
-  const [updateState, updateAction] = useActionState(updateLegCoordinates, { message: null });
-  const [importState, importAction] = useActionState(importLegsFromGeoJSON, { message: null });
+  const [createState, createAction] = useActionState(createLeg, { message: "" });
+  const [updateState, updateAction] = useActionState(updateLegCoordinates, { message: "" });
+  const [importState, importAction] = useActionState(importLegsFromGeoJSON, { message: "" });
   const [backfillState, backfillAction] = useActionState(backfillMileage, { message: "" });
 
   return (

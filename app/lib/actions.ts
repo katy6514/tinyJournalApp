@@ -139,7 +139,7 @@ function calculateMileage(coordinates: number[][]): number {
 }
 
 export async function importLegsFromGeoJSON(
-  _prevState: { message: string | null },
+  _prevState: { message: string },
   formData: FormData
 ) {
   const file = formData.get("geojson") as File;
@@ -194,7 +194,7 @@ export async function importLegsFromGeoJSON(
 }
 
 export async function createLeg(
-  _prevState: { message: string | null },
+  _prevState: { message: string },
   formData: FormData
 ) {
   const legnum = Number(formData.get("legnum"));
@@ -225,7 +225,7 @@ export async function createLeg(
 }
 
 export async function updateLegCoordinates(
-  _prevState: { message: string | null },
+  _prevState: { message: string },
   formData: FormData
 ) {
   const legId = formData.get("legId") as string;
