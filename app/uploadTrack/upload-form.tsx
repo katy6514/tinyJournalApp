@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { createLeg, updateLegCoordinates, importLegsFromGeoJSON } from "@/app/lib/actions";
+import { createLeg, updateLegCoordinates, importLegsFromGeoJSON, backfillMileage } from "@/app/lib/actions";
 import { Leg } from "@/app/lib/definitions";
 import { Label, Input, Select } from "@/app/ui/components/inputs";
 import { Button } from "@/app/ui/components/button";
@@ -13,6 +13,7 @@ export default function UploadTrackForm({ legs }: { legs: Leg[] }) {
   const [createState, createAction] = useActionState(createLeg, { message: null });
   const [updateState, updateAction] = useActionState(updateLegCoordinates, { message: null });
   const [importState, importAction] = useActionState(importLegsFromGeoJSON, { message: null });
+  const [backfillState, backfillAction] = useActionState(backfillMileage, { message: "" });
 
   return (
     <div className="bg-gray-50 dark:bg-gray-800 p-4 md:p-6 space-y-10 max-w-2xl">
@@ -164,6 +165,34 @@ export default function UploadTrackForm({ legs }: { legs: Leg[] }) {
           <div className="flex justify-end">
             <Button variant="dark" type="submit">
               Update Coordinates
+            </Button>
+          </div>
+        </form>
+      </section>
+
+      {/* ── Backfill Mileage ── */}
+      <section>
+        <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4 pb-2 border-b border-gray-200">
+          Backfill Mileage
+        </h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Calculate and store mileage for any legs that are missing it.
+        </p>
+        <form action={backfillAction}>
+          {backfillState.message && (
+            <p
+              className={`text-sm mb-4 ${
+                backfillState.message.includes("Calculated") || backfillState.message.includes("already")
+                  ? "text-green-600"
+                  : "text-red-500"
+              }`}
+            >
+              {backfillState.message}
+            </p>
+          )}
+          <div className="flex justify-end">
+            <Button variant="dark" type="submit">
+              Calculate Missing Mileage
             </Button>
           </div>
         </form>

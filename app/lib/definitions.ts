@@ -35,6 +35,7 @@ export type Leg = {
   legnum: number;
   name: string;
   coordinates: number[];
+  mileage?: number;
 };
 
 export type DateRow = {

@@ -29,18 +29,6 @@ export function checkForCampsite(data) {
   return false; // No campsite found
 }
 
-export function haversineDistance([lon1, lat1], [lon2, lat2]) {
-  const R = 6371; // Earth radius in km
-  const toRad = (deg) => (deg * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c * 0.621371; // in miles
-}
-
 /**
  *
  * @param {*} event
@@ -82,7 +70,10 @@ export function handleMouseOver(currentUser = null) {
         tooltip.style.display = "block";
       } else if (type === "Photo") {
         const { path, dateTime } = d.properties;
-        const normalized = dateTime.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
+        const normalized = dateTime.replace(
+          /^(\d{4}):(\d{2}):(\d{2})/,
+          "$1-$2-$3",
+        );
         const photoDate = new Date(normalized);
         const dateStr = photoDate.toLocaleDateString("en-US", {
           year: "numeric",
