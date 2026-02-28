@@ -27,7 +27,6 @@ export default function CDTmap() {
   const currentUserRef = useRef(null);
   currentUserRef.current = session?.user ?? null;
 
-
   // ✅ Define projection + path WITHIN component and memoize
   const projection = useMemo(() => {
     return d3
@@ -259,7 +258,13 @@ export default function CDTmap() {
       ----------------------------------------------------- */
 
       g.selectAll(".trail")
-        .data(trackData.features.filter((d) => Array.isArray(d.geometry?.coordinates) && d.geometry.coordinates.length > 0))
+        .data(
+          trackData.features.filter(
+            (d) =>
+              Array.isArray(d.geometry?.coordinates) &&
+              d.geometry.coordinates.length > 0,
+          ),
+        )
         .enter()
         .append("path")
         .attr("class", "trail")
