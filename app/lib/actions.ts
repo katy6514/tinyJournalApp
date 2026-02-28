@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { signIn } from "@/auth";
@@ -184,6 +184,7 @@ export async function importLegsFromGeoJSON(
   }
 
   revalidatePath("/uploadTrack");
+  revalidateTag("legs");
   return { message: `Successfully imported ${features.length} leg(s).` };
 }
 
@@ -214,6 +215,7 @@ export async function createLeg(
     VALUES (${legnum}, ${name},   ${sql.json(coordinates)}, ${mileage})
   `;
   revalidatePath("/uploadTrack");
+  revalidateTag("legs");
   return { message: "Leg created successfully." };
 }
 
@@ -242,6 +244,7 @@ export async function updateLegCoordinates(
     UPDATE legs SET coordinates =   ${sql.json(coordinates)}, mileage = ${mileage} WHERE id = ${legId}
   `;
   revalidatePath("/uploadTrack");
+  revalidateTag("legs");
   return { message: "Coordinates updated successfully." };
 }
 
@@ -263,6 +266,7 @@ export async function backfillMileage(
   }
 
   revalidatePath("/uploadTrack");
+  revalidateTag("legs");
   return { message: `Calculated mileage for ${legs.length} leg(s).` };
 }
 
