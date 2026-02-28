@@ -5,9 +5,10 @@ import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 import { Button } from "@/app/ui/components/button";
 import { PencilIcon } from "@heroicons/react/24/outline";
 
-import { fetchEntryByID } from "@/app/lib/data";
+import { fetchEntryByID, fetchLegForDateID } from "@/app/lib/data";
 import { JournalEntry } from "@/app/lib/definitions";
 import EntryPhotos from "@/app/ui/journal/entry-photos";
+import EntryMiniMap from "@/app/ui/journal/entry-mini-map";
 
 // import { EditEntry } from "@/app/ui/journal/buttons";
 
@@ -25,7 +26,27 @@ export default async function Page(props: {
 
   const { date, date_id, text, legname, state, photos } = entry || {};
 
-  // const { name } = await fetchLegForDateID(date_id);
+  const leg = await fetchLegForDateID(date_id);
+
+  let legGeoJSON = null;
+  if (leg?.coordinates) {
+    const coords =
+      typeof leg.coordinates === "string"
+        ? JSON.parse(leg.coordinates)
+        : leg.coordinates;
+    if (Array.isArray(coords) && coords.length > 0) {
+      legGeoJSON = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            geometry: { type: "LineString", coordinates: coords },
+            properties: { legnum: leg.legnum, name: leg.name },
+          },
+        ],
+      };
+    }
+  }
 
   const formattedDate = format(parseISO(date), "MMMM d, yyyy");
 
@@ -66,6 +87,8 @@ export default async function Page(props: {
         >
           Edit
         </Button>
+
+        <EntryMiniMap legGeoJSON={legGeoJSON} date={date} />
 
         <div className="">
           <p className={`${notoSerif.className} whitespace-pre-wrap`}>{text}</p>

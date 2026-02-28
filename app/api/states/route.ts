@@ -2,9 +2,14 @@ import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import sql from "@/app/lib/db";
 
+type StateRow = {
+  name: string;
+  geojson: object;
+};
+
 const getStatesGeoJSON = unstable_cache(
   async () => {
-    const states = await sql<{ name: string; geojson: unknown }[]>`
+    const states = await sql<StateRow[]>`
       SELECT name, geojson
       FROM states
       WHERE geojson IS NOT NULL
@@ -20,7 +25,7 @@ const getStatesGeoJSON = unstable_cache(
     return { type: "FeatureCollection", features };
   },
   ["states-geojson"],
-  { tags: ["states"] }
+  { tags: ["states"] },
 );
 
 export async function GET() {
@@ -29,3 +34,4 @@ export async function GET() {
     headers: { "Cache-Control": "public, max-age=31536000, immutable" },
   });
 }
+``;
