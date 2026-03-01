@@ -79,8 +79,8 @@ export default function CDTmap() {
     const svg = d3
       .select(ref.current)
       .attr("id", "CDTmap")
-      .attr("width", width)
-      .attr("height", height)
+      .attr("viewBox", `0 0 ${width} ${height}`)
+      .attr("width", "100%")
       .attr("stroke", "rgb(127, 127, 127)")
       .attr("stroke-width", "1px");
 
