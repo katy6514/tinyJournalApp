@@ -3,7 +3,7 @@ import NavLinks from "@/app/ui/journal/nav-links";
 import { PowerIcon, Bars3Icon } from "@heroicons/react/24/outline";
 import { signOut } from "@/auth";
 
-export default function SideNav() {
+export default function Navigation() {
   return (
     <div className="navbar bg-base-100 shadow-sm">
       <div className="navbar-start">
