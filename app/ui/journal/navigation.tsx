@@ -1,5 +1,6 @@
 import Link from "next/link";
 import NavLinks from "@/app/ui/journal/nav-links";
+import NavbarSearch from "@/app/ui/journal/navbar-search";
 import { PowerIcon, Bars3Icon } from "@heroicons/react/24/outline";
 import { signOut } from "@/auth";
 
@@ -24,7 +25,8 @@ export default function Navigation() {
           My CDT Journal
         </Link>
       </div>
-      <div className="navbar-end">
+      <div className="navbar-end gap-2">
+        <NavbarSearch />
         <form
           action={async () => {
             "use server";

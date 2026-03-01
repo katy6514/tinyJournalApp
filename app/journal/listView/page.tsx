@@ -6,8 +6,6 @@ import { PlusIcon } from "@heroicons/react/24/outline";
 import JournalList from "@/app/ui/journal/journal-list";
 
 import Pagination from "@/app/ui/journal/pagination";
-import Search from "@/app/ui/search";
-
 import { fetchFilteredEntries } from "@/app/lib/data";
 
 export default async function Page(props: {
@@ -37,9 +35,6 @@ export default async function Page(props: {
         <Button href={`/journal/create?returnPage=${currentPage}`} variant="primary" icon={<PlusIcon />}>
           Add Entry
         </Button>
-      </div>
-      <div className="flex items-center gap-2 pb-8">
-        <Search placeholder="Search entries..." />
       </div>
       <JournalList entries={entries} />
       <div className="mt-5 flex w-full justify-center">
