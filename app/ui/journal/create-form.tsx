@@ -126,10 +126,10 @@ export default function Form({
         </div>
       </div>
       <div className="mt-6 flex justify-end gap-4">
-        <Button href="/journal/listView" variant="light">
+        <Button href="/journal/listView" variant="secondary">
           Cancel
         </Button>
-        <Button variant="dark" type="submit">
+        <Button variant="primary" type="submit">
           Save Entry
         </Button>
       </div>

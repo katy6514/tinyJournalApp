@@ -1,17 +1,36 @@
 "use client";
 
 import { useActionState } from "react";
-import { createLeg, updateLegCoordinates, importLegsFromGeoJSON, backfillMileage, updateLegWithDate } from "@/app/lib/actions";
+import {
+  createLeg,
+  updateLegCoordinates,
+  importLegsFromGeoJSON,
+  backfillMileage,
+  updateLegWithDate,
+} from "@/app/lib/actions";
 import { Leg, DateRow } from "@/app/lib/definitions";
 import { Label, Input, Select } from "@/app/ui/components/inputs";
 import { Button } from "@/app/ui/components/button";
 
-
-export default function UploadTrackForm({ legs, dates }: { legs: Leg[]; dates: DateRow[] }) {
-  const [createState, createAction] = useActionState(createLeg, { message: "" });
-  const [updateState, updateAction] = useActionState(updateLegCoordinates, { message: "" });
-  const [importState, importAction] = useActionState(importLegsFromGeoJSON, { message: "" });
-  const [backfillState, backfillAction] = useActionState(backfillMileage, { message: "" });
+export default function UploadTrackForm({
+  legs,
+  dates,
+}: {
+  legs: Leg[];
+  dates: DateRow[];
+}) {
+  const [createState, createAction] = useActionState(createLeg, {
+    message: "",
+  });
+  const [updateState, updateAction] = useActionState(updateLegCoordinates, {
+    message: "",
+  });
+  const [importState, importAction] = useActionState(importLegsFromGeoJSON, {
+    message: "",
+  });
+  const [backfillState, backfillAction] = useActionState(backfillMileage, {
+    message: "",
+  });
 
   return (
     <div className="bg-gray-50 dark:bg-gray-800 p-4 md:p-6 space-y-10 max-w-2xl">
@@ -19,7 +38,8 @@ export default function UploadTrackForm({ legs, dates }: { legs: Leg[]; dates: D
         <h1 className="text-2xl font-semibold text-gray-800 dark:text-white">
           Upload Track Data
         </h1>
-        <Button href="/journal/map" variant="light">
+
+        <Button href="/journal/map" variant="secondary">
           Back to Map
         </Button>
       </div>
@@ -73,7 +93,7 @@ export default function UploadTrackForm({ legs, dates }: { legs: Leg[]; dates: D
             </p>
           )}
           <div className="flex justify-end">
-            <Button variant="dark" type="submit">
+            <Button variant="primary" type="submit">
               Create Leg
             </Button>
           </div>
@@ -114,7 +134,7 @@ export default function UploadTrackForm({ legs, dates }: { legs: Leg[]; dates: D
             </p>
           )}
           <div className="flex justify-end">
-            <Button variant="dark" type="submit">
+            <Button variant="primary" type="submit">
               Import Legs
             </Button>
           </div>
@@ -161,7 +181,7 @@ export default function UploadTrackForm({ legs, dates }: { legs: Leg[]; dates: D
             </p>
           )}
           <div className="flex justify-end">
-            <Button variant="dark" type="submit">
+            <Button variant="primary" type="submit">
               Update Coordinates
             </Button>
           </div>
@@ -197,7 +217,7 @@ export default function UploadTrackForm({ legs, dates }: { legs: Leg[]; dates: D
             </Select>
           </div>
           <div className="flex justify-end">
-            <Button variant="dark" type="submit">
+            <Button variant="primary" type="submit">
               Assign
             </Button>
           </div>
@@ -216,7 +236,8 @@ export default function UploadTrackForm({ legs, dates }: { legs: Leg[]; dates: D
           {backfillState.message && (
             <p
               className={`text-sm mb-4 ${
-                backfillState.message.includes("Calculated") || backfillState.message.includes("already")
+                backfillState.message.includes("Calculated") ||
+                backfillState.message.includes("already")
                   ? "text-green-600"
                   : "text-red-500"
               }`}
@@ -225,7 +246,7 @@ export default function UploadTrackForm({ legs, dates }: { legs: Leg[]; dates: D
             </p>
           )}
           <div className="flex justify-end">
-            <Button variant="dark" type="submit">
+            <Button variant="primary" type="submit">
               Calculate Missing Mileage
             </Button>
           </div>

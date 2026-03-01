@@ -12,7 +12,7 @@ export default function Home() {
         >
           My CDT Journal
         </h1>
-        <Button href="/journal" variant="outlined" className="m-20">
+        <Button href="/journal" variant="outline" className="m-20">
           Welcome
         </Button>
       </div>

@@ -110,7 +110,7 @@ export default async function Page(props: {
         <Button
           href={`/journal/${entry_id}/edit`}
           icon={<PencilIcon />}
-          variant="light"
+          variant="secondary"
         >
           Edit
         </Button>

@@ -1,11 +1,8 @@
 import React from "react";
 import Link from "next/link";
 import { twMerge } from "tailwind-merge";
-import { sourceSans } from "@/app/ui/fonts";
 
-type ButtonVariant = "dark" | "light" | "error" | "outlined";
-
-// import clsx from "clsx";
+type ButtonVariant = "primary" | "secondary" | "error" | "outline";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
@@ -17,17 +14,6 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant: ButtonVariant;
 }
 
-const baseClasses = `flex items-center ${sourceSans.className} justify-center px-6 py-3 text-sm font-medium w-auto inline-flex transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:opacity-50 disabled:cursor-not-allowed`;
-
-const variantClasses: Record<ButtonVariant, string> = {
-  dark: "text-white bg-gray-800 border-black hover:bg-black",
-  light:
-    "text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600",
-  error: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
-  outlined:
-    "bg-transparent text-gray-800 border border-gray-800 hover:bg-gray-100 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700",
-};
-
 export function Button({
   children,
   href,
@@ -35,20 +21,17 @@ export function Button({
   onClick,
   type,
   className = "",
-  variant = "dark", // default
+  variant = "primary",
 }: ButtonProps) {
-  const variantClass = variantClasses[variant];
+  const combinedClasses = twMerge(`btn btn-${variant}`, className);
 
   const content = (
     <>
-      {icon && <span className="w-5 h-5 mr-2.5">{icon}</span>}
+      {icon && <span className="w-5 h-5">{icon}</span>}
       {typeof children === "string" ? children.toUpperCase() : children}
     </>
   );
 
-  const combinedClasses = twMerge(baseClasses, variantClass, className);
-
-  // if the "button" has an href, it's a link
   if (href) {
     return (
       <Link href={href} className={combinedClasses}>

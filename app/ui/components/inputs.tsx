@@ -10,7 +10,7 @@ const inputClasses = ``;
 
 const textAreaClasses = `h-full`;
 
-const selectClasses = ``;
+
 
 const labelClasses = `block mb-2 text-sm font-medium text-gray-900 dark:text-white`;
 
@@ -49,14 +49,12 @@ export function Select({
   ariaDescribedby,
   onChange,
 }: SelectProps) {
-  const combinedClasses = twMerge(baseClasses, selectClasses, className);
-
   return (
     <select
       id={id}
       name={name}
       required={required}
-      className={combinedClasses}
+      className={twMerge("select w-full", className)}
       aria-describedby={ariaDescribedby}
       onChange={onChange}
     >

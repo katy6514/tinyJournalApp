@@ -34,7 +34,7 @@ export default async function Page(props: {
         ]}
       />
       <div className="my-4 flex justify-end md:my-8">
-        <Button href={`/journal/create?returnPage=${currentPage}`} variant="dark" icon={<PlusIcon />}>
+        <Button href={`/journal/create?returnPage=${currentPage}`} variant="primary" icon={<PlusIcon />}>
           Add Entry
         </Button>
       </div>
@@ -45,7 +45,7 @@ export default async function Page(props: {
       <div className="mt-5 flex w-full justify-center">
         <Pagination totalPages={totalPages} />
       </div>
-      <Button href={"/journal/create"} variant="dark" icon={<PlusIcon />}>
+      <Button href={"/journal/create"} variant="primary" icon={<PlusIcon />}>
         Add Entry
       </Button>{" "}
     </main>
