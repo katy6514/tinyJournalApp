@@ -1,48 +1,36 @@
-"use client";
-
 import Image from "next/image";
-import Link from "next/link";
 import { parseISO, format } from "date-fns";
-
 import { notoSerif } from "@/app/ui/fonts";
-
-import { JournalEntry, Photo } from "@/app/lib/definitions";
-import { Button } from "@/app/ui/components/button";
+import { JournalEntry } from "@/app/lib/definitions";
 
 export default function JournalCard({ entry }: { entry: JournalEntry }) {
-  const { date, date_id, entry_id, text, legname, state, photos, assigned_leg_name } = entry;
-
+  const { date, text, legname, state, photos, assigned_leg_name } = entry;
   const photo = photos?.[0];
-
   const formattedDate = format(parseISO(date), "MMMM d, yyyy");
 
   return (
-    <article className="shadow-lg grid grid-cols-3 grid-rows-2 gap-4 mb-8 pr-4 bg-gray-50 dark:bg-gray-600">
-      <div className="row-span-3 bg-white dark:bg-gray-700 overflow-hidden">
+    <div className="card card-side bg-base-100 shadow-sm mb-4">
+      <figure className="w-48 shrink-0">
         <Image
           src={photo ? photo.path : "/ContinentalDivideTrailLogo.png"}
           width={photo ? photo.width : 400}
           height={photo ? photo.height : 400}
           alt={photo ? (photo.title || photo.description || "") : "Continental Divide Trail"}
-          className={photo
-            ? "object-cover w-full h-full"
-            : "object-cover w-full h-full grayscale scale-150 translate-x-[20%] opacity-50"
+          className={
+            photo
+              ? "object-cover w-full h-full"
+              : "object-cover w-full h-full grayscale opacity-50"
           }
         />
+      </figure>
+      <div className="card-body">
+        <h2 className="card-title">{legname}</h2>
+        <p className="text-sm">{state} · {formattedDate}</p>
+        <p className="text-xs text-warning">
+          {assigned_leg_name ? `Leg: ${assigned_leg_name}` : "no leg assigned"}
+        </p>
+        <p className={`${notoSerif.className} text-sm line-clamp-3`}>{text}</p>
       </div>
-      <header className="col-span-2 row-span-1 p-4 mt-4 bg-gray-50 dark:bg-gray-800">
-        <h3 className="text-lg font-semibold">{legname}</h3>
-        <p className="text-md font-semibold">{state}</p>
-        <p className="text-sm text-gray-500">{formattedDate}</p>
-        <p className="text-xs text-yellow-600 mt-1">
-          {assigned_leg_name ? `Leg: ${assigned_leg_name}` : "no leg assigned for this date"}
-        </p>
-      </header>
-      <section className="col-span-2 row-span-1 h-auto p-4 mb-4 bg-white dark:bg-gray-800">
-        <p className={`${notoSerif.className} font-medium line-clamp-4`}>
-          {text}
-        </p>
-      </section>
-    </article>
+    </div>
   );
 }
