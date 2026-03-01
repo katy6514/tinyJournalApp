@@ -19,10 +19,16 @@ export default function Navigation() {
             <NavLinks />
           </ul>
         </div>
-      </div>
-      <div className="navbar-center">
         <Link href="/" className="btn btn-ghost text-xl">
           My CDT Journal
+        </Link>
+      </div>
+      <div className="navbar-center hidden md:flex gap-1">
+        <Link href="/journal/map" className="btn btn-ghost btn-sm">
+          The Map
+        </Link>
+        <Link href="/journal/listView" className="btn btn-ghost btn-sm">
+          The Journal
         </Link>
       </div>
       <div className="navbar-end gap-2">
