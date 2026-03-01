@@ -28,7 +28,9 @@ export default async function Page() {
           </Link>
         </div>
       )}
-      <CDTmap />
+      <div className="-mx-6 md:-mx-12">
+        <CDTmap />
+      </div>
       <div>
         <section>
           <header>
