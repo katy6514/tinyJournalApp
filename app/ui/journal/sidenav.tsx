@@ -1,33 +1,38 @@
 import Link from "next/link";
 import NavLinks from "@/app/ui/journal/nav-links";
-import { PowerIcon } from "@heroicons/react/24/outline";
-import { sourceSans } from "@/app/ui/fonts";
-
+import { PowerIcon, Bars3Icon } from "@heroicons/react/24/outline";
 import { signOut } from "@/auth";
 
 export default function SideNav() {
   return (
-    <div className="flex h-full flex-col px-3 py-4 md:px-2">
-      <Link
-        className="mb-2 flex h-20 items-end justify-start  bg-blue-600 p-4 md:h-40"
-        href="/"
-      >
-        <div className="w-32 text-white md:w-40">My CDT Journal</div>
-      </Link>
-      <div className="flex grow flex-row justify-between space-x-2 md:flex-col md:space-x-0 md:space-y-2">
-        <NavLinks />
-        <div className="hidden h-auto w-full grow  bg-gray-50 dark:bg-gray-800 md:block"></div>
+    <div className="navbar bg-base-100 shadow-sm">
+      <div className="navbar-start">
+        <div className="dropdown">
+          <div tabIndex={0} role="button" className="btn btn-ghost btn-circle">
+            <Bars3Icon className="h-5 w-5" />
+          </div>
+          <ul
+            tabIndex={0}
+            className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow"
+          >
+            <NavLinks />
+          </ul>
+        </div>
+      </div>
+      <div className="navbar-center">
+        <Link href="/" className="btn btn-ghost text-xl">
+          My CDT Journal
+        </Link>
+      </div>
+      <div className="navbar-end">
         <form
           action={async () => {
             "use server";
             await signOut({ redirectTo: "/" });
           }}
         >
-          <button
-            className={`flex h-[48px] w-full grow items-center ${sourceSans.className} justify-center gap-2  bg-gray-50 dark:bg-gray-800 p-3 text-md font-medium hover:bg-sky-100 hover:text-blue-600 md:flex-none md:justify-start md:p-2 md:px-3`}
-          >
-            <PowerIcon className="w-6" />
-            <div className="hidden md:block">Sign Out</div>
+          <button className="btn btn-ghost btn-circle">
+            <PowerIcon className="h-5 w-5" />
           </button>
         </form>
       </div>
