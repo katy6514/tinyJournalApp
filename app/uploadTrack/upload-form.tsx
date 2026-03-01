@@ -6,8 +6,6 @@ import { Leg, DateRow } from "@/app/lib/definitions";
 import { Label, Input, Select } from "@/app/ui/components/inputs";
 import { Button } from "@/app/ui/components/button";
 
-const baseFileInputClasses =
-  "block w-full text-sm text-gray-900 border border-gray-300 bg-white p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white";
 
 export default function UploadTrackForm({ legs, dates }: { legs: Leg[]; dates: DateRow[] }) {
   const [createState, createAction] = useActionState(createLeg, { message: "" });
@@ -60,7 +58,7 @@ export default function UploadTrackForm({ legs, dates }: { legs: Leg[]; dates: D
               type="file"
               accept=".json"
               required
-              className={baseFileInputClasses}
+              className="file-input w-full"
             />
           </div>
           {createState.message && (
@@ -101,7 +99,7 @@ export default function UploadTrackForm({ legs, dates }: { legs: Leg[]; dates: D
               type="file"
               accept=".json,.geojson"
               required
-              className={baseFileInputClasses}
+              className="file-input w-full"
             />
           </div>
           {importState.message && (
@@ -148,7 +146,7 @@ export default function UploadTrackForm({ legs, dates }: { legs: Leg[]; dates: D
               type="file"
               accept=".json"
               required
-              className={baseFileInputClasses}
+              className="file-input w-full"
             />
           </div>
           {updateState.message && (
