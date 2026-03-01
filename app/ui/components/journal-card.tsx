@@ -23,13 +23,13 @@ export default function JournalCard({ entry }: { entry: JournalEntry }) {
           }
         />
       </figure>
-      <div className="card-body">
+      <div className="card-body overflow-hidden">
         <h2 className="card-title">{legname}</h2>
         <p className="text-sm">{state} · {formattedDate}</p>
         <p className="text-xs text-warning">
           {assigned_leg_name ? `Leg: ${assigned_leg_name}` : "no leg assigned"}
         </p>
-        <p className={`${notoSerif.className} text-sm line-clamp-3`}>{text}</p>
+        <p className={`${notoSerif.className} text-sm line-clamp-2`}>{text}</p>
       </div>
     </div>
   );
