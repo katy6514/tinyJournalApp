@@ -95,8 +95,8 @@ export async function updateEntry(
     SET state_id = ${state_id}, legname = ${legname}, text = ${text}
     WHERE id = ${id}
   `;
-  revalidatePath("/journal/listView");
-  redirect("/journal/listView");
+  revalidatePath(`/journal/${id}`);
+  redirect(`/journal/${id}`);
 }
 
 export async function authenticate(
