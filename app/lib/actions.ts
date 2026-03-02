@@ -71,7 +71,7 @@ export type EditState = {
 export async function updateEntry(
   id: string,
   prevState: EditState,
-  formData: FormData
+  formData: FormData,
 ) {
   const validatedFields = UpdateEntry.safeParse({
     state_id: formData.get("state_id"),
@@ -101,7 +101,7 @@ export async function updateEntry(
 
 export async function authenticate(
   prevState: string | undefined,
-  formData: FormData
+  formData: FormData,
 ) {
   try {
     await signIn("credentials", formData);
@@ -118,7 +118,10 @@ export async function authenticate(
   }
 }
 
-function haversineDistance([lon1, lat1]: number[], [lon2, lat2]: number[]): number {
+function haversineDistance(
+  [lon1, lat1]: number[],
+  [lon2, lat2]: number[],
+): number {
   const R = 6371;
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
@@ -140,7 +143,7 @@ function calculateMileage(coordinates: number[][]): number {
 
 export async function importLegsFromGeoJSON(
   _prevState: { message: string },
-  formData: FormData
+  formData: FormData,
 ) {
   const file = formData.get("geojson") as File;
 
@@ -169,7 +172,7 @@ export async function importLegsFromGeoJSON(
     (f) =>
       f.geometry?.type === "LineString" &&
       Array.isArray(f.geometry?.coordinates) &&
-      f.properties?.title != null
+      f.properties?.title != null,
   );
 
   if (features.length === 0) {
@@ -195,7 +198,7 @@ export async function importLegsFromGeoJSON(
 
 export async function createLeg(
   _prevState: { message: string },
-  formData: FormData
+  formData: FormData,
 ) {
   const legnum = Number(formData.get("legnum"));
   const name = formData.get("name") as string;
@@ -226,7 +229,7 @@ export async function createLeg(
 
 export async function updateLegCoordinates(
   _prevState: { message: string },
-  formData: FormData
+  formData: FormData,
 ) {
   const legId = formData.get("legId") as string;
   const file = formData.get("coordinates") as File;
@@ -238,7 +241,20 @@ export async function updateLegCoordinates(
   let coordinates;
   try {
     const text = await file.text();
-    coordinates = JSON.parse(text);
+    const parsed = JSON.parse(text);
+
+    if (parsed?.type === "FeatureCollection") {
+      const feature = parsed.features?.find(
+        (f: { geometry?: { type: string } }) =>
+          f.geometry?.type === "LineString",
+      );
+      console.log("Parsed GeoJSON with features:", parsed.features?.length);
+      if (!feature)
+        return { message: "No LineString feature found in FeatureCollection." };
+      coordinates = feature.geometry.coordinates;
+    } else {
+      coordinates = parsed;
+    }
   } catch {
     return { message: "Invalid JSON file." };
   }
@@ -255,7 +271,7 @@ export async function updateLegCoordinates(
 
 export async function backfillMileage(
   _prevState: { message: string },
-  _formData: FormData
+  _formData: FormData,
 ): Promise<{ message: string }> {
   const legs = await sql<{ id: number; coordinates: number[][] }[]>`
     SELECT id, coordinates FROM legs WHERE mileage IS NULL AND coordinates IS NOT NULL
