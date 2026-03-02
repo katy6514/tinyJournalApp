@@ -106,15 +106,6 @@ export default async function Page(props: {
         <h2 className={`${notoSans.className} mb-4 text-md md:text-lg`}>
           {formattedDate}
         </h2>
-        {/* <EditEntry entry_id={entry_id} /> */}
-        <Button
-          href={`/journal/${entry_id}/edit`}
-          icon={<PencilIcon />}
-          variant="secondary"
-        >
-          Edit
-        </Button>
-
         <div className="flex gap-4 items-start">
           <div className="flex-1 min-w-0">
             <p className={`${notoSerif.className} whitespace-pre-wrap`}>{text}</p>
@@ -126,6 +117,15 @@ export default async function Page(props: {
           )}
         </div>
         <EntryPhotos photos={photos} />
+        <div className="mt-6 flex justify-end">
+          <Button
+            href={`/journal/${entry_id}/edit`}
+            icon={<PencilIcon />}
+            variant="secondary"
+          >
+            Edit
+          </Button>
+        </div>
       </div>
     </main>
   );

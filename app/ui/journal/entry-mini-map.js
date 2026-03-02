@@ -112,7 +112,7 @@ export default function EntryMiniMap({ legGeoJSON, date }) {
   if (!legGeoJSON) return null;
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+    <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white">
       <svg ref={ref} />
     </div>
   );
