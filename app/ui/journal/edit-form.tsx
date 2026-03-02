@@ -5,11 +5,17 @@ import { useActionState } from "react";
 import { Button } from "../components/button";
 
 import { updateEntry, EditState } from "@/app/lib/actions";
-import { JournalEntry } from "@/app/lib/definitions";
-import { Input, TextArea, Label } from "../components/inputs";
+import { JournalEntry, StateOption } from "@/app/lib/definitions";
+import { Select, Input, TextArea, Label } from "../components/inputs";
 
-export default function EditEntryForm({ entry }: { entry: JournalEntry }) {
-  const { entry_id, date, legname, state, text } = entry;
+export default function EditEntryForm({
+  entry,
+  states,
+}: {
+  entry: JournalEntry;
+  states: StateOption[];
+}) {
+  const { entry_id, date, legname, state_id, text } = entry;
   const updateEntryWithId = updateEntry.bind(null, entry_id);
 
   const initialState: EditState = { message: null, errors: {} };
@@ -29,19 +35,24 @@ export default function EditEntryForm({ entry }: { entry: JournalEntry }) {
 
           {/* STATE */}
           <div className="col-span-2 md:col-span-1  row-span-1">
-            <Label htmlFor="state">State</Label>
-            <Input
-              id="state"
-              name="state"
-              type="text"
-              placeholder={"NM/CO/WY/ID/MT"}
-              defaultValue={state || ""}
+            <Label htmlFor="state_id">State</Label>
+            <Select
+              id="state_id"
+              name="state_id"
               aria-describedby="state-error"
-              required={true}
-            />
+              required
+              defaultValue={state_id || ""}
+            >
+              <option value="">Select a state</option>
+              {states.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </Select>
             <div id="state-error" aria-live="polite" aria-atomic="true">
-              {formState.errors?.state &&
-                formState.errors.state.map((error: string) => (
+              {formState.errors?.state_id &&
+                formState.errors.state_id.map((error: string) => (
                   <p className="mt-2 text-sm text-red-500" key={error}>
                     {error}
                   </p>

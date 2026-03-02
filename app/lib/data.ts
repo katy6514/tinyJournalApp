@@ -3,6 +3,15 @@
 import { JournalEntry } from "./definitions";
 import sql from "./db";
 
+// ==========================
+// Fetch all states (id + name)
+// ==========================
+export async function fetchStates(): Promise<{ id: number; name: string }[]> {
+  return await sql<{ id: number; name: string }[]>`
+    SELECT id, name FROM states ORDER BY name ASC
+  `;
+}
+
 const ITEMS_PER_PAGE = 6;
 
 // ====================================
@@ -11,16 +20,18 @@ const ITEMS_PER_PAGE = 6;
 export async function fetchJournal(): Promise<JournalEntry[]> {
   try {
     return await sql<JournalEntry[]>`
-      SELECT 
+      SELECT
         TO_CHAR(d.date, 'YYYY-MM-DD') AS date,
         d.id AS date_id,
         e.id AS entry_id,
         e.text,
         e.legname,
-        e.state,
+        e.state_id,
+        st.name AS state,
         CASE WHEN e.text IS NOT NULL AND e.text <> '' THEN true ELSE false END AS has_text
       FROM dates d
       LEFT JOIN entries e ON d.id = e.date_id
+      LEFT JOIN states st ON st.id = e.state_id
       ORDER BY d.date;
     `;
   } catch (error) {
@@ -39,7 +50,8 @@ export async function fetchEntryByID(id: string): Promise<JournalEntry | null> {
         d.id AS date_id,
         TO_CHAR(d.date, 'YYYY-MM-DD') AS date,
         e.id AS entry_id,
-        e.state,
+        e.state_id,
+        st.name AS state,
         e.legname,
         e.text,
         COALESCE(
@@ -51,15 +63,16 @@ export async function fetchEntryByID(id: string): Promise<JournalEntry | null> {
               'title', p.title,
               'width', p.width,
               'height', p.height
-            ) ORDER BY p.description 
+            ) ORDER BY p.description
           ) FILTER (WHERE p.id IS NOT NULL),
           '[]'
         ) AS photos
       FROM entries e
       LEFT JOIN dates d ON d.id = e.date_id
+      LEFT JOIN states st ON st.id = e.state_id
       LEFT JOIN photos p ON p.date_id = d.id
       WHERE e.id = ${id}
-      GROUP BY d.id, d.date, e.id, e.state, e.legname, e.text
+      GROUP BY d.id, d.date, e.id, e.state_id, st.name, e.legname, e.text
     `;
 
     const result = data.map((entry) => ({
@@ -87,7 +100,8 @@ export async function fetchFilteredEntries(
       e.id AS entry_id,
       e.text,
       e.legname,
-      e.state,
+      e.state_id,
+      st.name AS state,
       TO_CHAR(d.date, 'YYYY-MM-DD') AS date,
       d.id AS date_id,
       CASE WHEN e.text IS NOT NULL AND e.text <> '' THEN true ELSE false END AS has_text,
@@ -108,13 +122,14 @@ export async function fetchFilteredEntries(
       COUNT(*) OVER () AS total_count
     FROM entries e
     JOIN dates d ON d.id = e.date_id
+    LEFT JOIN states st ON st.id = e.state_id
     LEFT JOIN photos p ON p.date_id = d.id
     LEFT JOIN legs l ON l.id = d.leg_id
     WHERE
-      e.state ILIKE ${`%${query}%`} OR
+      st.name ILIKE ${`%${query}%`} OR
       e.legname ILIKE ${`%${query}%`} OR
       e.text ILIKE ${`%${query}%`}
-    GROUP BY e.id, d.id, d.date, e.text, e.legname, e.state, l.name
+    GROUP BY e.id, d.id, d.date, e.text, e.legname, e.state_id, st.name, l.name
     ORDER BY d.id ASC
     LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
   `;
@@ -236,10 +251,12 @@ export async function fetchEmptyEntries(): Promise<JournalEntry[]> {
         e.id AS entry_id,
         e.text,
         e.legname,
-        e.state,
+        e.state_id,
+        st.name AS state,
         false AS has_text
       FROM dates d
       LEFT JOIN entries e ON d.id = e.date_id
+      LEFT JOIN states st ON st.id = e.state_id
       WHERE e.text IS NULL OR e.text = ''
       ORDER BY d.date
     `;

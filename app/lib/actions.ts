@@ -15,7 +15,7 @@ const FormSchema = z.object({
   date_id: z.string().min(1, { message: "Please select a date." }),
   text: z.string().min(1, { message: "Please enter some text." }),
   legname: z.string().min(1, { message: "Please enter a title or leg name." }),
-  state: z.string().min(1, { message: "Please select a state." }),
+  state_id: z.string().min(1, { message: "Please select a state." }),
 });
 
 const CreateEntry = FormSchema.omit({ date: true, id: true });
@@ -25,7 +25,7 @@ export type State = {
   errors?: {
     date_id?: string[];
     legname?: string[];
-    state?: string[];
+    state_id?: string[];
     text?: string[];
   };
   message?: string | null;
@@ -34,7 +34,7 @@ export type State = {
 export async function createEntry(prevState: State, formData: FormData) {
   const validatedFields = CreateEntry.safeParse({
     date_id: formData.get("date_id"),
-    state: formData.get("state"),
+    state_id: formData.get("state_id"),
     legname: formData.get("legname"),
     text: formData.get("text"),
   });
@@ -48,12 +48,12 @@ export async function createEntry(prevState: State, formData: FormData) {
   }
 
   // Prepare data for insertion into the database
-  const { date_id, legname, state, text } = validatedFields.data;
+  const { date_id, legname, state_id, text } = validatedFields.data;
   const returnPage = formData.get("returnPage") || "1";
 
   await sql`
-    INSERT INTO entries (date_id, legname, state, text)
-    VALUES (${date_id}, ${legname}, ${state}, ${text})
+    INSERT INTO entries (date_id, legname, state_id, text)
+    VALUES (${date_id}, ${legname}, ${state_id}, ${text})
   `;
   revalidatePath("/journal/listView");
   redirect(`/journal/listView?page=${returnPage}`);
@@ -62,7 +62,7 @@ export async function createEntry(prevState: State, formData: FormData) {
 export type EditState = {
   errors?: {
     legname?: string[];
-    state?: string[];
+    state_id?: string[];
     text?: string[];
   };
   message?: string | null;
@@ -74,7 +74,7 @@ export async function updateEntry(
   formData: FormData
 ) {
   const validatedFields = UpdateEntry.safeParse({
-    state: formData.get("state"),
+    state_id: formData.get("state_id"),
     legname: formData.get("legname"),
     text: formData.get("text"),
   });
@@ -88,11 +88,11 @@ export async function updateEntry(
   }
   // Prepare data for insertion into the database
 
-  const { state, legname, text } = validatedFields.data;
+  const { state_id, legname, text } = validatedFields.data;
 
   await sql`
     UPDATE entries
-    SET state = ${state}, legname = ${legname}, text = ${text}
+    SET state_id = ${state_id}, legname = ${legname}, text = ${text}
     WHERE id = ${id}
   `;
   revalidatePath("/journal/listView");

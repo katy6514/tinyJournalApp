@@ -1,6 +1,6 @@
 import EditEntryForm from "@/app/ui/journal/edit-form";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
-import { fetchEntryByID } from "@/app/lib/data";
+import { fetchEntryByID, fetchStates } from "@/app/lib/data";
 import { notFound } from "next/navigation";
 import { JournalEntry } from "@/app/lib/definitions";
 
@@ -9,7 +9,10 @@ export default async function Page(props: {
 }) {
   const { entry_id } = await props.params; // <-- await here
 
-  const entries = await fetchEntryByID(entry_id);
+  const [entries, states] = await Promise.all([
+    fetchEntryByID(entry_id),
+    fetchStates(),
+  ]);
   const entry: JournalEntry = Array.isArray(entries) ? entries[0] : entries;
 
   if (!entry) {
@@ -28,7 +31,7 @@ export default async function Page(props: {
           },
         ]}
       />
-      <EditEntryForm entry={entry} />
+      <EditEntryForm entry={entry} states={states} />
     </main>
   );
 }

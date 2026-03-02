@@ -11,6 +11,11 @@ export type Photo = {
   height: number;
 };
 
+export type StateOption = {
+  id: number;
+  name: string;
+};
+
 export type JournalEntry = {
   date: string;
   date_id: string;
@@ -18,6 +23,7 @@ export type JournalEntry = {
   text: string;
   legname: string;
   state: string;
+  state_id: number;
   has_text: boolean;
   photos: Photo[];
   assigned_leg_name?: string | null;

@@ -48,6 +48,7 @@ export function Select({
   className = "",
   ariaDescribedby,
   onChange,
+  defaultValue,
 }: SelectProps) {
   return (
     <select
@@ -57,6 +58,7 @@ export function Select({
       className={twMerge("select w-full", className)}
       aria-describedby={ariaDescribedby}
       onChange={onChange}
+      defaultValue={defaultValue}
     >
       {children}
     </select>

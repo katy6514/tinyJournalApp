@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 
 import { createEntry, State } from "@/app/lib/actions";
-import { JournalEntry } from "@/app/lib/definitions";
+import { JournalEntry, StateOption } from "@/app/lib/definitions";
 
 import { Button } from "../components/button";
 
@@ -13,10 +13,12 @@ export default function Form({
   emptyEntries,
   legNameByDateId,
   returnPage,
+  states,
 }: {
   emptyEntries: JournalEntry[];
   legNameByDateId: Record<string, string>;
   returnPage: string;
+  states: StateOption[];
 }) {
   const initialState: State = { message: null, errors: {} };
 
@@ -57,23 +59,23 @@ export default function Form({
 
           {/* STATE */}
           <div className="col-span-2 md:col-span-1  row-span-1">
-            <Label htmlFor="state">State</Label>
+            <Label htmlFor="state_id">State</Label>
             <Select
-              id="state"
-              name="state"
+              id="state_id"
+              name="state_id"
               aria-describedby="state-error"
               required
             >
               <option value="">Select a state</option>
-              <option value="Montana">Montana</option>
-              <option value="Idaho">Idaho</option>
-              <option value="Wyoming">Wyoming</option>
-              <option value="Colorado">Colorado</option>
-              <option value="New Mexico">New Mexico</option>
+              {states.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
             </Select>
             <div id="state-error" aria-live="polite" aria-atomic="true">
-              {formState.errors?.state &&
-                formState.errors.state.map((error: string) => (
+              {formState.errors?.state_id &&
+                formState.errors.state_id.map((error: string) => (
                   <p className="mt-2 text-sm text-red-500" key={error}>
                     {error}
                   </p>
