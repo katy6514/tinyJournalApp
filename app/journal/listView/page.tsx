@@ -1,5 +1,6 @@
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 import { Button } from "@/app/ui/components/button";
+import Search from "@/app/ui/search";
 
 import { PlusIcon } from "@heroicons/react/24/outline";
 
@@ -31,7 +32,8 @@ export default async function Page(props: {
           },
         ]}
       />
-      <div className="my-4 flex justify-end md:my-8">
+      <div className="my-4 flex items-center justify-between md:my-8">
+        <Search placeholder="Search entries..." />
         <Button href={`/journal/create?returnPage=${currentPage}`} variant="primary" icon={<PlusIcon />}>
           Add Entry
         </Button>
