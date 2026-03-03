@@ -31,7 +31,7 @@ export default async function Page() {
       <div className="w-[80vw]">
         <CDTmap />
       </div>
-      <div>
+      {/* <div>
         <section>
           <header>
             <h3>Helpful Hints</h3>
@@ -46,7 +46,7 @@ export default async function Page() {
             </ul>
           </div>
         </section>
-      </div>
+      </div> */}
       <div
         id="tooltip"
         role="tooltip"

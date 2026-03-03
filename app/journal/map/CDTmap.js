@@ -40,12 +40,24 @@ export default function CDTmap() {
   useEffect(() => {
     const g = gRef.current;
     if (!g) return;
-    g.selectAll(".photoPoints").attr("display", visibility.photos ? null : "none");
-    g.selectAll(".campPoints").attr("display", visibility.campsites ? null : "none");
-    g.selectAll(".messagePoints").attr("display", visibility.messages ? null : "none");
+    g.selectAll(".photoPoints").attr(
+      "display",
+      visibility.photos ? null : "none",
+    );
+    g.selectAll(".campPoints").attr(
+      "display",
+      visibility.campsites ? null : "none",
+    );
+    g.selectAll(".messagePoints").attr(
+      "display",
+      visibility.messages ? null : "none",
+    );
     g.selectAll(".cities").attr("display", visibility.cities ? null : "none");
     g.selectAll(".trail").attr("display", visibility.trail ? null : "none");
-    g.selectAll(".state-label").attr("display", visibility.stateLabels ? null : "none");
+    g.selectAll(".state-label").attr(
+      "display",
+      visibility.stateLabels ? null : "none",
+    );
   }, [visibility]);
 
   // ✅ Define projection + path WITHIN component and memoize
@@ -416,104 +428,126 @@ export default function CDTmap() {
  *  Legend
  ----------------------------------------------------- */
 
-    g.append("path")
-      .attr("d", square)
-      .attr("transform", "translate(100,430)")
-      .style("fill", colors.messages)
-      .style("stroke", "none");
-    g.append("path")
-      .attr("d", triangle)
-      .attr("transform", "translate(100,460)")
-      .style("fill", colors.campSites)
-      .style("stroke", "none");
-    g.append("circle")
-      .attr("cx", 100)
-      .attr("cy", 490)
-      .attr("r", 6)
-      .style("fill", colors.photos)
-      .style("stroke", "none");
+    // g.append("path")
+    //   .attr("d", square)
+    //   .attr("transform", "translate(100,430)")
+    //   .style("fill", colors.messages)
+    //   .style("stroke", "none");
+    // g.append("path")
+    //   .attr("d", triangle)
+    //   .attr("transform", "translate(100,460)")
+    //   .style("fill", colors.campSites)
+    //   .style("stroke", "none");
+    // g.append("circle")
+    //   .attr("cx", 100)
+    //   .attr("cy", 490)
+    //   .attr("r", 6)
+    //   .style("fill", colors.photos)
+    //   .style("stroke", "none");
 
-    g.append("path")
-      .attr("d", cross)
-      .attr("transform", "translate(100,520)")
-      .style("fill", "black")
-      .style("stroke", "none");
+    // g.append("path")
+    //   .attr("d", cross)
+    //   .attr("transform", "translate(100,520)")
+    //   .style("fill", "black")
+    //   .style("stroke", "none");
 
-    g.append("line")
-      .attr("x1", 90)
-      .attr("x2", 110)
-      .attr("y1", 550)
-      .attr("y2", 550)
-      .attr("stroke", colors.evenDays) // Set the line color
-      .attr("stroke-width", 3); // Set the line width
-    g.append("line")
-      .attr("x1", 90)
-      .attr("x2", 110)
-      .attr("y1", 580)
-      .attr("y2", 580)
-      .attr("stroke", colors.oddDays) // Set the line color
-      .attr("stroke-width", 3); // Set the line width
+    // g.append("line")
+    //   .attr("x1", 90)
+    //   .attr("x2", 110)
+    //   .attr("y1", 550)
+    //   .attr("y2", 550)
+    //   .attr("stroke", colors.evenDays) // Set the line color
+    //   .attr("stroke-width", 3); // Set the line width
+    // g.append("line")
+    //   .attr("x1", 90)
+    //   .attr("x2", 110)
+    //   .attr("y1", 580)
+    //   .attr("y2", 580)
+    //   .attr("stroke", colors.oddDays) // Set the line color
+    //   .attr("stroke-width", 3); // Set the line width
 
-    g.append("text")
-      .attr("x", 120)
-      .attr("y", 430)
-      .text("Garmin Message Sent")
-      .style("font-size", "15px")
-      .attr("alignment-baseline", "middle");
-    g.append("text")
-      .attr("x", 120)
-      .attr("y", 460)
-      .text("Campsite Location")
-      .style("font-size", "15px")
-      .attr("alignment-baseline", "middle");
-    g.append("text")
-      .attr("x", 120)
-      .attr("y", 490)
-      .text("Photo Location")
-      .style("font-size", "15px")
-      .attr("alignment-baseline", "middle");
-    g.append("text")
-      .attr("x", 120)
-      .attr("y", 520)
-      .text("Resupply Stops")
-      .style("font-size", "15px")
-      .attr("alignment-baseline", "middle");
-    g.append("text")
-      .attr("x", 120)
-      .attr("y", 550)
-      .text("Even days")
-      .style("font-size", "15px")
-      .attr("alignment-baseline", "middle");
-    g.append("text")
-      .attr("x", 120)
-      .attr("y", 580)
-      .text("Odd days")
-      .style("font-size", "15px")
-      .attr("alignment-baseline", "middle");
+    // g.append("text")
+    //   .attr("x", 120)
+    //   .attr("y", 430)
+    //   .text("Garmin Message Sent")
+    //   .style("font-size", "15px")
+    //   .attr("alignment-baseline", "middle");
+    // g.append("text")
+    //   .attr("x", 120)
+    //   .attr("y", 460)
+    //   .text("Campsite Location")
+    //   .style("font-size", "15px")
+    //   .attr("alignment-baseline", "middle");
+    // g.append("text")
+    //   .attr("x", 120)
+    //   .attr("y", 490)
+    //   .text("Photo Location")
+    //   .style("font-size", "15px")
+    //   .attr("alignment-baseline", "middle");
+    // g.append("text")
+    //   .attr("x", 120)
+    //   .attr("y", 520)
+    //   .text("Resupply Stops")
+    //   .style("font-size", "15px")
+    //   .attr("alignment-baseline", "middle");
+    // g.append("text")
+    //   .attr("x", 120)
+    //   .attr("y", 550)
+    //   .text("Even days")
+    //   .style("font-size", "15px")
+    //   .attr("alignment-baseline", "middle");
+    // g.append("text")
+    //   .attr("x", 120)
+    //   .attr("y", 580)
+    //   .text("Odd days")
+    //   .style("font-size", "15px")
+    //   .attr("alignment-baseline", "middle");
   }, [path, projection]);
 
   const LAYERS = [
-    { key: "photos",      label: "Photos",         color: colors.photos,    shape: "circle" },
-    { key: "campsites",   label: "Campsites",      color: colors.campSites, shape: "triangle" },
-    { key: "messages",    label: "Messages",       color: colors.messages,  shape: "square" },
-    { key: "cities",      label: "Resupply Stops", color: "#000000",        shape: "cross" },
-    { key: "trail",       label: "Trail",          color: colors.evenDays,  shape: "line" },
-    { key: "stateLabels", label: "State Labels",   color: "gray",           shape: "text" },
+    { key: "photos", label: "Photos", color: colors.photos, shape: "circle" },
+    {
+      key: "campsites",
+      label: "Campsites",
+      color: colors.campSites,
+      shape: "triangle",
+    },
+    {
+      key: "messages",
+      label: "Messages",
+      color: colors.messages,
+      shape: "square",
+    },
+    {
+      key: "cities",
+      label: "Resupply Stops",
+      color: "#000000",
+      shape: "cross",
+    },
+    { key: "trail", label: "Trail", color: colors.evenDays, shape: "line" },
+    { key: "stateLabels", label: "State Labels", color: "gray", shape: "text" },
   ];
 
   return (
     <div className="relative">
       {/* Layer toggle panel */}
-      <div className="absolute top-3 left-3 z-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg shadow-md p-3 text-xs">
-        <p className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Layers</p>
+      <div className="absolute top-100 left-3 z-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg shadow-md p-3 text-xs">
+        <p className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+          Layers
+        </p>
         <div className="space-y-1.5">
           {LAYERS.map(({ key, label, color }) => (
-            <label key={key} className="flex items-center gap-2 cursor-pointer select-none">
+            <label
+              key={key}
+              className="flex items-center gap-2 cursor-pointer select-none"
+            >
               <input
                 type="checkbox"
                 className="checkbox checkbox-xs"
                 checked={visibility[key]}
-                onChange={() => setVisibility((v) => ({ ...v, [key]: !v[key] }))}
+                onChange={() =>
+                  setVisibility((v) => ({ ...v, [key]: !v[key] }))
+                }
               />
               <span
                 className="inline-block w-3 h-3 rounded-sm flex-shrink-0"
