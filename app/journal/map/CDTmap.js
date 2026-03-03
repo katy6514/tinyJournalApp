@@ -515,26 +515,62 @@ export default function CDTmap() {
   }, [path, projection]);
 
   const LAYERS = [
-    { key: "photos", label: "Photos", color: colors.photos, shape: "circle" },
-    {
-      key: "campsites",
-      label: "Campsites",
-      color: colors.campSites,
-      shape: "triangle",
-    },
-    {
-      key: "messages",
-      label: "Messages",
-      color: colors.messages,
-      shape: "square",
-    },
+    { key: "photos",    label: "Photos",    color: colors.photos,    shape: "circle" },
+    { key: "campsites", label: "Campsites", color: colors.campSites, shape: "triangle" },
+    { key: "messages",  label: "Messages",  color: colors.messages,  shape: "square" },
   ];
 
   const STATIC_LAYERS = [
-    { label: "Resupply Stops", color: colors.black },
-    { label: "Trail", color: colors.evenDays },
-    { label: "State Labels", color: "gray" },
+    { label: "Resupply Stops", color: colors.black,    shape: "cross" },
+    { label: "Trail",          color: colors.evenDays, shape: "line" },
+    { label: "State Labels",   color: "gray",          shape: "text" },
   ];
+
+  const LegendSymbol = ({ shape, color }) => {
+    const size = 14;
+    const mid = size / 2;
+    switch (shape) {
+      case "circle":
+        return (
+          <svg width={size} height={size} style={{ flexShrink: 0 }}>
+            <circle cx={mid} cy={mid} r={5} fill={color} />
+          </svg>
+        );
+      case "square":
+        return (
+          <svg width={size} height={size} style={{ flexShrink: 0 }}>
+            <rect x={2} y={2} width={10} height={10} fill={color} />
+          </svg>
+        );
+      case "triangle":
+        return (
+          <svg width={size} height={size} style={{ flexShrink: 0 }}>
+            <polygon points={`${mid},2 ${size - 1},${size - 2} 1,${size - 2}`} fill={color} />
+          </svg>
+        );
+      case "cross":
+        return (
+          <svg width={size} height={size} style={{ flexShrink: 0 }}>
+            <line x1={mid} y1={1} x2={mid} y2={size - 1} stroke={color} strokeWidth={2} />
+            <line x1={1} y1={mid} x2={size - 1} y2={mid} stroke={color} strokeWidth={2} />
+          </svg>
+        );
+      case "line":
+        return (
+          <svg width={size} height={size} style={{ flexShrink: 0 }}>
+            <line x1={0} y1={mid} x2={size} y2={mid} stroke={color} strokeWidth={2.5} />
+          </svg>
+        );
+      case "text":
+        return (
+          <svg width={size} height={size} style={{ flexShrink: 0 }}>
+            <text x={mid} y={mid + 1} textAnchor="middle" dominantBaseline="middle" fill={color} fontSize={8} fontWeight="600" letterSpacing="1">AB</text>
+          </svg>
+        );
+      default:
+        return <span style={{ display: "inline-block", width: size, height: size, background: color, flexShrink: 0 }} />;
+    }
+  };
 
   return (
     <div className="relative">
@@ -544,7 +580,7 @@ export default function CDTmap() {
           Legend
         </p>
         <div className="space-y-1.5">
-          {LAYERS.map(({ key, label, color }) => (
+          {LAYERS.map(({ key, label, color, shape }) => (
             <label
               key={key}
               className="flex items-center gap-2 cursor-pointer select-none"
@@ -557,23 +593,17 @@ export default function CDTmap() {
                   setVisibility((v) => ({ ...v, [key]: !v[key] }))
                 }
               />
-              <span
-                className="inline-block w-3 h-3 rounded-sm flex-shrink-0"
-                style={{ background: color }}
-              />
+              <LegendSymbol shape={shape} color={color} />
               <span className="text-gray-700 dark:text-gray-300">{label}</span>
             </label>
           ))}
-          {STATIC_LAYERS.map(({ label, color }) => (
+          {STATIC_LAYERS.map(({ label, color, shape }) => (
             <div
               key={label}
               className="flex items-center gap-2 select-none"
               style={{ paddingLeft: "20px" }}
             >
-              <span
-                className="inline-block w-3 h-3 rounded-sm flex-shrink-0"
-                style={{ background: color }}
-              />
+              <LegendSymbol shape={shape} color={color} />
               <span className="text-gray-700 dark:text-gray-300">{label}</span>
             </div>
           ))}
