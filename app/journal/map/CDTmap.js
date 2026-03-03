@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useMemo } from "react";
+import React, { useRef, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 
 import * as d3 from "d3";
@@ -26,6 +26,27 @@ export default function CDTmap() {
   const { data: session } = useSession();
   const currentUserRef = useRef(null);
   currentUserRef.current = session?.user ?? null;
+
+  const [visibility, setVisibility] = useState({
+    photos: true,
+    campsites: true,
+    messages: true,
+    cities: true,
+    trail: true,
+    stateLabels: true,
+  });
+
+  // Sync visibility state → D3 element display whenever toggles change
+  useEffect(() => {
+    const g = gRef.current;
+    if (!g) return;
+    g.selectAll(".photoPoints").attr("display", visibility.photos ? null : "none");
+    g.selectAll(".campPoints").attr("display", visibility.campsites ? null : "none");
+    g.selectAll(".messagePoints").attr("display", visibility.messages ? null : "none");
+    g.selectAll(".cities").attr("display", visibility.cities ? null : "none");
+    g.selectAll(".trail").attr("display", visibility.trail ? null : "none");
+    g.selectAll(".state-label").attr("display", visibility.stateLabels ? null : "none");
+  }, [visibility]);
 
   // ✅ Define projection + path WITHIN component and memoize
   const projection = useMemo(() => {
@@ -471,8 +492,38 @@ export default function CDTmap() {
       .attr("alignment-baseline", "middle");
   }, [path, projection]);
 
+  const LAYERS = [
+    { key: "photos",      label: "Photos",         color: colors.photos,    shape: "circle" },
+    { key: "campsites",   label: "Campsites",      color: colors.campSites, shape: "triangle" },
+    { key: "messages",    label: "Messages",       color: colors.messages,  shape: "square" },
+    { key: "cities",      label: "Resupply Stops", color: "#000000",        shape: "cross" },
+    { key: "trail",       label: "Trail",          color: colors.evenDays,  shape: "line" },
+    { key: "stateLabels", label: "State Labels",   color: "gray",           shape: "text" },
+  ];
+
   return (
-    <div>
+    <div className="relative">
+      {/* Layer toggle panel */}
+      <div className="absolute top-3 left-3 z-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg shadow-md p-3 text-xs">
+        <p className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Layers</p>
+        <div className="space-y-1.5">
+          {LAYERS.map(({ key, label, color }) => (
+            <label key={key} className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="checkbox checkbox-xs"
+                checked={visibility[key]}
+                onChange={() => setVisibility((v) => ({ ...v, [key]: !v[key] }))}
+              />
+              <span
+                className="inline-block w-3 h-3 rounded-sm flex-shrink-0"
+                style={{ background: color }}
+              />
+              <span className="text-gray-700 dark:text-gray-300">{label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
       <svg ref={ref}></svg>
       <div
         id="message-panel"
