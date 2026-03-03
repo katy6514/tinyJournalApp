@@ -128,6 +128,7 @@ export default function CDTmap() {
     const triangle = d3.symbol().type(d3.symbolTriangle).size(128);
     const cross = d3.symbol().type(d3.symbolCross).size(128);
 
+
     // Add zoom behavior
     const zoom = d3
       .zoom()
@@ -139,7 +140,7 @@ export default function CDTmap() {
       .on("end", (event) => {
         // console.log("Zoom level:", event.transform.k);
         const newSize = 128 / (event.transform.k * event.transform.k);
-        g.selectAll("circle").attr("r", 6 / event.transform.k);
+        g.selectAll(".photoPoints").attr("r", 6 / event.transform.k);
         g.selectAll(".campPoints").attr("d", triangle.size(newSize));
         g.selectAll(".messagePoints").attr("d", square.size(newSize));
         g.selectAll(".cityPoints").attr("d", cross.size(newSize));
@@ -403,7 +404,7 @@ export default function CDTmap() {
         const [x, y] = projection([d.lon, d.lat]);
         return `translate(${x}, ${y})`;
       })
-      .attr("fill", "black")
+      .attr("fill", colors.black)
       .attr("stroke", "none");
 
     cityGroup
@@ -432,9 +433,14 @@ export default function CDTmap() {
       .attr("y", (d) => projection([d.lon, d.lat])[1] + d.dy)
       .text((d) => d.name)
       .attr("font-size", 12)
+      .attr("font-weight", "600")
       .attr("text-anchor", (d) => (d.dx <= 0 ? "end" : "start"))
-      .attr("fill", "black")
-      .attr("stroke", "none");
+      .attr("dominant-baseline", "middle")
+      .attr("fill", colors.black)
+      .attr("stroke", "white")
+      .attr("stroke-width", 3)
+      .attr("stroke-linejoin", "round")
+      .attr("paint-order", "stroke");
 
     /* -----------------------------------------------------
  *  Legend
