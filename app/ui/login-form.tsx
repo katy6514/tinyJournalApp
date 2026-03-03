@@ -1,5 +1,5 @@
 "use client";
-import { sourceSans, mulish } from "@/app/ui/fonts";
+import { sourceSans } from "@/app/ui/fonts";
 
 import {
   AtSymbolIcon,
