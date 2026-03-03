@@ -110,28 +110,55 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
       // Start / end labels
       const coords = legGeoJSON.features[0]?.geometry?.coordinates;
       if (coords?.length > 0) {
-        const addLabel = (coord, label, anchor) => {
+        const OFFSET = 24;
+
+        const addLabel = (coord, label, neighborCoord, awayFromNeighbor) => {
           const pos = projection(coord);
           if (!pos) return;
+
+          // Compute offset direction: away from the track at this endpoint
+          let dx = 0, dy = -OFFSET;
+          const neighborPos = projection(neighborCoord);
+          if (neighborPos) {
+            const dirX = awayFromNeighbor
+              ? pos[0] - neighborPos[0]
+              : neighborPos[0] - pos[0];
+            const dirY = awayFromNeighbor
+              ? pos[1] - neighborPos[1]
+              : neighborPos[1] - pos[1];
+            const len = Math.sqrt(dirX * dirX + dirY * dirY) || 1;
+            dx = (dirX / len) * OFFSET;
+            dy = (dirY / len) * OFFSET;
+          }
+
+          const color = awayFromNeighbor ? "#dc2626" : "#16a34a";
+
           svg.append("circle")
             .attr("cx", pos[0])
             .attr("cy", pos[1])
             .attr("r", 5)
-            .attr("fill", anchor === "start" ? "#16a34a" : "#dc2626")
+            .attr("fill", color)
             .attr("stroke", "white")
             .attr("stroke-width", 1.5);
+
+          // White halo so text is readable over the map
           svg.append("text")
-            .attr("x", pos[0])
-            .attr("y", pos[1] - 8)
+            .attr("x", pos[0] + dx)
+            .attr("y", pos[1] + dy)
             .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "middle")
             .attr("font-size", "10px")
             .attr("font-weight", "600")
-            .attr("fill", anchor === "start" ? "#16a34a" : "#dc2626")
+            .attr("stroke", "white")
+            .attr("stroke-width", 3)
+            .attr("stroke-linejoin", "round")
+            .attr("fill", color)
+            .attr("paint-order", "stroke")
             .text(label);
         };
 
-        if (start) addLabel(coords[0], start, "start");
-        if (end) addLabel(coords[coords.length - 1], end, "end");
+        if (start) addLabel(coords[0], start, coords[1], false);
+        if (end) addLabel(coords[coords.length - 1], end, coords[coords.length - 2], true);
       }
     });
   }, [legGeoJSON, date, start, end]);
