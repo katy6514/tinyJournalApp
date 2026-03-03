@@ -144,8 +144,10 @@ export default function CDTmap() {
         g.selectAll(".city_labels")
           .attr("display", event.transform.k > 2.35 ? null : "none")
           .attr("font-size", 12 / event.transform.k);
-        g.selectAll(".city_lines")
-          .attr("display", event.transform.k > 2.35 ? null : "none");
+        g.selectAll(".city_lines").attr(
+          "display",
+          event.transform.k > 2.35 ? null : "none",
+        );
         g.selectAll(".state-label").attr("font-size", 20 / event.transform.k);
         g.selectAll(".leg-label")
           .attr("display", event.transform.k > 15 ? null : "none")
@@ -526,14 +528,12 @@ export default function CDTmap() {
       color: colors.messages,
       shape: "square",
     },
-    {
-      key: "cities",
-      label: "Resupply Stops",
-      color: "#000000",
-      shape: "cross",
-    },
-    { key: "trail", label: "Trail", color: colors.evenDays, shape: "line" },
-    { key: "stateLabels", label: "State Labels", color: "gray", shape: "text" },
+  ];
+
+  const STATIC_LAYERS = [
+    { label: "Resupply Stops", color: colors.black },
+    { label: "Trail", color: colors.evenDays },
+    { label: "State Labels", color: "gray" },
   ];
 
   return (
@@ -541,7 +541,7 @@ export default function CDTmap() {
       {/* Layer toggle panel */}
       <div className="absolute top-100 left-3 z-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg shadow-md p-3 text-xs">
         <p className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-          Layers
+          Legend
         </p>
         <div className="space-y-1.5">
           {LAYERS.map(({ key, label, color }) => (
@@ -563,6 +563,19 @@ export default function CDTmap() {
               />
               <span className="text-gray-700 dark:text-gray-300">{label}</span>
             </label>
+          ))}
+          {STATIC_LAYERS.map(({ label, color }) => (
+            <div
+              key={label}
+              className="flex items-center gap-2 select-none"
+              style={{ paddingLeft: "20px" }}
+            >
+              <span
+                className="inline-block w-3 h-3 rounded-sm flex-shrink-0"
+                style={{ background: color }}
+              />
+              <span className="text-gray-700 dark:text-gray-300">{label}</span>
+            </div>
           ))}
         </div>
       </div>
