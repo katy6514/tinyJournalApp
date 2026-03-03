@@ -1,26 +1,3 @@
-// import { Revenue } from './definitions';
-
-// export const formatCurrency = (amount: number) => {
-//   return (amount / 100).toLocaleString('en-US', {
-//     style: 'currency',
-//     currency: 'USD',
-//   });
-// };
-
-// export const formatDateToLocal = (
-//   dateStr: string,
-//   locale: string = 'en-US',
-// ) => {
-//   const date = new Date(dateStr);
-//   const options: Intl.DateTimeFormatOptions = {
-//     day: 'numeric',
-//     month: 'short',
-//     year: 'numeric',
-//   };
-//   const formatter = new Intl.DateTimeFormat(locale, options);
-//   return formatter.format(date);
-// };
-
 export const generatePagination = (currentPage: number, totalPages: number) => {
   // If total pages fits within the max window size, show all with no ellipsis.
   if (totalPages <= 9) {
@@ -53,3 +30,23 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
 
   return pages;
 };
+
+function capitalizeFirstLetter(val: string) {
+  let result = "";
+  for (const word of String(val).split(" ")) {
+    if (word.length > 0 && word[0] !== word[0].toUpperCase()) {
+      result += word.charAt(0).toUpperCase() + word.slice(1) + " ";
+    } else {
+      result += word + " ";
+    }
+  }
+  return result.trim();
+}
+
+export function parseLegName(name: string) {
+  const [start, end] = name.split(" - ");
+  return {
+    start: capitalizeFirstLetter(start?.trim()),
+    end: capitalizeFirstLetter(end?.trim()),
+  };
+}

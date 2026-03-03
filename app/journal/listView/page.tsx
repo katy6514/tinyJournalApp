@@ -21,7 +21,7 @@ export default async function Page(props: {
   const { entries, totalPages } = await fetchFilteredEntries(query, currentPage);
 
   return (
-    <main>
+    <main className="bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
       <Breadcrumbs
         breadcrumbs={[
           { label: "Journal", href: "/journal/listView" },

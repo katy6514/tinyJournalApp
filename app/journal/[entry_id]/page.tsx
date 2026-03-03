@@ -6,8 +6,13 @@ import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 import { Button } from "@/app/ui/components/button";
 import { PencilIcon } from "@heroicons/react/24/outline";
 
-import { fetchEntryByID, fetchLegForDateID, fetchAdjacentEntries } from "@/app/lib/data";
+import {
+  fetchEntryByID,
+  fetchLegForDateID,
+  fetchAdjacentEntries,
+} from "@/app/lib/data";
 import { JournalEntry } from "@/app/lib/definitions";
+import { parseLegName } from "@/app/lib/utils";
 import EntryPhotos from "@/app/ui/journal/entry-photos";
 import EntryMiniMap from "@/app/ui/journal/entry-mini-map";
 
@@ -53,6 +58,7 @@ export default async function Page(props: {
   }
 
   const formattedDate = format(parseISO(date), "MMMM d, yyyy");
+  const { start: legStart, end: legEnd } = leg?.name ? parseLegName(leg.name) : { start: null, end: null };
 
   return (
     <main>
@@ -90,31 +96,53 @@ export default async function Page(props: {
       </div>
 
       <div className=" bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
-        <h1 className={`${notoSans.className} mb-4 text-xl md:text-2xl`}>
-          {legname}
-        </h1>
-        {/* {name && (
-          <h2
-            className={`${notoSans.className} mb-4 text-blue-500 text-lg md:text-xl`}
-          >
-            fetched LegName: {name}
-          </h2>
-        )} */}
-        <h2 className={`${notoSans.className} mb-4 text-lg md:text-xl`}>
-          {state}
-        </h2>
-        <h2 className={`${notoSans.className} mb-4 text-md md:text-lg`}>
-          {formattedDate}
-        </h2>
-        <div className="flex gap-4 items-start">
+        {/* Metadata + minimap row */}
+        <div className="flex gap-4 items-start mb-6">
           <div className="flex-1 min-w-0">
-            <p className={`${notoSerif.className} whitespace-pre-wrap`}>{text}</p>
+            <h1 className={`${notoSans.className} mb-2 text-xl md:text-2xl`}>
+              {legname}
+            </h1>
+            <h2 className={`${notoSans.className} mb-2 text-lg md:text-xl`}>
+              {state}
+            </h2>
+            <h2 className={`${notoSans.className} mb-2 text-md md:text-lg`}>
+              {formattedDate}
+            </h2>
+            {(legStart || legEnd || leg?.mileage) && (
+              <dl className={`${notoSans.className} mt-3 text-sm text-gray-600 dark:text-gray-400 space-y-1`}>
+                {legStart && (
+                  <div className="flex gap-2">
+                    <dt className="font-medium">Start</dt>
+                    <dd>{legStart}</dd>
+                  </div>
+                )}
+                {legEnd && (
+                  <div className="flex gap-2">
+                    <dt className="font-medium">End</dt>
+                    <dd>{legEnd}</dd>
+                  </div>
+                )}
+                {leg?.mileage && (
+                  <div className="flex gap-2">
+                    <dt className="font-medium">Mileage</dt>
+                    <dd>{leg.mileage} mi</dd>
+                  </div>
+                )}
+              </dl>
+            )}
           </div>
           {legGeoJSON && (
-            <div className="w-[40%] shrink-0">
-              <EntryMiniMap legGeoJSON={legGeoJSON} date={date} />
+            <div className="w-1/2 shrink-0">
+              <EntryMiniMap legGeoJSON={legGeoJSON} date={date} start={legStart} end={legEnd} />
             </div>
           )}
+        </div>
+
+        {/* Journal text */}
+        <div className="flex-1 min-w-0">
+          <p className={`${notoSerif.className} whitespace-pre-wrap`}>
+            {text}
+          </p>
         </div>
         <EntryPhotos photos={photos} />
         <div className="mt-6 flex justify-end">

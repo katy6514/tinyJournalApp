@@ -9,7 +9,7 @@ const MAP_WIDTH = 500;
 const MAP_HEIGHT = 350;
 const PADDING = 40;
 
-export default function EntryMiniMap({ legGeoJSON, date }) {
+export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
   const ref = useRef();
 
   useEffect(() => {
@@ -106,8 +106,35 @@ export default function EntryMiniMap({ legGeoJSON, date }) {
         })
         .attr("fill", colors.campSites)
         .attr("stroke", "none");
+
+      // Start / end labels
+      const coords = legGeoJSON.features[0]?.geometry?.coordinates;
+      if (coords?.length > 0) {
+        const addLabel = (coord, label, anchor) => {
+          const pos = projection(coord);
+          if (!pos) return;
+          svg.append("circle")
+            .attr("cx", pos[0])
+            .attr("cy", pos[1])
+            .attr("r", 5)
+            .attr("fill", anchor === "start" ? "#16a34a" : "#dc2626")
+            .attr("stroke", "white")
+            .attr("stroke-width", 1.5);
+          svg.append("text")
+            .attr("x", pos[0])
+            .attr("y", pos[1] - 8)
+            .attr("text-anchor", "middle")
+            .attr("font-size", "10px")
+            .attr("font-weight", "600")
+            .attr("fill", anchor === "start" ? "#16a34a" : "#dc2626")
+            .text(label);
+        };
+
+        if (start) addLabel(coords[0], start, "start");
+        if (end) addLabel(coords[coords.length - 1], end, "end");
+      }
     });
-  }, [legGeoJSON, date]);
+  }, [legGeoJSON, date, start, end]);
 
   if (!legGeoJSON) return null;
 
