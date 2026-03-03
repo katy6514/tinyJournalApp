@@ -19,7 +19,7 @@ const Phase: React.FC<PhaseProps> = ({ title, items }) => (
 
 export default function DevelopmentJourney() {
   return (
-    <main>
+    <main className="bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
       <Breadcrumbs
         breadcrumbs={[
           { label: "About", href: "/journal" },
