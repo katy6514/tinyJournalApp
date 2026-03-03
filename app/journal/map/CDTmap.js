@@ -108,6 +108,7 @@ export default function CDTmap() {
         g.selectAll(".messagePoints").attr("d", square.size(newSize));
         g.selectAll(".cityPoints").attr("d", cross.size(newSize));
         g.selectAll(".city_labels").attr("font-size", 12 / event.transform.k);
+        g.selectAll(".state-label").attr("font-size", 20 / event.transform.k);
         g.selectAll(".leg-label")
           .attr("display", event.transform.k > 15 ? null : "none")
           .attr("font-size", 12 / event.transform.k);
@@ -165,6 +166,41 @@ export default function CDTmap() {
                 .scale(scale),
             );
         });
+
+      /* -----------------------------------------------------
+      *  State labels — centered, rotated to follow local latitude
+      ----------------------------------------------------- */
+      stateData.features.forEach((d) => {
+        const centroid = d3.geoCentroid(d);
+        if (!centroid) return;
+        const pos = projection(centroid);
+        if (!pos) return;
+
+        const [lon, lat] = centroid;
+        // Sample two nearby projected points along the same latitude to get the
+        // local slope of a parallel, then rotate the label to match.
+        const p1 = projection([lon - 2, lat]);
+        const p2 = projection([lon + 2, lat]);
+        let angle = 0;
+        if (p1 && p2) {
+          angle = (Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180) / Math.PI;
+        }
+
+        g.append("text")
+          .attr("class", "state-label")
+          .attr("x", pos[0])
+          .attr("y", pos[1])
+          .attr("text-anchor", "middle")
+          .attr("dominant-baseline", "middle")
+          .attr("transform", `rotate(${angle}, ${pos[0]}, ${pos[1]})`)
+          .attr("fill", "gray")
+          .attr("stroke", "none")
+          .attr("font-size", 20)
+          .attr("font-weight", "400")
+          .attr("letter-spacing", "3px")
+          .attr("pointer-events", "none")
+          .text(d.properties.name.toUpperCase());
+      });
 
       /* -----------------------------------------------------
       *  Plotting Garmin Data
