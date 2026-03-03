@@ -135,12 +135,17 @@ export default function CDTmap() {
       })
 
       .on("end", (event) => {
+        // console.log("Zoom level:", event.transform.k);
         const newSize = 128 / (event.transform.k * event.transform.k);
         g.selectAll("circle").attr("r", 6 / event.transform.k);
         g.selectAll(".campPoints").attr("d", triangle.size(newSize));
         g.selectAll(".messagePoints").attr("d", square.size(newSize));
         g.selectAll(".cityPoints").attr("d", cross.size(newSize));
-        g.selectAll(".city_labels").attr("font-size", 12 / event.transform.k);
+        g.selectAll(".city_labels")
+          .attr("display", event.transform.k > 2.35 ? null : "none")
+          .attr("font-size", 12 / event.transform.k);
+        g.selectAll(".city_lines")
+          .attr("display", event.transform.k > 2.35 ? null : "none");
         g.selectAll(".state-label").attr("font-size", 20 / event.transform.k);
         g.selectAll(".leg-label")
           .attr("display", event.transform.k > 15 ? null : "none")
@@ -402,6 +407,8 @@ export default function CDTmap() {
       .data(cities)
       .enter()
       .append("line")
+      .attr("class", "city_lines")
+      .attr("display", "none")
       .attr("x1", (d) => projection([d.lon, d.lat])[0])
       .attr("y1", (d) => projection([d.lon, d.lat])[1])
       .attr("x2", (d) => projection([d.lon, d.lat])[0] + d.dx)
@@ -416,6 +423,7 @@ export default function CDTmap() {
       .enter()
       .append("text")
       .attr("class", "city_labels")
+      .attr("display", "none")
       .attr("x", (d) => projection([d.lon, d.lat])[0] + d.dx)
       .attr("y", (d) => projection([d.lon, d.lat])[1] + d.dy)
       .text((d) => d.name)
