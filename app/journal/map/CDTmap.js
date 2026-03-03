@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import * as d3 from "d3";
 
 import { width, height, cities, colors } from "./constants";
+import { notoSans } from "@/app/ui/fonts";
 
 import {
   getAlternatingColor,
@@ -115,7 +116,8 @@ export default function CDTmap() {
       .attr("viewBox", `0 0 ${width} ${height}`)
       .attr("width", "100%")
       .attr("stroke", "rgb(127, 127, 127)")
-      .attr("stroke-width", "1px");
+      .attr("stroke-width", "1px")
+      .attr("font-family", notoSans.style.fontFamily);
 
     svg.selectAll("*").remove();
 
@@ -574,7 +576,7 @@ export default function CDTmap() {
   return (
     <div className="relative">
       {/* Layer toggle panel */}
-      <div className="absolute top-100 left-3 z-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg shadow-md p-3 text-xs">
+      <div className={`absolute top-100 left-3 z-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg shadow-md p-3 text-xs ${notoSans.className}`}>
         <p className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
           Legend
         </p>

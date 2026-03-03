@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import * as d3 from "d3";
 import { colors } from "@/app/journal/map/constants";
 import { checkForCampsite } from "@/app/journal/map/utils";
+import { notoSans } from "@/app/ui/fonts";
 
 const MAP_WIDTH = 500;
 const MAP_HEIGHT = 350;
@@ -21,6 +22,7 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
       .select(ref.current)
       .attr("viewBox", `0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`)
       .attr("width", "100%")
+      .attr("font-family", notoSans.style.fontFamily)
       .style("cursor", "grab");
 
     svg.selectAll("*").remove();
