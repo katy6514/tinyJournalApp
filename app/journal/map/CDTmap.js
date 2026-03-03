@@ -523,7 +523,6 @@ export default function CDTmap() {
   const STATIC_LAYERS = [
     { label: "Resupply Stops", color: colors.black,    shape: "cross" },
     { label: "Trail",          color: colors.evenDays, shape: "line" },
-    { label: "State Labels",   color: "gray",          shape: "text" },
   ];
 
   const LegendSymbol = ({ shape, color }) => {
