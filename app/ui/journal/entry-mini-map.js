@@ -18,9 +18,13 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
     const svg = d3
       .select(ref.current)
       .attr("viewBox", `0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`)
-      .attr("width", "100%");
+      .attr("width", "100%")
+      .style("cursor", "grab");
 
     svg.selectAll("*").remove();
+
+    // All content goes inside this group so zoom transforms it as a unit
+    const g = svg.append("g").attr("class", "zoom-layer");
 
     const projection = d3
       .geoAlbersUsa()
@@ -34,12 +38,27 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
     const square = d3.symbol().type(d3.symbolSquare).size(80);
     const triangle = d3.symbol().type(d3.symbolTriangle).size(80);
 
+    // Zoom: scroll/pinch to zoom, drag to pan, double-click resets
+    const zoom = d3
+      .zoom()
+      .scaleExtent([1, 12])
+      .on("zoom", (event) => {
+        g.attr("transform", event.transform);
+      });
+
+    svg.call(zoom);
+    svg.on("mousedown.cursor", () => svg.style("cursor", "grabbing"));
+    svg.on("mouseup.cursor mouseleave.cursor", () => svg.style("cursor", "grab"));
+    svg.on("dblclick.zoom", () => {
+      svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
+    });
+
     Promise.all([
       d3.json("/api/states"),
       d3.json("/data/cdtInreachData_withCoords.geojson"),
     ]).then(([stateData, inReachData]) => {
       // State outlines for context
-      svg
+      g
         .selectAll(".state")
         .data(stateData.features)
         .enter()
@@ -51,7 +70,7 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
         .attr("d", path);
 
       // Leg trail
-      svg
+      g
         .selectAll(".trail")
         .data(legGeoJSON.features)
         .enter()
@@ -79,7 +98,7 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
         (d) => !d.properties?.MessageText || !checkForCampsite(d)
       );
 
-      svg
+      g
         .selectAll(".messagePoints")
         .data(messages)
         .enter()
@@ -93,7 +112,7 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
         .attr("fill", colors.messages)
         .attr("stroke", "none");
 
-      svg
+      g
         .selectAll(".campPoints")
         .data(campSites)
         .enter()
@@ -133,7 +152,7 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
 
           const color = awayFromNeighbor ? "#dc2626" : "#16a34a";
 
-          svg.append("circle")
+          g.append("circle")
             .attr("cx", pos[0])
             .attr("cy", pos[1])
             .attr("r", 5)
@@ -142,7 +161,7 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
             .attr("stroke-width", 1.5);
 
           // White halo so text is readable over the map
-          svg.append("text")
+          g.append("text")
             .attr("x", pos[0] + dx)
             .attr("y", pos[1] + dy)
             .attr("text-anchor", "middle")
