@@ -11,6 +11,8 @@ const PADDING = 40;
 
 export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
   const ref = useRef();
+  const tooltipRef = useRef();
+  const tooltipImgRef = useRef();
 
   useEffect(() => {
     if (!legGeoJSON?.features?.length) return;
@@ -26,12 +28,13 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
     // All content goes inside this group so zoom transforms it as a unit
     const g = svg.append("g").attr("class", "zoom-layer");
 
-    const projection = d3
-      .geoAlbersUsa()
-      .fitExtent(
-        [[PADDING, PADDING], [MAP_WIDTH - PADDING, MAP_HEIGHT - PADDING]],
-        legGeoJSON
-      );
+    const projection = d3.geoAlbersUsa().fitExtent(
+      [
+        [PADDING, PADDING],
+        [MAP_WIDTH - PADDING, MAP_HEIGHT - PADDING],
+      ],
+      legGeoJSON,
+    );
 
     const path = d3.geoPath().projection(projection);
 
@@ -48,7 +51,9 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
 
     svg.call(zoom);
     svg.on("mousedown.cursor", () => svg.style("cursor", "grabbing"));
-    svg.on("mouseup.cursor mouseleave.cursor", () => svg.style("cursor", "grab"));
+    svg.on("mouseup.cursor mouseleave.cursor", () =>
+      svg.style("cursor", "grab"),
+    );
     svg.on("dblclick.zoom", () => {
       svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
     });
@@ -56,10 +61,10 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
     Promise.all([
       d3.json("/api/states"),
       d3.json("/data/cdtInreachData_withCoords.geojson"),
-    ]).then(([stateData, inReachData]) => {
+      d3.json("/data/geoPhotos.geojson"),
+    ]).then(([stateData, inReachData, photoData]) => {
       // State outlines for context
-      g
-        .selectAll(".state")
+      g.selectAll(".state")
         .data(stateData.features)
         .enter()
         .append("path")
@@ -70,8 +75,7 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
         .attr("d", path);
 
       // Leg trail
-      g
-        .selectAll(".trail")
+      g.selectAll(".trail")
         .data(legGeoJSON.features)
         .enter()
         .append("path")
@@ -92,14 +96,13 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
       });
 
       const campSites = dayPoints.filter(
-        (d) => d.properties?.MessageText && checkForCampsite(d)
+        (d) => d.properties?.MessageText && checkForCampsite(d),
       );
       const messages = dayPoints.filter(
-        (d) => !d.properties?.MessageText || !checkForCampsite(d)
+        (d) => !d.properties?.MessageText || !checkForCampsite(d),
       );
 
-      g
-        .selectAll(".messagePoints")
+      g.selectAll(".messagePoints")
         .data(messages)
         .enter()
         .append("path")
@@ -112,8 +115,7 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
         .attr("fill", colors.messages)
         .attr("stroke", "none");
 
-      g
-        .selectAll(".campPoints")
+      g.selectAll(".campPoints")
         .data(campSites)
         .enter()
         .append("path")
@@ -126,6 +128,46 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
         .attr("fill", colors.campSites)
         .attr("stroke", "none");
 
+      // Photo points filtered to this date
+      const photoPoints = photoData.features.filter((f) => {
+        if (f.geometry?.type !== "Photo") return false;
+        if (!f.properties?.dateTime) return false;
+        if (
+          !Array.isArray(f.geometry.coordinates) ||
+          f.geometry.coordinates.length !== 2
+        )
+          return false;
+        if (!projection(f.geometry.coordinates)) return false;
+        const normalized = f.properties.dateTime.replace(
+          /^(\d{4}):(\d{2}):(\d{2})/,
+          "$1-$2-$3",
+        );
+        return new Date(normalized).toISOString().split("T")[0] === date;
+      });
+
+      g.selectAll(".photoPoints")
+        .data(photoPoints)
+        .enter()
+        .append("circle")
+        .attr("class", "photoPoints")
+        .attr("cx", (d) => projection(d.geometry.coordinates)[0])
+        .attr("cy", (d) => projection(d.geometry.coordinates)[1])
+        .attr("r", 6)
+        .attr("fill", colors.photos)
+        .attr("stroke", "none")
+        .style("cursor", "pointer")
+        .on("mouseover", function (event, d) {
+          if (tooltipImgRef.current && tooltipRef.current) {
+            tooltipImgRef.current.src = d.properties.path;
+            tooltipRef.current.style.display = "block";
+          }
+        })
+        .on("mouseout", function () {
+          if (tooltipRef.current) {
+            tooltipRef.current.style.display = "none";
+          }
+        });
+
       // Start / end labels
       const coords = legGeoJSON.features[0]?.geometry?.coordinates;
       if (coords?.length > 0) {
@@ -136,7 +178,8 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
           if (!pos) return;
 
           // Compute offset direction: away from the track at this endpoint
-          let dx = 0, dy = -OFFSET;
+          let dx = 0,
+            dy = -OFFSET;
           const neighborPos = projection(neighborCoord);
           if (neighborPos) {
             const dirX = awayFromNeighbor
@@ -177,7 +220,13 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
         };
 
         if (start) addLabel(coords[0], start, coords[1], false);
-        if (end) addLabel(coords[coords.length - 1], end, coords[coords.length - 2], true);
+        if (end)
+          addLabel(
+            coords[coords.length - 1],
+            end,
+            coords[coords.length - 2],
+            true,
+          );
       }
     });
   }, [legGeoJSON, date, start, end]);
@@ -185,8 +234,36 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
   if (!legGeoJSON) return null;
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white">
-      <svg ref={ref} />
+    <div className="relative" style={{ overflow: "visible" }}>
+      <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white">
+        <svg ref={ref} />
+      </div>
+      {/* Photo tooltip — positioned to the left of the map, covering the metadata */}
+      <div
+        ref={tooltipRef}
+        style={{
+          display: "none",
+          position: "absolute",
+          top: 0,
+          right: "100%",
+          paddingRight: "12px",
+          width: "100%",
+          zIndex: 10,
+          pointerEvents: "none",
+        }}
+      >
+        <img
+          ref={tooltipImgRef}
+          src={null}
+          alt="Trail photo"
+          style={{
+            width: "100%",
+            height: "auto",
+            borderRadius: "8px",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
+          }}
+        />
+      </div>
     </div>
   );
 }
