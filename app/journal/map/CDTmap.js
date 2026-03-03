@@ -587,7 +587,7 @@ export default function CDTmap() {
             >
               <input
                 type="checkbox"
-                className="checkbox checkbox-xs"
+                className="toggle toggle-xs"
                 checked={visibility[key]}
                 onChange={() =>
                   setVisibility((v) => ({ ...v, [key]: !v[key] }))
@@ -601,7 +601,7 @@ export default function CDTmap() {
             <div
               key={label}
               className="flex items-center gap-2 select-none"
-              style={{ paddingLeft: "20px" }}
+              style={{ paddingLeft: "36px" }}
             >
               <LegendSymbol shape={shape} color={color} />
               <span className="text-gray-700 dark:text-gray-300">{label}</span>
