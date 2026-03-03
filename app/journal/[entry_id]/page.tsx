@@ -99,36 +99,38 @@ export default async function Page(props: {
         {/* Metadata + minimap row */}
         <div className="flex gap-4 items-start mb-6">
           <div className="flex-1 min-w-0">
-            <h1 className={`${notoSans.className} mb-2 text-xl md:text-2xl`}>
-              {legname}
-            </h1>
-            <h2 className={`${notoSans.className} mb-2 text-lg md:text-xl`}>
-              {state}
-            </h2>
-            <h2 className={`${notoSans.className} mb-2 text-md md:text-lg`}>
+            <h2 className={`${notoSans.className} mb-1 text-md md:text-lg text-gray-500 dark:text-gray-400`}>
               {formattedDate}
             </h2>
+            <h1 className={`${notoSans.className} mb-1 text-xl md:text-2xl`}>
+              {legname}
+            </h1>
+            <h2 className={`${notoSans.className} mb-4 text-lg md:text-xl`}>
+              {state}
+            </h2>
             {(legStart || legEnd || leg?.mileage) && (
-              <dl className={`${notoSans.className} mt-3 text-sm text-gray-600 dark:text-gray-400 space-y-1`}>
-                {legStart && (
-                  <div className="flex gap-2">
-                    <dt className="font-medium">Start</dt>
-                    <dd>{legStart}</dd>
-                  </div>
-                )}
-                {legEnd && (
-                  <div className="flex gap-2">
-                    <dt className="font-medium">End</dt>
-                    <dd>{legEnd}</dd>
-                  </div>
-                )}
-                {leg?.mileage && (
-                  <div className="flex gap-2">
-                    <dt className="font-medium">Mileage</dt>
-                    <dd>{leg.mileage} mi</dd>
-                  </div>
-                )}
-              </dl>
+              <table className={`${notoSans.className} text-sm text-gray-600 dark:text-gray-400`}>
+                <tbody>
+                  {legStart && (
+                    <tr>
+                      <td className="font-medium pr-4 py-0.5">Start</td>
+                      <td>{legStart}</td>
+                    </tr>
+                  )}
+                  {legEnd && (
+                    <tr>
+                      <td className="font-medium pr-4 py-0.5">End</td>
+                      <td>{legEnd}</td>
+                    </tr>
+                  )}
+                  {leg?.mileage && (
+                    <tr>
+                      <td className="font-medium pr-4 py-0.5">Mileage</td>
+                      <td>{leg.mileage} mi</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             )}
           </div>
           {legGeoJSON && (
