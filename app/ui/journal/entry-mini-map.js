@@ -160,7 +160,7 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
         .attr("stroke-width", 1.5)
         .attr("vector-effect", "non-scaling-stroke")
         .style("cursor", "pointer")
-        .on("mouseover", function (event, d) {
+        .on("mouseover", function (_event, d) {
           if (tooltipImgRef.current && tooltipRef.current) {
             tooltipImgRef.current.src = d.properties.path;
             tooltipRef.current.style.display = "block";
@@ -175,42 +175,44 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
       // Start / end labels
       const coords = legGeoJSON.features[0]?.geometry?.coordinates;
       if (coords?.length > 0) {
-        const OFFSET = 24;
+        const LABEL_OFFSET = 50;
 
-        const addLabel = (coord, label, neighborCoord, awayFromNeighbor) => {
+        const addLabel = (coord, label, neighborCoord, color) => {
           const pos = projection(coord);
           if (!pos) return;
 
-          // Compute offset direction: away from the track at this endpoint
+          // Direction: away from the neighbor, i.e. outside the track at this endpoint
           let dx = 0,
-            dy = -OFFSET;
+            dy = -LABEL_OFFSET;
           const neighborPos = projection(neighborCoord);
           if (neighborPos) {
-            const dirX = awayFromNeighbor
-              ? pos[0] - neighborPos[0]
-              : neighborPos[0] - pos[0];
-            const dirY = awayFromNeighbor
-              ? pos[1] - neighborPos[1]
-              : neighborPos[1] - pos[1];
-            const len = Math.sqrt(dirX * dirX + dirY * dirY) || 1;
-            dx = (dirX / len) * OFFSET;
-            dy = (dirY / len) * OFFSET;
+            const vx = pos[0] - neighborPos[0];
+            const vy = pos[1] - neighborPos[1];
+            const len = Math.sqrt(vx * vx + vy * vy) || 1;
+            dx = (vx / len) * LABEL_OFFSET;
+            dy = (vy / len) * LABEL_OFFSET;
           }
 
-          const color = awayFromNeighbor ? "#dc2626" : "#16a34a";
+          // Clamp label to stay within SVG viewBox
+          const MARGIN = 15;
+          const labelX = Math.max(MARGIN, Math.min(MAP_WIDTH - MARGIN, pos[0] + dx));
+          const labelY = Math.max(MARGIN, Math.min(MAP_HEIGHT - MARGIN, pos[1] + dy));
 
-          g.append("circle")
-            .attr("cx", pos[0])
-            .attr("cy", pos[1])
-            .attr("r", 5)
-            .attr("fill", color)
-            .attr("stroke", "white")
-            .attr("stroke-width", 1.5);
+          // Leader line from endpoint to label
+          g.append("line")
+            .attr("x1", pos[0])
+            .attr("y1", pos[1])
+            .attr("x2", labelX)
+            .attr("y2", labelY)
+            .attr("stroke", color)
+            .attr("stroke-width", 1)
+            .attr("stroke-opacity", 0.6)
+            .attr("vector-effect", "non-scaling-stroke");
 
-          // White halo so text is readable over the map
+          // Label with white halo
           g.append("text")
-            .attr("x", pos[0] + dx)
-            .attr("y", pos[1] + dy)
+            .attr("x", labelX)
+            .attr("y", labelY)
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "middle")
             .attr("font-size", "10px")
@@ -223,13 +225,13 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
             .text(label);
         };
 
-        if (start) addLabel(coords[0], start, coords[1], false);
+        if (start) addLabel(coords[0], start, coords[1], "#16a34a");
         if (end)
           addLabel(
             coords[coords.length - 1],
             end,
             coords[coords.length - 2],
-            true,
+            "#dc2626",
           );
       }
 
