@@ -327,7 +327,9 @@ export default function CDTmap() {
         .attr("cy", (d) => projection(d.geometry.coordinates)[1])
         .attr("r", 6)
         .attr("fill", colors.photos)
-        .attr("stroke", "none")
+        .attr("stroke", "white")
+        .attr("stroke-width", 1.5)
+        .attr("vector-effect", "non-scaling-stroke")
         .attr("pointer-events", "none");
 
       // Show one or multiple photos in the tooltip depending on overlap

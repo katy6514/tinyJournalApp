@@ -156,7 +156,9 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
         .attr("cy", (d) => projection(d.geometry.coordinates)[1])
         .attr("r", 6)
         .attr("fill", colors.photos)
-        .attr("stroke", "none")
+        .attr("stroke", "white")
+        .attr("stroke-width", 1.5)
+        .attr("vector-effect", "non-scaling-stroke")
         .style("cursor", "pointer")
         .on("mouseover", function (event, d) {
           if (tooltipImgRef.current && tooltipRef.current) {
@@ -230,6 +232,15 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
             true,
           );
       }
+
+      // Scale symbols and photo circles as zoom level changes
+      zoom.on("end", (event) => {
+        const k = event.transform.k;
+        const newSize = 80 / (k * k);
+        g.selectAll(".photoPoints").attr("r", 6 / k);
+        g.selectAll(".campPoints").attr("d", triangle.size(newSize));
+        g.selectAll(".messagePoints").attr("d", square.size(newSize));
+      });
     });
   }, [legGeoJSON, date, start, end]);
 
