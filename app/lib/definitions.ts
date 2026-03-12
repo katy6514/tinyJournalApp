@@ -9,6 +9,9 @@ export type Photo = {
   description?: string;
   width: number;
   height: number;
+  lat?: number;
+  lon?: number;
+  date_time?: string;
 };
 
 export type StateOption = {

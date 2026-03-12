@@ -15,12 +15,15 @@
     "clsx": "^2.1.1",
     "d3": "^7.9.0",
     "date-fns": "^4.1.0",
+    "exifr": "^7.1.3",
+    "heic-convert": "^2.1.0",
     "next": "^15.4.10",
     "next-auth": "5.0.0-beta.29",
     "postgres": "^3.4.7",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-photo-album": "^3.1.0",
+    "sharp": "^0.34.5",
     "tailwind-merge": "^3.3.1",
     "use-debounce": "^10.0.5",
     "yet-another-react-lightbox": "^3.25.0",
@@ -30,6 +33,7 @@
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/bcrypt": "^6.0.0",
+    "@types/heic-convert": "^2.1.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -39,5 +43,13 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   },
-  "packageManager": "pnpm@10.11.0+sha512.6540583f41cc5f628eb3d9773ecee802f4f9ef9923cc45b69890fb47991d4b092964694ec3a4f738a420c918a333062c8b925d312f42e4f0c263eb603551f977"
+  "packageManager": "pnpm@10.11.0+sha512.6540583f41cc5f628eb3d9773ecee802f4f9ef9923cc45b69890fb47991d4b092964694ec3a4f738a420c918a333062c8b925d312f42e4f0c263eb603551f977",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@tailwindcss/oxide",
+      "bcrypt",
+      "sharp",
+      "unrs-resolver"
+    ]
+  }
 }

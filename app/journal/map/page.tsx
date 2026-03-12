@@ -19,12 +19,18 @@ export default async function Page() {
         ]}
       />
       {session && (
-        <div className="flex justify-end px-4 py-2">
+        <div className="flex justify-end gap-4 px-4 py-2">
           <Link
             href="/uploadTrack"
             className="text-sm font-medium text-blue-600 hover:text-blue-800 underline"
           >
             Upload Track Data
+          </Link>
+          <Link
+            href="/uploadPhotos"
+            className="text-sm font-medium text-blue-600 hover:text-blue-800 underline"
+          >
+            Upload Photos
           </Link>
         </div>
       )}

@@ -169,7 +169,7 @@ export default function CDTmap() {
       d3.json("/api/legs"),
       d3.json("/api/states"),
       d3.json("/data/cdtInreachData_withCoords.geojson"),
-      d3.json("/data/geoPhotos.geojson"),
+      d3.json("/api/photos"),
     ]).then(([trackData, stateData, inReachData, photoData]) => {
       /* -----------------------------------------------------
       *  State outline mapping functionality

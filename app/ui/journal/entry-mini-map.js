@@ -63,7 +63,7 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
     Promise.all([
       d3.json("/api/states"),
       d3.json("/data/cdtInreachData_withCoords.geojson"),
-      d3.json("/data/geoPhotos.geojson"),
+      d3.json("/api/photos"),
     ]).then(([stateData, inReachData, photoData]) => {
       // State outlines for context
       g.selectAll(".state")
