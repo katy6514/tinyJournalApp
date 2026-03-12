@@ -11,7 +11,6 @@ import { notoSans } from "@/app/ui/fonts";
 import {
   getAlternatingColor,
   checkForCampsite,
-  handleMouseOver,
   handleMouseMove,
   handleMouseOut,
 } from "./utils";
@@ -23,6 +22,7 @@ import {
 export default function CDTmap() {
   const ref = useRef();
   const gRef = useRef(null);
+  const currentTransformRef = useRef(null);
 
   const { data: session } = useSession();
   const currentUserRef = useRef(null);
@@ -41,10 +41,9 @@ export default function CDTmap() {
   useEffect(() => {
     const g = gRef.current;
     if (!g) return;
-    g.selectAll(".photoPoints").attr(
-      "display",
-      visibility.photos ? null : "none",
-    );
+    const photoDisplay = visibility.photos ? null : "none";
+    g.selectAll(".photoPoints").attr("display", photoDisplay);
+    g.selectAll(".photoHitAreas").attr("display", photoDisplay);
     g.selectAll(".campPoints").attr(
       "display",
       visibility.campsites ? null : "none",
@@ -135,12 +134,14 @@ export default function CDTmap() {
       .scaleExtent([1, 500])
       .on("zoom", (event) => {
         g.attr("transform", event.transform);
+        currentTransformRef.current = event.transform;
       })
 
       .on("end", (event) => {
         // console.log("Zoom level:", event.transform.k);
         const newSize = 128 / (event.transform.k * event.transform.k);
         g.selectAll(".photoPoints").attr("r", 6 / event.transform.k);
+        g.selectAll(".photoHitAreas").attr("r", 14 / event.transform.k);
         g.selectAll(".campPoints").attr("d", triangle.size(newSize));
         g.selectAll(".messagePoints").attr("d", square.size(newSize));
         g.selectAll(".cityPoints").attr("d", cross.size(newSize));
@@ -316,6 +317,7 @@ export default function CDTmap() {
           projection(d.geometry.coordinates),
       );
 
+      // Visible photo dots – pointer events handled by hit areas below
       g.selectAll(".photoPoints")
         .data(validPhotoPoints)
         .enter()
@@ -326,9 +328,59 @@ export default function CDTmap() {
         .attr("r", 6)
         .attr("fill", colors.photos)
         .attr("stroke", "none")
-        .on("mouseover", function (event, d) {
-          handleMouseOver(currentUserRef.current)(event, d);
-        })
+        .attr("pointer-events", "none");
+
+      // Show one or multiple photos in the tooltip depending on overlap
+      function showPhotoTooltip(d) {
+        const t = currentTransformRef.current ?? d3.zoomIdentity;
+        const [hx, hy] = projection(d.geometry.coordinates);
+        const [hsx, hsy] = t.apply([hx, hy]);
+
+        const nearby = validPhotoPoints.filter((f) => {
+          const [fx, fy] = projection(f.geometry.coordinates);
+          const [fsx, fsy] = t.apply([fx, fy]);
+          const dx = fsx - hsx;
+          const dy = fsy - hsy;
+          return Math.sqrt(dx * dx + dy * dy) <= 14;
+        });
+
+        const tooltip = document.getElementById("tooltip");
+        tooltip.classList.remove("invisible", "opacity-0");
+        tooltip.classList.add("visible", "opacity-100");
+
+        if (nearby.length === 1) {
+          const { path: photoPath, dateTime } = d.properties;
+          const normalized = dateTime.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
+          const photoDate = new Date(normalized);
+          const dateStr = photoDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+          const timeStr = photoDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+          tooltip.innerHTML = `<img src="${photoPath}" width="550"><br /><p><strong>Date:</strong> ${dateStr}</p><p><strong>Time:</strong> ${timeStr}</p>`;
+        } else {
+          const { dateTime: firstDT } = nearby[0].properties;
+          const normalized = firstDT.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
+          const dateStr = new Date(normalized).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+          const photoItems = nearby.map((f) => {
+            const { path: photoPath, dateTime } = f.properties;
+            const dt = dateTime.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
+            const timeStr = new Date(dt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+            return `<div style="flex-shrink:0;text-align:center"><img src="${photoPath}" style="width:250px;display:block"><p style="font-size:11px;margin-top:4px">${timeStr}</p></div>`;
+          }).join("");
+          tooltip.innerHTML = `<p style="font-weight:600;margin-bottom:6px">${nearby.length} photos — ${dateStr}</p><div style="display:flex;gap:8px;overflow-x:auto;max-width:600px">${photoItems}</div>`;
+        }
+      }
+
+      // Transparent larger hit areas on top for easier interaction
+      g.selectAll(".photoHitAreas")
+        .data(validPhotoPoints)
+        .enter()
+        .append("circle")
+        .attr("class", "photoHitAreas")
+        .attr("cx", (d) => projection(d.geometry.coordinates)[0])
+        .attr("cy", (d) => projection(d.geometry.coordinates)[1])
+        .attr("r", 14)
+        .attr("fill", "transparent")
+        .attr("stroke", "none")
+        .on("mouseover", function (_event, d) { showPhotoTooltip(d); })
         .on("mousemove", handleMouseMove)
         .on("mouseout", handleMouseOut);
 
