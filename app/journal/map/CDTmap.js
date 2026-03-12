@@ -53,7 +53,7 @@ export default function CDTmap() {
       "display",
       visibility.messages ? null : "none",
     );
-    g.selectAll(".cities").attr("display", visibility.cities ? null : "none");
+    g.selectAll(".cities, .city_label_layer").attr("display", visibility.cities ? null : "none");
     g.selectAll(".trail").attr("display", visibility.trail ? null : "none");
     g.selectAll(".state-label").attr(
       "display",
@@ -385,10 +385,51 @@ export default function CDTmap() {
         .attr("fill", "black")
         .attr("stroke", "none")
         .attr("text-anchor", "middle");
+
+      /* -----------------------------------------------------
+      *  City labels (rendered last so they float above state lines)
+      ----------------------------------------------------- */
+
+      const cityLabelsGroup = g.append("g").attr("class", "city_label_layer");
+
+      cityLabelsGroup
+        .selectAll("line")
+        .data(cities)
+        .enter()
+        .append("line")
+        .attr("class", "city_lines")
+        .attr("display", "none")
+        .attr("x1", (d) => projection([d.lon, d.lat])[0])
+        .attr("y1", (d) => projection([d.lon, d.lat])[1])
+        .attr("x2", (d) => projection([d.lon, d.lat])[0] + d.dx)
+        .attr("y2", (d) => projection([d.lon, d.lat])[1] + d.dy)
+        .attr("stroke", "black")
+        .attr("stroke-width", 1)
+        .attr("vector-effect", "non-scaling-stroke");
+
+      cityLabelsGroup
+        .selectAll("text")
+        .data(cities)
+        .enter()
+        .append("text")
+        .attr("class", "city_labels")
+        .attr("display", "none")
+        .attr("x", (d) => projection([d.lon, d.lat])[0] + d.dx)
+        .attr("y", (d) => projection([d.lon, d.lat])[1] + d.dy)
+        .text((d) => d.name)
+        .attr("font-size", 12)
+        .attr("font-weight", "600")
+        .attr("text-anchor", (d) => (d.dx <= 0 ? "end" : "start"))
+        .attr("dominant-baseline", "middle")
+        .attr("fill", colors.black)
+        .attr("stroke", "white")
+        .attr("stroke-width", 3)
+        .attr("stroke-linejoin", "round")
+        .attr("paint-order", "stroke");
     });
 
     /* -----------------------------------------------------
-    *  City data
+    *  City symbols (appended at original z-order, under fetched data)
     ----------------------------------------------------- */
 
     const cityGroup = g.append("g").attr("class", "cities");
@@ -406,41 +447,6 @@ export default function CDTmap() {
       })
       .attr("fill", colors.black)
       .attr("stroke", "none");
-
-    cityGroup
-      .selectAll("line")
-      .data(cities)
-      .enter()
-      .append("line")
-      .attr("class", "city_lines")
-      .attr("display", "none")
-      .attr("x1", (d) => projection([d.lon, d.lat])[0])
-      .attr("y1", (d) => projection([d.lon, d.lat])[1])
-      .attr("x2", (d) => projection([d.lon, d.lat])[0] + d.dx)
-      .attr("y2", (d) => projection([d.lon, d.lat])[1] + d.dy)
-      .attr("stroke", "black")
-      .attr("stroke-width", 1)
-      .attr("vector-effect", "non-scaling-stroke");
-
-    cityGroup
-      .selectAll("text")
-      .data(cities)
-      .enter()
-      .append("text")
-      .attr("class", "city_labels")
-      .attr("display", "none")
-      .attr("x", (d) => projection([d.lon, d.lat])[0] + d.dx)
-      .attr("y", (d) => projection([d.lon, d.lat])[1] + d.dy)
-      .text((d) => d.name)
-      .attr("font-size", 12)
-      .attr("font-weight", "600")
-      .attr("text-anchor", (d) => (d.dx <= 0 ? "end" : "start"))
-      .attr("dominant-baseline", "middle")
-      .attr("fill", colors.black)
-      .attr("stroke", "white")
-      .attr("stroke-width", 3)
-      .attr("stroke-linejoin", "round")
-      .attr("paint-order", "stroke");
 
     /* -----------------------------------------------------
  *  Legend
