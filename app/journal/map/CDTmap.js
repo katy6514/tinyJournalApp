@@ -11,6 +11,7 @@ import { notoSans } from "@/app/ui/fonts";
 import {
   getAlternatingColor,
   checkForCampsite,
+  parseGPSTime,
   handleMouseMove,
   handleMouseOut,
 } from "./utils";
@@ -72,7 +73,7 @@ export default function CDTmap() {
 
   function showMessagePanel(event, d, currentUser) {
     const panel = document.getElementById("message-panel");
-    const messageDate = new Date(d.properties.GPSTime);
+    const messageDate = parseGPSTime(d.properties.GPSTime);
     const dateStr = messageDate.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",

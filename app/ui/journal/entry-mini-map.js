@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
 import * as d3 from "d3";
 import { colors } from "@/app/journal/map/constants";
-import { checkForCampsite } from "@/app/journal/map/utils";
+import { checkForCampsite, parseGPSTime } from "@/app/journal/map/utils";
 import { notoSans } from "@/app/ui/fonts";
 
 const MAP_WIDTH = 500;
@@ -14,6 +15,11 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
   const ref = useRef();
   const tooltipRef = useRef();
   const tooltipImgRef = useRef();
+  const msgTooltipRef = useRef();
+
+  const { data: session } = useSession();
+  const currentUserRef = useRef(null);
+  currentUserRef.current = session?.user ?? null;
 
   useEffect(() => {
     if (!legGeoJSON?.features?.length) return;
@@ -60,6 +66,38 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
       svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
     });
 
+    function showMsgTooltip(event, d) {
+      const panel = msgTooltipRef.current;
+      if (!panel) return;
+      const msgDate = parseGPSTime(d.properties.GPSTime);
+      const dateStr = msgDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+      const timeStr = msgDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+      const isOwner = currentUserRef.current?.email === "katy6514@gmail.com";
+      const messageText = isOwner ? d.properties.MessageText : "Message hidden";
+      panel.innerHTML = `
+        <p style="font-weight:600;margin-bottom:6px;">Garmin Message</p>
+        <p><strong>Date:</strong> ${dateStr}</p>
+        <p><strong>Time:</strong> ${timeStr}</p>
+        <p><strong>To:</strong> ${d.properties.Recipients}</p>
+        <p style="margin-top:6px;padding-top:6px;border-top:1px solid #e5e7eb;">${messageText}</p>
+      `;
+      panel.style.display = "block";
+      panel.style.left = event.pageX + 15 + "px";
+      panel.style.top = event.pageY - 50 + "px";
+    }
+
+    function moveMsgTooltip(event) {
+      const panel = msgTooltipRef.current;
+      if (!panel) return;
+      panel.style.left = event.pageX + 15 + "px";
+      panel.style.top = event.pageY - 50 + "px";
+    }
+
+    function hideMsgTooltip() {
+      const panel = msgTooltipRef.current;
+      if (panel) panel.style.display = "none";
+    }
+
     Promise.all([
       d3.json("/api/states"),
       d3.json("/data/cdtInreachData_withCoords.geojson"),
@@ -93,8 +131,16 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
         if (f.geometry?.type !== "Point") return false;
         if (!f.properties?.GPSTime) return false;
         if (!projection(f.geometry.coordinates)) return false;
-        const msgDate = new Date(f.properties.GPSTime);
-        return msgDate.toISOString().split("T")[0] === date;
+        // Use local date parts — toISOString() returns UTC, which shifts
+        // late-evening messages (e.g. 22:00 MT = 04:00 UTC next day) to the
+        // wrong calendar day.
+        const msgDate = parseGPSTime(f.properties.GPSTime);
+        const localDate = [
+          msgDate.getFullYear(),
+          String(msgDate.getMonth() + 1).padStart(2, "0"),
+          String(msgDate.getDate()).padStart(2, "0"),
+        ].join("-");
+        return localDate === date;
       });
 
       const campSites = dayPoints.filter(
@@ -115,7 +161,10 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
           return `translate(${x}, ${y})`;
         })
         .attr("fill", colors.messages)
-        .attr("stroke", "none");
+        .attr("stroke", "none")
+        .on("mouseover", showMsgTooltip)
+        .on("mousemove", moveMsgTooltip)
+        .on("mouseout", hideMsgTooltip);
 
       g.selectAll(".campPoints")
         .data(campSites)
@@ -128,7 +177,10 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
           return `translate(${x}, ${y})`;
         })
         .attr("fill", colors.campSites)
-        .attr("stroke", "none");
+        .attr("stroke", "none")
+        .on("mouseover", showMsgTooltip)
+        .on("mousemove", moveMsgTooltip)
+        .on("mouseout", hideMsgTooltip);
 
       // Photo points filtered to this date
       const photoPoints = photoData.features.filter((f) => {
@@ -140,11 +192,10 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
         )
           return false;
         if (!projection(f.geometry.coordinates)) return false;
-        const normalized = f.properties.dateTime.replace(
-          /^(\d{4}):(\d{2}):(\d{2})/,
-          "$1-$2-$3",
-        );
-        return new Date(normalized).toISOString().split("T")[0] === date;
+        // Compare date strings directly — avoids UTC conversion shifting
+        // late-evening photos (≥18:00 MT) to the next calendar day.
+        const dateOnly = f.properties.dateTime.slice(0, 10).replace(/:/g, "-");
+        return dateOnly === date;
       });
 
       g.selectAll(".photoPoints")
@@ -254,6 +305,24 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
         <svg ref={ref} />
       </div>
       {/* Photo tooltip — positioned to the left of the map, covering the metadata */}
+      <div
+        ref={msgTooltipRef}
+        style={{
+          display: "none",
+          position: "fixed",
+          zIndex: 50,
+          backgroundColor: "white",
+          border: "1px solid #e5e7eb",
+          borderRadius: "8px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+          padding: "10px 14px",
+          fontSize: "13px",
+          color: "#4b5563",
+          maxWidth: "280px",
+          pointerEvents: "none",
+          lineHeight: "1.5",
+        }}
+      />
       <div
         ref={tooltipRef}
         style={{
