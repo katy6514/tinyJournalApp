@@ -223,67 +223,38 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
           }
         });
 
-      // Start / end labels
+      // Start (green circle) and end (red square) markers
       const coords = legGeoJSON.features[0]?.geometry?.coordinates;
       if (coords?.length > 0) {
-        const LABEL_OFFSET = 50;
+        const startPos = projection(coords[0]);
+        const endPos = projection(coords[coords.length - 1]);
 
-        const addLabel = (coord, label, neighborCoord, color) => {
-          const pos = projection(coord);
-          if (!pos) return;
-
-          // Direction: away from the neighbor, i.e. outside the track at this endpoint
-          let dx = 0,
-            dy = -LABEL_OFFSET;
-          const neighborPos = projection(neighborCoord);
-          if (neighborPos) {
-            const vx = pos[0] - neighborPos[0];
-            const vy = pos[1] - neighborPos[1];
-            const len = Math.sqrt(vx * vx + vy * vy) || 1;
-            dx = (vx / len) * LABEL_OFFSET;
-            dy = (vy / len) * LABEL_OFFSET;
-          }
-
-          // Clamp label to stay within SVG viewBox
-          const MARGIN = 15;
-          const labelX = Math.max(MARGIN, Math.min(MAP_WIDTH - MARGIN, pos[0] + dx));
-          const labelY = Math.max(MARGIN, Math.min(MAP_HEIGHT - MARGIN, pos[1] + dy));
-
-          // Leader line from endpoint to label
-          g.append("line")
-            .attr("x1", pos[0])
-            .attr("y1", pos[1])
-            .attr("x2", labelX)
-            .attr("y2", labelY)
-            .attr("stroke", color)
-            .attr("stroke-width", 1)
-            .attr("stroke-opacity", 0.6)
-            .attr("vector-effect", "non-scaling-stroke");
-
-          // Label with white halo
-          g.append("text")
-            .attr("x", labelX)
-            .attr("y", labelY)
-            .attr("text-anchor", "middle")
-            .attr("dominant-baseline", "middle")
-            .attr("font-size", "10px")
-            .attr("font-weight", "600")
+        if (startPos) {
+          g.append("circle")
+            .attr("class", "startMarker")
+            .attr("cx", startPos[0])
+            .attr("cy", startPos[1])
+            .attr("r", 6)
+            .attr("fill", "#16a34a")
             .attr("stroke", "white")
-            .attr("stroke-width", 3)
-            .attr("stroke-linejoin", "round")
-            .attr("fill", color)
-            .attr("paint-order", "stroke")
-            .text(label);
-        };
+            .attr("stroke-width", 1.5)
+            .attr("vector-effect", "non-scaling-stroke");
+        }
 
-        if (start) addLabel(coords[0], start, coords[1], "#16a34a");
-        if (end)
-          addLabel(
-            coords[coords.length - 1],
-            end,
-            coords[coords.length - 2],
-            "#dc2626",
-          );
+        if (endPos) {
+          g.append("rect")
+            .attr("class", "endMarker")
+            .attr("data-cx", endPos[0])
+            .attr("data-cy", endPos[1])
+            .attr("x", endPos[0] - 5)
+            .attr("y", endPos[1] - 5)
+            .attr("width", 10)
+            .attr("height", 10)
+            .attr("fill", "#dc2626")
+            .attr("stroke", "white")
+            .attr("stroke-width", 1.5)
+            .attr("vector-effect", "non-scaling-stroke");
+        }
       }
 
       // Scale symbols and photo circles as zoom level changes
@@ -293,6 +264,13 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
         g.selectAll(".photoPoints").attr("r", 6 / k);
         g.selectAll(".campPoints").attr("d", triangle.size(newSize));
         g.selectAll(".messagePoints").attr("d", square.size(newSize));
+        g.selectAll(".startMarker").attr("r", 6 / k).attr("stroke-width", 1.5 / k);
+        g.selectAll(".endMarker")
+          .attr("x", function () { return +d3.select(this).attr("data-cx") - 5 / k; })
+          .attr("y", function () { return +d3.select(this).attr("data-cy") - 5 / k; })
+          .attr("width", 10 / k)
+          .attr("height", 10 / k)
+          .attr("stroke-width", 1.5 / k);
       });
     });
   }, [legGeoJSON, date, start, end]);

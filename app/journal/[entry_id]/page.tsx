@@ -116,13 +116,23 @@ export default async function Page(props: {
                 <tbody>
                   {legStart && (
                     <tr>
-                      <td className="font-medium pr-4 py-0.5">Start</td>
+                      <td className="font-medium pr-4 py-0.5">
+                        <span className="flex items-center gap-1.5">
+                          Start
+                          <svg width="14" height="14" className="shrink-0"><circle cx="7" cy="7" r="5.5" fill="#16a34a" stroke="white" strokeWidth="1.5" /></svg>
+                        </span>
+                      </td>
                       <td>{legStart}</td>
                     </tr>
                   )}
                   {legEnd && (
                     <tr>
-                      <td className="font-medium pr-4 py-0.5">End</td>
+                      <td className="font-medium pr-4 py-0.5">
+                        <span className="flex items-center gap-1.5">
+                          End
+                          <svg width="14" height="14" className="shrink-0"><rect x="1.5" y="1.5" width="11" height="11" fill="#dc2626" stroke="white" strokeWidth="1.5" /></svg>
+                        </span>
+                      </td>
                       <td>{legEnd}</td>
                     </tr>
                   )}
