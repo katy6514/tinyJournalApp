@@ -161,7 +161,9 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
           return `translate(${x}, ${y})`;
         })
         .attr("fill", colors.messages)
-        .attr("stroke", "none")
+        .attr("stroke", colors.messagesDark)
+        .attr("stroke-width", 1.5)
+        .attr("vector-effect", "non-scaling-stroke")
         .on("mouseover", showMsgTooltip)
         .on("mousemove", moveMsgTooltip)
         .on("mouseout", hideMsgTooltip);
@@ -176,8 +178,10 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
           const [x, y] = projection(d.geometry.coordinates);
           return `translate(${x}, ${y})`;
         })
-        .attr("fill", colors.campSites)
-        .attr("stroke", "none")
+        .attr("fill", colors.campSitesLight)
+        .attr("stroke", colors.campSites)
+        .attr("stroke-width", 1.5)
+        .attr("vector-effect", "non-scaling-stroke")
         .on("mouseover", showMsgTooltip)
         .on("mousemove", moveMsgTooltip)
         .on("mouseout", hideMsgTooltip);
@@ -207,7 +211,7 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
         .attr("cy", (d) => projection(d.geometry.coordinates)[1])
         .attr("r", 6)
         .attr("fill", colors.photos)
-        .attr("stroke", "white")
+        .attr("stroke", colors.photosDark)
         .attr("stroke-width", 1.5)
         .attr("vector-effect", "non-scaling-stroke")
         .style("cursor", "pointer")

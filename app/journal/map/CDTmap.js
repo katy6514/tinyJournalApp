@@ -284,7 +284,9 @@ export default function CDTmap() {
           return `translate(${x}, ${y})`;
         })
         .attr("fill", colors.messages)
-        .attr("stroke", "none")
+        .attr("stroke", colors.messagesDark)
+        .attr("stroke-width", 1.5)
+        .attr("vector-effect", "non-scaling-stroke")
         .on("mouseover", function (event, d) {
           showMessagePanel(event, d, currentUserRef.current);
         })
@@ -301,8 +303,10 @@ export default function CDTmap() {
           const [x, y] = projection(d.geometry.coordinates);
           return `translate(${x}, ${y})`;
         })
-        .attr("fill", colors.campSites)
-        .attr("stroke", "none")
+        .attr("fill", colors.campSitesLight)
+        .attr("stroke", colors.campSites)
+        .attr("stroke-width", 1.5)
+        .attr("vector-effect", "non-scaling-stroke")
         .on("mouseover", function (event, d) {
           showMessagePanel(event, d, currentUserRef.current);
         })
@@ -331,7 +335,7 @@ export default function CDTmap() {
         .attr("cy", (d) => projection(d.geometry.coordinates)[1])
         .attr("r", 6)
         .attr("fill", colors.photos)
-        .attr("stroke", "white")
+        .attr("stroke", colors.photosDark)
         .attr("stroke-width", 1.5)
         .attr("vector-effect", "non-scaling-stroke")
         .attr("pointer-events", "none");
@@ -632,19 +636,9 @@ export default function CDTmap() {
   }, [path, projection]);
 
   const LAYERS = [
-    { key: "photos", label: "Photos", color: colors.photos, shape: "circle" },
-    {
-      key: "campsites",
-      label: "Campsites",
-      color: colors.campSites,
-      shape: "triangle",
-    },
-    {
-      key: "messages",
-      label: "Messages",
-      color: colors.messages,
-      shape: "square",
-    },
+    { key: "photos",    label: "Photos",    fill: colors.photos,        stroke: colors.photosDark,    shape: "circle" },
+    { key: "campsites", label: "Campsites", fill: colors.campSitesLight, stroke: colors.campSites,     shape: "triangle" },
+    { key: "messages",  label: "Messages",  fill: colors.messages,       stroke: colors.messagesDark,  shape: "square" },
   ];
 
   const STATIC_LAYERS = [
@@ -652,20 +646,22 @@ export default function CDTmap() {
     { label: "Trail", color: colors.evenDays, shape: "line" },
   ];
 
-  const LegendSymbol = ({ shape, color }) => {
+  const LegendSymbol = ({ shape, fill, stroke, color }) => {
     const size = 14;
     const mid = size / 2;
+    const f = fill ?? color;
+    const s = stroke ?? "none";
     switch (shape) {
       case "circle":
         return (
           <svg width={size} height={size} style={{ flexShrink: 0 }}>
-            <circle cx={mid} cy={mid} r={5} fill={color} />
+            <circle cx={mid} cy={mid} r={4.5} fill={f} stroke={s} strokeWidth={1.5} />
           </svg>
         );
       case "square":
         return (
           <svg width={size} height={size} style={{ flexShrink: 0 }}>
-            <rect x={2} y={2} width={10} height={10} fill={color} />
+            <rect x={2} y={2} width={10} height={10} fill={f} stroke={s} strokeWidth={1.5} />
           </svg>
         );
       case "triangle":
@@ -673,7 +669,9 @@ export default function CDTmap() {
           <svg width={size} height={size} style={{ flexShrink: 0 }}>
             <polygon
               points={`${mid},2 ${size - 1},${size - 2} 1,${size - 2}`}
-              fill={color}
+              fill={f}
+              stroke={s}
+              strokeWidth={1.5}
             />
           </svg>
         );
@@ -753,7 +751,7 @@ export default function CDTmap() {
           Legend
         </p>
         <div className="space-y-1.5">
-          {LAYERS.map(({ key, label, color, shape }) => (
+          {LAYERS.map(({ key, label, fill, stroke, shape }) => (
             <label
               key={key}
               className="flex items-center gap-2 cursor-pointer select-none"
@@ -766,7 +764,7 @@ export default function CDTmap() {
                   setVisibility((v) => ({ ...v, [key]: !v[key] }))
                 }
               />
-              <LegendSymbol shape={shape} color={color} />
+              <LegendSymbol shape={shape} fill={fill} stroke={stroke} />
               <span className="text-gray-700 dark:text-gray-300">{label}</span>
             </label>
           ))}
