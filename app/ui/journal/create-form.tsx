@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 
-import { createEntry, State } from "@/app/lib/actions";
+import { createEntry, State } from "@/app/lib/actions/entries";
 import { JournalEntry, StateOption } from "@/app/lib/definitions";
 
 import { Button } from "../components/button";

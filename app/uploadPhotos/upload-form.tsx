@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { uploadPhotos, UploadPhotoResult } from "@/app/lib/actions";
+import { uploadPhotos, UploadPhotoResult } from "@/app/lib/actions/photos";
 import { Label, Input } from "@/app/ui/components/inputs";
 import { Button } from "@/app/ui/components/button";
 

@@ -4,7 +4,7 @@ import { useActionState } from "react";
 
 import { Button } from "../components/button";
 
-import { updateEntry, EditState } from "@/app/lib/actions";
+import { updateEntry, EditState } from "@/app/lib/actions/entries";
 import { JournalEntry, StateOption } from "@/app/lib/definitions";
 import { Select, Input, TextArea, Label } from "../components/inputs";
 

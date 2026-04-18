@@ -7,7 +7,7 @@ import {
   importLegsFromGeoJSON,
   backfillMileage,
   updateLegWithDate,
-} from "@/app/lib/actions";
+} from "@/app/lib/actions/legs";
 import { Leg, DateRow } from "@/app/lib/definitions";
 import { Label, Input, Select } from "@/app/ui/components/inputs";
 import { Button } from "@/app/ui/components/button";
