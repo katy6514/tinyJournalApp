@@ -92,7 +92,7 @@ export async function fetchEntryByID(id: string): Promise<JournalEntry | null> {
 // ==============================================
 export async function fetchFilteredEntries(
   query: string,
-  currentPage: number
+  currentPage: number,
 ): Promise<{ entries: JournalEntry[]; totalPages: number }> {
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
   const data = await sql<(JournalEntry & { total_count: string })[]>`
@@ -134,7 +134,9 @@ export async function fetchFilteredEntries(
     LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
   `;
 
-  const totalPages = Math.ceil(Number(data[0]?.total_count ?? 0) / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(
+    Number(data[0]?.total_count ?? 0) / ITEMS_PER_PAGE,
+  );
   return { entries: data, totalPages };
 }
 
@@ -159,7 +161,7 @@ export async function fetchPhotosForDateID(date_id: string) {
 }
 
 // ==========================
-// Fetch photos for a given date
+// Fetch leg for a given date
 // ==========================
 export async function fetchLegForDateID(date_id: string) {
   try {
@@ -179,7 +181,7 @@ export async function fetchLegForDateID(date_id: string) {
 }
 
 // ==========================
-// Fetch photos for a given date
+// Fetch photos
 // ==========================
 export async function fetchPhotos() {
   try {
