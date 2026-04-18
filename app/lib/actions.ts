@@ -420,6 +420,27 @@ export async function uploadPhotos(
       continue;
     }
 
+    // Check for an existing photo with the same date_time + date_id (re-upload of a photo
+    // that previously failed GPS extraction). If found, update lat/lon in place and skip
+    // writing a new file to avoid duplicates.
+    if (dateTimeStr) {
+      const existing = await sql<{ id: number; lat: number | null }[]>`
+        SELECT id, lat FROM photos WHERE date_time = ${dateTimeStr} AND date_id = ${dateId} LIMIT 1
+      `;
+      if (existing.length > 0) {
+        if (existing[0].lat !== null) {
+          results.push({ filename: originalName, status: "error", message: "Photo already exists with GPS data. Skipping." });
+          continue;
+        }
+        // Update GPS on the existing row — no new file needed
+        await sql`
+          UPDATE photos SET lat = ${lat}, lon = ${lon} WHERE id = ${existing[0].id}
+        `;
+        results.push({ filename: originalName, status: "success", message: "Updated existing photo with GPS coordinates." });
+        continue;
+      }
+    }
+
     // Convert HEIC to JPEG now that EXIF has been extracted
     let storageBuffer = originalBuffer;
     if (isHeic) {
