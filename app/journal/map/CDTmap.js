@@ -53,7 +53,10 @@ export default function CDTmap() {
       "display",
       visibility.messages ? null : "none",
     );
-    g.selectAll(".cities, .city_label_layer").attr("display", visibility.cities ? null : "none");
+    g.selectAll(".cities, .city_label_layer").attr(
+      "display",
+      visibility.cities ? null : "none",
+    );
     g.selectAll(".trail").attr("display", visibility.trail ? null : "none");
     g.selectAll(".state-label").attr(
       "display",
@@ -127,7 +130,6 @@ export default function CDTmap() {
     const square = d3.symbol().type(d3.symbolSquare).size(128);
     const triangle = d3.symbol().type(d3.symbolTriangle).size(128);
     const cross = d3.symbol().type(d3.symbolCross).size(128);
-
 
     // Add zoom behavior
     const zoom = d3
@@ -353,21 +355,48 @@ export default function CDTmap() {
 
         if (nearby.length === 1) {
           const { path: photoPath, dateTime } = d.properties;
-          const normalized = dateTime.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
+          const normalized = dateTime.replace(
+            /^(\d{4}):(\d{2}):(\d{2})/,
+            "$1-$2-$3",
+          );
           const photoDate = new Date(normalized);
-          const dateStr = photoDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-          const timeStr = photoDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+          const dateStr = photoDate.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+          const timeStr = photoDate.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+          });
           tooltip.innerHTML = `<img src="${photoPath}" width="550"><br /><p><strong>Date:</strong> ${dateStr}</p><p><strong>Time:</strong> ${timeStr}</p>`;
         } else {
           const { dateTime: firstDT } = nearby[0].properties;
-          const normalized = firstDT.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
-          const dateStr = new Date(normalized).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-          const photoItems = nearby.map((f) => {
-            const { path: photoPath, dateTime } = f.properties;
-            const dt = dateTime.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
-            const timeStr = new Date(dt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-            return `<div style="flex-shrink:0;text-align:center"><img src="${photoPath}" style="width:250px;display:block"><p style="font-size:11px;margin-top:4px">${timeStr}</p></div>`;
-          }).join("");
+          const normalized = firstDT.replace(
+            /^(\d{4}):(\d{2}):(\d{2})/,
+            "$1-$2-$3",
+          );
+          const dateStr = new Date(normalized).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+          const photoItems = nearby
+            .map((f) => {
+              const { path: photoPath, dateTime } = f.properties;
+              const dt = dateTime.replace(
+                /^(\d{4}):(\d{2}):(\d{2})/,
+                "$1-$2-$3",
+              );
+              const timeStr = new Date(dt).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              });
+              return `<div style="flex-shrink:0;text-align:center"><img src="${photoPath}" style="width:250px;display:block"><p style="font-size:11px;margin-top:4px">${timeStr}</p></div>`;
+            })
+            .join("");
           tooltip.innerHTML = `<p style="font-weight:600;margin-bottom:6px">${nearby.length} photos — ${dateStr}</p><div style="display:flex;gap:8px;overflow-x:auto;max-width:600px">${photoItems}</div>`;
         }
       }
@@ -383,7 +412,9 @@ export default function CDTmap() {
         .attr("r", 14)
         .attr("fill", "transparent")
         .attr("stroke", "none")
-        .on("mouseover", function (_event, d) { showPhotoTooltip(d); })
+        .on("mouseover", function (_event, d) {
+          showPhotoTooltip(d);
+        })
         .on("mousemove", handleMouseMove)
         .on("mouseout", handleMouseOut);
 
@@ -435,7 +466,17 @@ export default function CDTmap() {
           const mid = coords[Math.floor(coords.length / 2)];
           return projection(mid)[1];
         })
-        .text((d) => `${d.properties.title} - ${d.properties.description}`)
+        .text((d) => {
+          const raw = d.properties.date;
+          if (!raw) return d.properties.description || d.properties.title;
+          const dt = new Date(raw + "T00:00:00");
+          const dateStr = dt.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          });
+          return `${dateStr}: ${d.properties.description || ""}`;
+        })
         .attr("font-size", 12)
         .attr("fill", "black")
         .attr("stroke", "none")
@@ -584,14 +625,24 @@ export default function CDTmap() {
   }, [path, projection]);
 
   const LAYERS = [
-    { key: "photos",    label: "Photos",    color: colors.photos,    shape: "circle" },
-    { key: "campsites", label: "Campsites", color: colors.campSites, shape: "triangle" },
-    { key: "messages",  label: "Messages",  color: colors.messages,  shape: "square" },
+    { key: "photos", label: "Photos", color: colors.photos, shape: "circle" },
+    {
+      key: "campsites",
+      label: "Campsites",
+      color: colors.campSites,
+      shape: "triangle",
+    },
+    {
+      key: "messages",
+      label: "Messages",
+      color: colors.messages,
+      shape: "square",
+    },
   ];
 
   const STATIC_LAYERS = [
-    { label: "Resupply Stops", color: colors.black,    shape: "cross" },
-    { label: "Trail",          color: colors.evenDays, shape: "line" },
+    { label: "Resupply Stops", color: colors.black, shape: "cross" },
+    { label: "Trail", color: colors.evenDays, shape: "line" },
   ];
 
   const LegendSymbol = ({ shape, color }) => {
@@ -613,37 +664,84 @@ export default function CDTmap() {
       case "triangle":
         return (
           <svg width={size} height={size} style={{ flexShrink: 0 }}>
-            <polygon points={`${mid},2 ${size - 1},${size - 2} 1,${size - 2}`} fill={color} />
+            <polygon
+              points={`${mid},2 ${size - 1},${size - 2} 1,${size - 2}`}
+              fill={color}
+            />
           </svg>
         );
       case "cross":
         return (
           <svg width={size} height={size} style={{ flexShrink: 0 }}>
-            <line x1={mid} y1={1} x2={mid} y2={size - 1} stroke={color} strokeWidth={2} />
-            <line x1={1} y1={mid} x2={size - 1} y2={mid} stroke={color} strokeWidth={2} />
+            <line
+              x1={mid}
+              y1={1}
+              x2={mid}
+              y2={size - 1}
+              stroke={color}
+              strokeWidth={2}
+            />
+            <line
+              x1={1}
+              y1={mid}
+              x2={size - 1}
+              y2={mid}
+              stroke={color}
+              strokeWidth={2}
+            />
           </svg>
         );
       case "line":
         return (
           <svg width={size} height={size} style={{ flexShrink: 0 }}>
-            <line x1={0} y1={mid} x2={size} y2={mid} stroke={color} strokeWidth={2.5} />
+            <line
+              x1={0}
+              y1={mid}
+              x2={size}
+              y2={mid}
+              stroke={color}
+              strokeWidth={2.5}
+            />
           </svg>
         );
       case "text":
         return (
           <svg width={size} height={size} style={{ flexShrink: 0 }}>
-            <text x={mid} y={mid + 1} textAnchor="middle" dominantBaseline="middle" fill={color} fontSize={8} fontWeight="600" letterSpacing="1">AB</text>
+            <text
+              x={mid}
+              y={mid + 1}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill={color}
+              fontSize={8}
+              fontWeight="600"
+              letterSpacing="1"
+            >
+              AB
+            </text>
           </svg>
         );
       default:
-        return <span style={{ display: "inline-block", width: size, height: size, background: color, flexShrink: 0 }} />;
+        return (
+          <span
+            style={{
+              display: "inline-block",
+              width: size,
+              height: size,
+              background: color,
+              flexShrink: 0,
+            }}
+          />
+        );
     }
   };
 
   return (
     <div className="relative">
       {/* Layer toggle panel */}
-      <div className={`absolute top-100 left-3 z-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg shadow-md p-3 text-xs ${notoSans.className}`}>
+      <div
+        className={`absolute top-100 left-3 z-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg shadow-md p-3 text-xs ${notoSans.className}`}
+      >
         <p className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
           Legend
         </p>
