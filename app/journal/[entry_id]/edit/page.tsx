@@ -1,4 +1,4 @@
-import EditEntryForm from "@/app/ui/journal/edit-form";
+import EntryForm from "@/app/ui/journal/entry-form";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 import { fetchEntryByID, fetchStates } from "@/app/lib/data";
 import { notFound } from "next/navigation";
@@ -31,7 +31,7 @@ export default async function Page(props: {
           },
         ]}
       />
-      <EditEntryForm entry={entry} states={states} />
+      <EntryForm entry={entry} states={states} />
     </main>
   );
 }

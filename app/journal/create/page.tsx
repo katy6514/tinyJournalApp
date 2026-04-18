@@ -1,4 +1,4 @@
-import Form from "@/app/ui/journal/create-form";
+import EntryForm from "@/app/ui/journal/entry-form";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 import { fetchEmptyEntries, fetchAssignedLegs, fetchStates } from "@/app/lib/data";
 
@@ -29,7 +29,7 @@ export default async function Page(props: {
           },
         ]}
       />
-      <Form emptyEntries={emptyEntries} legNameByDateId={legNameByDateId} returnPage={returnPage} states={states} />
+      <EntryForm emptyEntries={emptyEntries} legNameByDateId={legNameByDateId} returnPage={returnPage} states={states} />
     </main>
   );
 }
