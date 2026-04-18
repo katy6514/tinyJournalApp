@@ -98,18 +98,20 @@ export default async function Page(props: {
       <div className=" bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
         {/* Metadata + minimap row */}
         <div className="flex gap-4 items-start mb-6">
-          <div className="flex-1 min-w-0">
-            <h2 className={`${notoSans.className} mb-1 text-md md:text-lg text-gray-500 dark:text-gray-400`}>
-              {formattedDate}
-            </h2>
-            <h1 className={`${notoSans.className} mb-1 text-xl md:text-2xl`}>
-              {legname}
-            </h1>
-            <h2 className={`${notoSans.className} mb-4 text-lg md:text-xl`}>
-              {state}
-            </h2>
+          <div className="flex-1 min-w-0 flex justify-between gap-6">
+            <div>
+              <h2 className={`${notoSans.className} mb-1 text-md md:text-lg text-gray-500 dark:text-gray-400`}>
+                {formattedDate}
+              </h2>
+              <h1 className={`${notoSans.className} mb-1 text-xl md:text-2xl`}>
+                {legname}
+              </h1>
+              <h2 className={`${notoSans.className} text-lg md:text-xl`}>
+                {state}
+              </h2>
+            </div>
             {(legStart || legEnd || leg?.mileage) && (
-              <table className={`${notoSans.className} text-sm text-gray-600 dark:text-gray-400`}>
+              <table className={`${notoSans.className} text-sm text-gray-600 dark:text-gray-400 self-start mt-1`}>
                 <tbody>
                   {legStart && (
                     <tr>
