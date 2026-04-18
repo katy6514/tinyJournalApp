@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 import * as d3 from "d3";
 
@@ -28,6 +29,9 @@ export default function CDTmap() {
   const { data: session } = useSession();
   const currentUserRef = useRef(null);
   currentUserRef.current = session?.user ?? null;
+  const router = useRouter();
+  const routerRef = useRef(router);
+  routerRef.current = router;
 
   const [visibility, setVisibility] = useState({
     photos: true,
@@ -156,10 +160,6 @@ export default function CDTmap() {
           event.transform.k > 2.35 ? null : "none",
         );
         g.selectAll(".state-label").attr("font-size", 20 / event.transform.k);
-        g.selectAll(".leg-label")
-          .attr("display", event.transform.k > 30 ? null : "none")
-          .attr("font-size", 12 / event.transform.k)
-          .attr("stroke-width", 3 / event.transform.k);
       });
 
     svg.call(zoom);
@@ -438,68 +438,57 @@ export default function CDTmap() {
         .attr("fill", "none")
         .attr("stroke", (d) => getAlternatingColor(d.properties))
         .attr("stroke-width", 2)
-        .attr("vector-effect", "non-scaling-stroke");
+        .attr("vector-effect", "non-scaling-stroke")
+        .attr("pointer-events", "none");
 
-      /* -----------------------------------------------------
-      *  Leg labels (visible when zoom k > 15)
-      ----------------------------------------------------- */
+      // Transparent wide hit areas on top for easier hover detection
+      const trailData = trackData.features.filter(
+        (d) =>
+          Array.isArray(d.geometry?.coordinates) &&
+          d.geometry.coordinates.length > 0,
+      );
 
-      const validTrackFeatures = trackData.features.filter((d) => {
-        const coords = d.geometry?.coordinates;
-        if (!Array.isArray(coords) || coords.length === 0) return false;
-        const mid = coords[Math.floor(coords.length / 2)];
-        return projection(mid) !== null;
-      });
-
-      g.selectAll(".leg-label")
-        .data(validTrackFeatures)
+      g.selectAll(".trail-hit")
+        .data(trailData)
         .enter()
-        .append("text")
-        .attr("class", "leg-label")
-        .attr("display", "none")
-        .attr("x", (d) => {
-          const coords = d.geometry.coordinates;
-          const mid = coords[Math.floor(coords.length / 2)];
-          return projection(mid)[0];
-        })
-        .attr("y", (d) => {
-          const coords = d.geometry.coordinates;
-          const mid = coords[Math.floor(coords.length / 2)];
-          return projection(mid)[1];
-        })
-        .attr("font-size", 12)
-        .attr("font-weight", "600")
-        .attr("fill", colors.black)
-        .attr("stroke", "white")
-        .attr("stroke-width", 3)
-        .attr("stroke-linejoin", "round")
-        .attr("paint-order", "stroke")
-        .attr("text-anchor", "middle")
-        .each(function (d) {
+        .append("path")
+        .attr("class", "trail-hit")
+        .attr("d", d3.geoPath().projection(projection))
+        .attr("fill", "none")
+        .attr("stroke", "transparent")
+        .attr("stroke-width", 12)
+        .attr("vector-effect", "non-scaling-stroke")
+        .on("mouseover", function (event, d) {
+          if ((currentTransformRef.current?.k ?? 0) <= 20) return;
           const raw = d.properties.date;
           const dateStr = raw
             ? new Date(raw + "T00:00:00").toLocaleDateString("en-US", {
-                month: "short",
+                month: "long",
                 day: "numeric",
                 year: "numeric",
               })
-            : d.properties.title;
+            : null;
           const desc = d.properties.description || "";
+          const tooltip = document.getElementById("tooltip");
+          tooltip.innerHTML = dateStr
+            ? `<p style="font-weight:600">${dateStr}</p><p style="font-weight:400;opacity:0.85">${desc}</p>`
+            : `<p style="font-weight:600">${desc}</p>`;
+          tooltip.style.left = event.pageX + 15 + "px";
+          tooltip.style.top = event.pageY - 50 + "px";
+          tooltip.classList.remove("invisible", "opacity-0");
+          tooltip.classList.add("visible", "opacity-100");
+        })
+        .on("mousemove", handleMouseMove)
+        .on("mouseout", handleMouseOut)
+        .on("click", function (_event, d) {
+          const entryId = d.properties.entry_id;
+          if (!entryId) return;
+          handleMouseOut();
+          routerRef.current.push(`/journal/${entryId}`);
+        })
+        .style("cursor", (d) => d.properties.entry_id ? "pointer" : "default");
 
-          d3.select(this)
-            .append("tspan")
-            .attr("x", d3.select(this).attr("x"))
-            .attr("dy", "-0.6em")
-            .text(dateStr);
-
-          d3.select(this)
-            .append("tspan")
-            .attr("x", d3.select(this).attr("x"))
-            .attr("dy", "1.2em")
-            .attr("font-weight", "400")
-            .text(desc);
-        });
-
+      /* -----------------------------------------------------
       /* -----------------------------------------------------
       *  City labels (rendered last so they float above state lines)
       ----------------------------------------------------- */
