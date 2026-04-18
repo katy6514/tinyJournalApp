@@ -446,7 +446,7 @@ export async function uploadPhotos(
     if (isHeic) {
       try {
         const heicConvert = (await import("heic-convert")).default;
-        const converted = await heicConvert({ buffer: originalBuffer, format: "JPEG", quality: 0.9 });
+        const converted = await heicConvert({ buffer: originalBuffer as unknown as ArrayBuffer, format: "JPEG", quality: 0.9 });
         storageBuffer = Buffer.from(converted);
       } catch (e) {
         results.push({ filename: originalName, status: "error", message: `HEIC conversion failed: ${String(e)}` });
