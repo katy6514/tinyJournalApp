@@ -157,7 +157,7 @@ export default function CDTmap() {
         );
         g.selectAll(".state-label").attr("font-size", 20 / event.transform.k);
         g.selectAll(".leg-label")
-          .attr("display", event.transform.k > 15 ? null : "none")
+          .attr("display", event.transform.k > 30 ? null : "none")
           .attr("font-size", 12 / event.transform.k)
           .attr("stroke-width", 3 / event.transform.k);
       });
@@ -467,17 +467,6 @@ export default function CDTmap() {
           const mid = coords[Math.floor(coords.length / 2)];
           return projection(mid)[1];
         })
-        .text((d) => {
-          const raw = d.properties.date;
-          if (!raw) return d.properties.description || d.properties.title;
-          const dt = new Date(raw + "T00:00:00");
-          const dateStr = dt.toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          });
-          return `${dateStr}: ${d.properties.description || ""}`;
-        })
         .attr("font-size", 12)
         .attr("font-weight", "600")
         .attr("fill", colors.black)
@@ -485,8 +474,31 @@ export default function CDTmap() {
         .attr("stroke-width", 3)
         .attr("stroke-linejoin", "round")
         .attr("paint-order", "stroke")
-        .attr("dominant-baseline", "middle")
-        .attr("text-anchor", "middle");
+        .attr("text-anchor", "middle")
+        .each(function (d) {
+          const raw = d.properties.date;
+          const dateStr = raw
+            ? new Date(raw + "T00:00:00").toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+            : d.properties.title;
+          const desc = d.properties.description || "";
+
+          d3.select(this)
+            .append("tspan")
+            .attr("x", d3.select(this).attr("x"))
+            .attr("dy", "-0.6em")
+            .text(dateStr);
+
+          d3.select(this)
+            .append("tspan")
+            .attr("x", d3.select(this).attr("x"))
+            .attr("dy", "1.2em")
+            .attr("font-weight", "400")
+            .text(desc);
+        });
 
       /* -----------------------------------------------------
       *  City labels (rendered last so they float above state lines)
