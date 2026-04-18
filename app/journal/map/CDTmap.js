@@ -158,7 +158,8 @@ export default function CDTmap() {
         g.selectAll(".state-label").attr("font-size", 20 / event.transform.k);
         g.selectAll(".leg-label")
           .attr("display", event.transform.k > 15 ? null : "none")
-          .attr("font-size", 12 / event.transform.k);
+          .attr("font-size", 12 / event.transform.k)
+          .attr("stroke-width", 3 / event.transform.k);
       });
 
     svg.call(zoom);
@@ -478,8 +479,13 @@ export default function CDTmap() {
           return `${dateStr}: ${d.properties.description || ""}`;
         })
         .attr("font-size", 12)
-        .attr("fill", "black")
-        .attr("stroke", "none")
+        .attr("font-weight", "600")
+        .attr("fill", colors.black)
+        .attr("stroke", "white")
+        .attr("stroke-width", 3)
+        .attr("stroke-linejoin", "round")
+        .attr("paint-order", "stroke")
+        .attr("dominant-baseline", "middle")
         .attr("text-anchor", "middle");
 
       /* -----------------------------------------------------
