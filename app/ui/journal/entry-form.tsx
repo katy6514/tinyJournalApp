@@ -41,7 +41,10 @@ export default function EntryForm({
     ? updateEntry.bind(null, entry.entry_id)
     : createEntry;
 
-  const [formState, formAction] = useActionState(action, initialState);
+  const [formState, formAction] = useActionState(
+    action as (state: State, formData: FormData) => Promise<State>,
+    initialState,
+  );
   const [legname, setLegname] = useState(entry?.legname ?? "");
 
   return (

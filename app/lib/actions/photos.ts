@@ -8,6 +8,7 @@ import { randomUUID } from "crypto";
 import { auth } from "@/auth";
 
 import sql from "../db";
+import { extractPhotoExif } from "../exif";
 
 export type UploadPhotoResult = {
   results: Array<{
@@ -23,9 +24,6 @@ export async function uploadPhotos(
 ): Promise<UploadPhotoResult> {
   const session = await auth();
   if (!session) throw new Error("Not authenticated");
-
-  // Dynamic import: exifr is ESM-only, can't be top-level imported in a CJS context
-  const exifr = (await import("exifr")).default;
 
   const title = (formData.get("title") as string | null) || null;
   const files = formData.getAll("photos") as File[];
@@ -52,49 +50,8 @@ export async function uploadPhotos(
     // because heic-convert strips metadata from the output JPEG
     const originalBuffer = Buffer.from(await file.arrayBuffer());
 
-    // Extract EXIF from original (EXIF is present in HEIC before conversion)
-    let lat: number | null = null;
-    let lon: number | null = null;
-    let dateTimeStr: string | null = null;
-    let calendarDate: string | null = null;
-    let width: number | null = null;
-    let height: number | null = null;
-
-    try {
-      // exifr.gps() is the most reliable cross-format GPS extractor (JPEG and HEIC)
-      // It bypasses the pick-filter issue where the GPS sub-IFD isn't always parsed
-      const gps = await exifr.gps(originalBuffer);
-      if (gps) {
-        lat = gps.latitude ?? null;
-        lon = gps.longitude ?? null;
-      }
-    } catch {
-      // Non-fatal: photo saves without GPS coords if none embedded
-    }
-
-    try {
-      const exifData = await exifr.parse(originalBuffer, {
-        pick: ["DateTimeOriginal", "ExifImageWidth", "ExifImageHeight"],
-      });
-      if (exifData) {
-        width = exifData.ExifImageWidth ?? null;
-        height = exifData.ExifImageHeight ?? null;
-
-        const dt: Date | undefined = exifData.DateTimeOriginal;
-        if (dt instanceof Date) {
-          const y  = dt.getFullYear();
-          const mo = String(dt.getMonth() + 1).padStart(2, "0");
-          const d  = String(dt.getDate()).padStart(2, "0");
-          const h  = String(dt.getHours()).padStart(2, "0");
-          const mi = String(dt.getMinutes()).padStart(2, "0");
-          const s  = String(dt.getSeconds()).padStart(2, "0");
-          dateTimeStr = `${y}:${mo}:${d} ${h}:${mi}:${s}`;
-          calendarDate = `${y}-${mo}-${d}`;
-        }
-      }
-    } catch {
-      // Non-fatal: photo saves without date/dimensions if EXIF is unreadable
-    }
+    const { lat, lon, dateTimeStr, calendarDate, width, height } =
+      await extractPhotoExif(originalBuffer);
 
     // Require a matching date in the dates table (date_id is NOT NULL)
     let dateId: number | null = null;
