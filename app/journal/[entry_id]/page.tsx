@@ -96,9 +96,10 @@ export default async function Page(props: {
       </div>
 
       <div className=" bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
-        {/* Metadata + minimap row */}
-        <div className="flex gap-4 items-start mb-6">
-          <div className="flex-1 min-w-0 flex justify-between gap-6">
+        {/* Grid: col 1 = metadata then journal text, col 2 = minimap spanning both rows */}
+        <div className={legGeoJSON ? "grid grid-cols-[1fr_50%] gap-4 items-start" : ""}>
+          {/* Metadata */}
+          <div className="flex justify-between gap-6 mb-6">
             <div>
               <h2 className={`${notoSans.className} mb-1 text-md md:text-lg text-gray-500 dark:text-gray-400`}>
                 {formattedDate}
@@ -135,18 +136,20 @@ export default async function Page(props: {
               </table>
             )}
           </div>
+
+          {/* Mini map — spans metadata row + journal text row */}
           {legGeoJSON && (
-            <div className="w-1/2 shrink-0">
+            <div className="row-span-2">
               <EntryMiniMap legGeoJSON={legGeoJSON} date={date} start={legStart} end={legEnd} />
             </div>
           )}
-        </div>
 
-        {/* Journal text */}
-        <div className="flex-1 min-w-0">
-          <p className={`${notoSerif.className} whitespace-pre-wrap`}>
-            {text}
-          </p>
+          {/* Journal text */}
+          <div>
+            <p className={`${notoSerif.className} whitespace-pre-wrap`}>
+              {text}
+            </p>
+          </div>
         </div>
         <EntryPhotos photos={photos} />
         <div className="mt-6 flex justify-end">
