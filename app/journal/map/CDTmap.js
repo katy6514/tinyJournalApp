@@ -57,10 +57,8 @@ export default function CDTmap() {
       "display",
       visibility.messages ? null : "none",
     );
-    g.selectAll(".cities, .city_label_layer").attr(
-      "display",
-      visibility.cities ? null : "none",
-    );
+    g.selectAll(".cities").attr("display", visibility.cities ? null : "none");
+    d3.select(ref.current).selectAll(".city_label_layer").attr("display", visibility.cities ? null : "none");
     g.selectAll(".trail").attr("display", visibility.trail ? null : "none");
     g.selectAll(".state-label").attr(
       "display",
@@ -142,6 +140,40 @@ export default function CDTmap() {
       .on("zoom", (event) => {
         g.attr("transform", event.transform);
         currentTransformRef.current = event.transform;
+
+        // Reposition city labels/lines and show only those whose dot is in the viewport
+        const t = event.transform;
+        const MARGIN = 10;
+        const showLabels = t.k > 2.35;
+
+        svg.selectAll(".city_labels").each(function () {
+          const el = d3.select(this);
+          const [dotSx, dotSy] = t.apply([+el.attr("data-dot-x"), +el.attr("data-dot-y")]);
+          const inViewport = dotSx >= 0 && dotSx <= width && dotSy >= 0 && dotSy <= height;
+          if (showLabels && inViewport) {
+            const [sx, sy] = t.apply([+el.attr("data-bx"), +el.attr("data-by")]);
+            el.attr("x", Math.max(MARGIN, Math.min(width - MARGIN, sx)))
+              .attr("y", Math.max(MARGIN, Math.min(height - MARGIN, sy)))
+              .attr("display", null);
+          } else {
+            el.attr("display", "none");
+          }
+        });
+
+        svg.selectAll(".city_lines").each(function () {
+          const el = d3.select(this);
+          const [x1, y1] = t.apply([+el.attr("data-dot-x"), +el.attr("data-dot-y")]);
+          const inViewport = x1 >= 0 && x1 <= width && y1 >= 0 && y1 <= height;
+          if (showLabels && inViewport) {
+            const [lx, ly] = t.apply([+el.attr("data-label-x"), +el.attr("data-label-y")]);
+            el.attr("x1", x1).attr("y1", y1)
+              .attr("x2", Math.max(MARGIN, Math.min(width - MARGIN, lx)))
+              .attr("y2", Math.max(MARGIN, Math.min(height - MARGIN, ly)))
+              .attr("display", null);
+          } else {
+            el.attr("display", "none");
+          }
+        });
       })
 
       .on("end", (event) => {
@@ -152,13 +184,6 @@ export default function CDTmap() {
         g.selectAll(".campPoints").attr("d", triangle.size(newSize));
         g.selectAll(".messagePoints").attr("d", square.size(newSize));
         g.selectAll(".cityPoints").attr("d", cross.size(newSize));
-        g.selectAll(".city_labels")
-          .attr("display", event.transform.k > 2.35 ? null : "none")
-          .attr("font-size", 12 / event.transform.k);
-        g.selectAll(".city_lines").attr(
-          "display",
-          event.transform.k > 2.35 ? null : "none",
-        );
         g.selectAll(".state-label").attr("font-size", 20 / event.transform.k);
       });
 
@@ -497,7 +522,9 @@ export default function CDTmap() {
       *  City labels (rendered last so they float above state lines)
       ----------------------------------------------------- */
 
-      const cityLabelsGroup = g.append("g").attr("class", "city_label_layer");
+      // City label overlay is appended to svg (not g) so it is not affected by
+      // the zoom transform — positions are updated manually on every zoom tick.
+      const cityLabelsGroup = svg.append("g").attr("class", "city_label_layer");
 
       cityLabelsGroup
         .selectAll("line")
@@ -506,6 +533,10 @@ export default function CDTmap() {
         .append("line")
         .attr("class", "city_lines")
         .attr("display", "none")
+        .attr("data-dot-x", (d) => projection([d.lon, d.lat])[0])
+        .attr("data-dot-y", (d) => projection([d.lon, d.lat])[1])
+        .attr("data-label-x", (d) => projection([d.lon, d.lat])[0] + d.dx)
+        .attr("data-label-y", (d) => projection([d.lon, d.lat])[1] + d.dy)
         .attr("x1", (d) => projection([d.lon, d.lat])[0])
         .attr("y1", (d) => projection([d.lon, d.lat])[1])
         .attr("x2", (d) => projection([d.lon, d.lat])[0] + d.dx)
@@ -521,6 +552,10 @@ export default function CDTmap() {
         .append("text")
         .attr("class", "city_labels")
         .attr("display", "none")
+        .attr("data-dot-x", (d) => projection([d.lon, d.lat])[0])
+        .attr("data-dot-y", (d) => projection([d.lon, d.lat])[1])
+        .attr("data-bx", (d) => projection([d.lon, d.lat])[0] + d.dx)
+        .attr("data-by", (d) => projection([d.lon, d.lat])[1] + d.dy)
         .attr("x", (d) => projection([d.lon, d.lat])[0] + d.dx)
         .attr("y", (d) => projection([d.lon, d.lat])[1] + d.dy)
         .text((d) => d.name)
