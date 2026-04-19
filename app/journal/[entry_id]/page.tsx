@@ -161,7 +161,9 @@ export default async function Page(props: {
             </p>
           </div>
         </div>
-        <EntryPhotos photos={photos} />
+        <div className="mt-8">
+          <EntryPhotos photos={photos} />
+        </div>
         <div className="mt-6 flex justify-end">
           <Button
             href={`/journal/${entry_id}/edit`}
