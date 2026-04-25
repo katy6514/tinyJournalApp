@@ -386,11 +386,13 @@ export default function CDTmap() {
         g.selectAll(".campCluster")
           .data(groups)
           .enter()
-          .append("circle")
+          .append("path")
           .attr("class", "campCluster")
-          .attr("cx", (d) => d.cx)
-          .attr("cy", (d) => d.cy)
-          .attr("r", (d) => (6 + Math.log(d.count + 1) * 4) / k)
+          .attr("d", (d) => {
+            const r = (6 + Math.log(d.count + 1) * 4) / k;
+            return triangle.size(r * r * 2)();
+          })
+          .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
           .attr("fill", colors.campSitesLight)
           .attr("stroke", colors.campSites)
           .attr("stroke-width", 1.5)
