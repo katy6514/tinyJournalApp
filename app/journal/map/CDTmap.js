@@ -176,6 +176,21 @@ export default function CDTmap() {
     const zoom = d3
       .zoom()
       .scaleExtent([1, 500])
+      .filter(function (event) {
+        // Don't let zoom intercept drag gestures on interactive data elements —
+        // otherwise D3 zoom suppresses the subsequent click event via a
+        // capture-phase handler it registers after any pointer movement.
+        const cls = event.target?.classList;
+        if (
+          cls?.contains("photoClusterHit") ||
+          cls?.contains("msgClusterHit") ||
+          cls?.contains("campClusterHit") ||
+          cls?.contains("photoHitAreas")
+        ) {
+          return false;
+        }
+        return (!event.ctrlKey || event.type === "wheel") && !event.button;
+      })
       .on("zoom", (event) => {
         g.attr("transform", event.transform);
         currentTransformRef.current = event.transform;
@@ -463,7 +478,8 @@ export default function CDTmap() {
           })
           .on("mousemove", handleMouseMove)
           .on("mouseout", handleMouseOut)
-          .on("click", function (_event, d) {
+          .on("click", function (event, d) {
+            event.stopPropagation();
             handleMouseOut();
             setClusterPanelRef.current({
               type: "message",
@@ -605,7 +621,8 @@ export default function CDTmap() {
           })
           .on("mousemove", handleMouseMove)
           .on("mouseout", handleMouseOut)
-          .on("click", function (_event, d) {
+          .on("click", function (event, d) {
+            event.stopPropagation();
             handleMouseOut();
             setClusterPanelRef.current({
               type: "campsite",
@@ -809,7 +826,8 @@ export default function CDTmap() {
           })
           .on("mousemove", handleMouseMove)
           .on("mouseout", handleMouseOut)
-          .on("click", function (_event, d) {
+          .on("click", function (event, d) {
+            event.stopPropagation();
             handleMouseOut();
             setClusterPanelRef.current({
               type: "photo",
