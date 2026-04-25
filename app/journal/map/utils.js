@@ -110,7 +110,7 @@ export function handleMouseOver(currentUser = null) {
 
 export function handleMouseMove(event) {
   const tooltip = document.getElementById("tooltip");
-  tooltip.style.left = event.pageX + 15 + "px";
+  tooltip.style.left = event.pageX - tooltip.offsetWidth - 15 + "px";
   tooltip.style.top = event.pageY - 50 + "px";
 }
 
