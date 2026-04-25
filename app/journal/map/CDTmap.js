@@ -93,7 +93,8 @@ export default function CDTmap() {
     const ty = height / 2 - (scale * (minY + maxY)) / 2;
     d3.select(ref.current)
       .transition()
-      .duration(500)
+      .duration(1200)
+      .ease(d3.easeCubicInOut)
       .call(
         zoomRef.current.transform,
         d3.zoomIdentity.translate(tx, ty).scale(scale),
