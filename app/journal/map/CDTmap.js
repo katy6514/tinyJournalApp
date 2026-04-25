@@ -126,9 +126,9 @@ export default function CDTmap() {
     const visibleLeft = width / 2;
     const visibleWidth = width / 2;
     const scale = Math.min(
-      (visibleWidth - 2 * PADDING) / Math.max(maxX - minX, 10),
-      (height - 2 * PADDING) / Math.max(maxY - minY, 10),
-      200,
+      (visibleWidth - 2 * PADDING) / Math.max(maxX - minX, 1),
+      (height - 2 * PADDING) / Math.max(maxY - minY, 1),
+      500, // matches scaleExtent max
     );
     const visibleCenterX = visibleLeft + visibleWidth / 2; // 675
     const tx = visibleCenterX - (scale * (minX + maxX)) / 2;
