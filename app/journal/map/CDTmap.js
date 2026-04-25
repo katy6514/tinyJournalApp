@@ -114,12 +114,17 @@ export default function CDTmap() {
     const minY = Math.min(...ys),
       maxY = Math.max(...ys);
     const PADDING = 80;
+    // The overlay panel covers the left half of the SVG viewBox.
+    // Fit the cluster into the visible right half and center it there.
+    const visibleLeft = width / 2;
+    const visibleWidth = width / 2;
     const scale = Math.min(
-      (width - 2 * PADDING) / Math.max(maxX - minX, 10),
+      (visibleWidth - 2 * PADDING) / Math.max(maxX - minX, 10),
       (height - 2 * PADDING) / Math.max(maxY - minY, 10),
       200,
     );
-    const tx = width / 2 - (scale * (minX + maxX)) / 2;
+    const visibleCenterX = visibleLeft + visibleWidth / 2; // 675
+    const tx = visibleCenterX - (scale * (minX + maxX)) / 2;
     const ty = height / 2 - (scale * (minY + maxY)) / 2;
     d3.select(ref.current)
       .transition()
@@ -1280,13 +1285,16 @@ export default function CDTmap() {
     : "";
 
   return (
-    <div className="flex w-full items-stretch">
-      {/* Agenda panel — left half when a cluster is clicked */}
+    <div className="relative w-full">
+      {/* SVG always full width — never shrinks when panel opens */}
+      <svg ref={ref}></svg>
+
+      {/* Agenda panel — overlays the left half when a cluster is clicked */}
       {clusterPanel && (
         <div
-          className={`w-1/2 bg-white dark:bg-gray-900 flex flex-col border-r border-gray-200 dark:border-gray-700 overflow-hidden ${notoSans.className}`}
+          className={`absolute inset-y-0 left-0 w-1/2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm flex flex-col border-r border-gray-200 dark:border-gray-700 z-10 ${notoSans.className}`}
         >
-          <div className="sticky top-0 flex justify-between items-center px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 z-10">
+          <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 dark:border-gray-700">
             <h2 className="font-semibold text-gray-800 dark:text-gray-200">
               {clusterPanel.items.length} {panelTypeLabel}
             </h2>
@@ -1298,7 +1306,7 @@ export default function CDTmap() {
               ×
             </button>
           </div>
-          <div className="flex-1 p-4">
+          <div className="flex-1 p-4 overflow-y-auto">
             {activeItem
               ? renderAgendaItem(activeItem)
               : <p className="text-sm text-gray-400 italic text-center mt-8">Hover over a point on the map</p>
@@ -1307,69 +1315,62 @@ export default function CDTmap() {
         </div>
       )}
 
-      {/* Map panel */}
-      <div className={`relative ${clusterPanel ? "w-1/2" : "w-full"}`}>
-        {/* Layer toggle panel */}
-        <div
-          className={`absolute top-3 right-3 z-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg shadow-md p-3 text-xs ${notoSans.className}`}
-        >
-          <p className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-            Legend
-          </p>
-          <div className="space-y-1.5">
-            {LAYERS.map(({ key, label, fill, stroke, shape }) => (
-              <label
-                key={key}
-                className="flex items-center gap-2 cursor-pointer select-none"
-              >
-                <input
-                  type="checkbox"
-                  className="toggle toggle-xs"
-                  checked={visibility[key]}
-                  onChange={() =>
-                    setVisibility((v) => ({ ...v, [key]: !v[key] }))
-                  }
-                />
-                <LegendSymbol shape={shape} fill={fill} stroke={stroke} />
-                <span className="text-gray-700 dark:text-gray-300">
-                  {label}
-                </span>
-              </label>
-            ))}
-            {STATIC_LAYERS.map(({ label, color, shape }) => (
-              <div
-                key={label}
-                className="flex items-center gap-2 select-none"
-                style={{ paddingLeft: "36px" }}
-              >
-                <LegendSymbol shape={shape} color={color} />
-                <span className="text-gray-700 dark:text-gray-300">
-                  {label}
-                </span>
-              </div>
-            ))}
-          </div>
+      {/* Legend — top right, above the panel if panel is open */}
+      <div
+        className={`absolute top-3 right-3 z-20 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg shadow-md p-3 text-xs ${notoSans.className}`}
+      >
+        <p className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+          Legend
+        </p>
+        <div className="space-y-1.5">
+          {LAYERS.map(({ key, label, fill, stroke, shape }) => (
+            <label
+              key={key}
+              className="flex items-center gap-2 cursor-pointer select-none"
+            >
+              <input
+                type="checkbox"
+                className="toggle toggle-xs"
+                checked={visibility[key]}
+                onChange={() =>
+                  setVisibility((v) => ({ ...v, [key]: !v[key] }))
+                }
+              />
+              <LegendSymbol shape={shape} fill={fill} stroke={stroke} />
+              <span className="text-gray-700 dark:text-gray-300">{label}</span>
+            </label>
+          ))}
+          {STATIC_LAYERS.map(({ label, color, shape }) => (
+            <div
+              key={label}
+              className="flex items-center gap-2 select-none"
+              style={{ paddingLeft: "36px" }}
+            >
+              <LegendSymbol shape={shape} color={color} />
+              <span className="text-gray-700 dark:text-gray-300">{label}</span>
+            </div>
+          ))}
         </div>
-        <svg ref={ref}></svg>
-        <div
-          id="message-panel"
-          style={{
-            display: "none",
-            position: "fixed",
-            zIndex: 50,
-            backgroundColor: "white",
-            border: "1px solid #e5e7eb",
-            borderRadius: "8px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
-            padding: "12px 16px",
-            fontSize: "14px",
-            color: "#4b5563",
-            maxWidth: "320px",
-            pointerEvents: "none",
-            lineHeight: "1.6",
-          }}
-        />
       </div>
+
+      <div
+        id="message-panel"
+        style={{
+          display: "none",
+          position: "fixed",
+          zIndex: 50,
+          backgroundColor: "white",
+          border: "1px solid #e5e7eb",
+          borderRadius: "8px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+          padding: "12px 16px",
+          fontSize: "14px",
+          color: "#4b5563",
+          maxWidth: "320px",
+          pointerEvents: "none",
+          lineHeight: "1.6",
+        }}
+      />
     </div>
   );
 }
