@@ -51,7 +51,7 @@ export default function CDTmap() {
     const photoDisplay = visibility.photos ? null : "none";
     g.selectAll(".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel")
       .attr("display", photoDisplay);
-    g.selectAll(".campPoints").attr(
+    g.selectAll(".campPoints, .campCluster, .campClusterHit, .campClusterLabel").attr(
       "display",
       visibility.campsites ? null : "none",
     );
@@ -135,8 +135,9 @@ export default function CDTmap() {
     const triangle = d3.symbol().type(d3.symbolTriangle).size(128);
     const cross = d3.symbol().type(d3.symbolCross).size(128);
 
-    // Placeholder — assigned inside Promise.all so zoom "end" can call it
+    // Placeholders — assigned inside Promise.all so zoom "end" can call them
     let renderPhotoClusters = () => {};
+    let renderCampClusters = () => {};
 
     // Add zoom behavior
     const zoom = d3
@@ -187,7 +188,7 @@ export default function CDTmap() {
         // console.log("Zoom level:", event.transform.k);
         const newSize = 128 / (event.transform.k * event.transform.k);
         renderPhotoClusters(event.transform);
-        g.selectAll(".campPoints").attr("d", triangle.size(newSize));
+        renderCampClusters(event.transform);
         g.selectAll(".messagePoints").attr("d", square.size(newSize));
         g.selectAll(".cityPoints").attr("d", cross.size(newSize));
         g.selectAll(".state-label").attr("font-size", 20 / event.transform.k);
@@ -324,25 +325,117 @@ export default function CDTmap() {
         .on("mousemove", moveMessagePanel)
         .on("mouseout", hideMessagePanel);
 
-      g.selectAll(".campPoints")
-        .data(campSites)
-        .enter()
-        .append("path")
-        .attr("class", "campPoints")
-        .attr("d", triangle)
-        .attr("transform", (d) => {
-          const [x, y] = projection(d.geometry.coordinates);
-          return `translate(${x}, ${y})`;
-        })
-        .attr("fill", colors.campSitesLight)
-        .attr("stroke", colors.campSites)
-        .attr("stroke-width", 1.5)
-        .attr("vector-effect", "non-scaling-stroke")
-        .on("mouseover", function (event, d) {
-          showMessagePanel(event, d, currentUserRef.current);
-        })
-        .on("mousemove", moveMessagePanel)
-        .on("mouseout", hideMessagePanel);
+      renderCampClusters = function (transform) {
+        const k = transform.k;
+        const CLUSTER_RADIUS = 20;
+
+        g.selectAll(".campPoints, .campCluster, .campClusterHit, .campClusterLabel").remove();
+
+        const positions = campSites.map((p) => {
+          const [px, py] = projection(p.geometry.coordinates);
+          const [sx, sy] = transform.apply([px, py]);
+          return { px, py, sx, sy };
+        });
+
+        const assigned = new Set();
+        const solos = [];
+        const groups = [];
+
+        for (let i = 0; i < campSites.length; i++) {
+          if (assigned.has(i)) continue;
+          const members = [i];
+          assigned.add(i);
+          for (let j = i + 1; j < campSites.length; j++) {
+            if (assigned.has(j)) continue;
+            const dx = positions[j].sx - positions[i].sx;
+            const dy = positions[j].sy - positions[i].sy;
+            if (Math.sqrt(dx * dx + dy * dy) <= CLUSTER_RADIUS) {
+              members.push(j);
+              assigned.add(j);
+            }
+          }
+          if (members.length === 1) {
+            solos.push(campSites[members[0]]);
+          } else {
+            const cx = members.reduce((s, i) => s + positions[i].px, 0) / members.length;
+            const cy = members.reduce((s, i) => s + positions[i].py, 0) / members.length;
+            groups.push({ points: members.map((i) => campSites[i]), cx, cy, count: members.length });
+          }
+        }
+
+        const newSize = 128 / (k * k);
+
+        g.selectAll(".campPoints")
+          .data(solos)
+          .enter()
+          .append("path")
+          .attr("class", "campPoints")
+          .attr("d", triangle.size(newSize))
+          .attr("transform", (d) => {
+            const [x, y] = projection(d.geometry.coordinates);
+            return `translate(${x}, ${y})`;
+          })
+          .attr("fill", colors.campSitesLight)
+          .attr("stroke", colors.campSites)
+          .attr("stroke-width", 1.5)
+          .attr("vector-effect", "non-scaling-stroke")
+          .on("mouseover", function (event, d) { showMessagePanel(event, d, currentUserRef.current); })
+          .on("mousemove", moveMessagePanel)
+          .on("mouseout", hideMessagePanel);
+
+        g.selectAll(".campCluster")
+          .data(groups)
+          .enter()
+          .append("circle")
+          .attr("class", "campCluster")
+          .attr("cx", (d) => d.cx)
+          .attr("cy", (d) => d.cy)
+          .attr("r", (d) => (6 + Math.log(d.count + 1) * 4) / k)
+          .attr("fill", colors.campSitesLight)
+          .attr("stroke", colors.campSites)
+          .attr("stroke-width", 1.5)
+          .attr("vector-effect", "non-scaling-stroke")
+          .attr("pointer-events", "none");
+
+        g.selectAll(".campClusterHit")
+          .data(groups)
+          .enter()
+          .append("circle")
+          .attr("class", "campClusterHit")
+          .attr("cx", (d) => d.cx)
+          .attr("cy", (d) => d.cy)
+          .attr("r", (d) => (6 + Math.log(d.count + 1) * 4 + 8) / k)
+          .attr("fill", "transparent")
+          .attr("stroke", "none")
+          .on("mouseover", function (_event, d) {
+            const tooltip = document.getElementById("tooltip");
+            tooltip.classList.remove("invisible", "opacity-0");
+            tooltip.classList.add("visible", "opacity-100");
+            tooltip.innerHTML = `<p style="font-weight:600">${d.count} campsites</p>`;
+          })
+          .on("mousemove", handleMouseMove)
+          .on("mouseout", handleMouseOut);
+
+        g.selectAll(".campClusterLabel")
+          .data(groups)
+          .enter()
+          .append("text")
+          .attr("class", "campClusterLabel")
+          .attr("x", (d) => d.cx)
+          .attr("y", (d) => d.cy)
+          .attr("text-anchor", "middle")
+          .attr("dominant-baseline", "middle")
+          .attr("font-size", 8 / k)
+          .attr("fill", "white")
+          .attr("stroke", "none")
+          .attr("pointer-events", "none")
+          .text((d) => d.count);
+
+        if (!visibilityRef.current.campsites) {
+          g.selectAll(".campPoints, .campCluster, .campClusterHit, .campClusterLabel")
+            .attr("display", "none");
+        }
+      };
 
       /* -----------------------------------------------------
       *  Take the cleaned photo geojson data and plot it
@@ -512,8 +605,9 @@ export default function CDTmap() {
         }
       };
 
-      // Initial render at current zoom (identity if user hasn't zoomed yet)
+      // Initial render — photos first, campsites second so campsites appear on top
       renderPhotoClusters(currentTransformRef.current ?? d3.zoomIdentity);
+      renderCampClusters(currentTransformRef.current ?? d3.zoomIdentity);
 
       /* -----------------------------------------------------
       *  Track mapping functionality (rendered last = on top)
