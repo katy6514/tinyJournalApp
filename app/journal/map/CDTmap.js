@@ -54,6 +54,11 @@ export default function CDTmap() {
   activeItemRef.current = activeItem;
   const updateConnectorLineRef = useRef(() => {});
 
+  // Floating photo popout: shown when a photo point or cluster is clicked
+  const [photoPopout, setPhotoPopout] = useState(null);
+  // Stable setter ref so D3 closures can call it without stale-closure issues
+  const setPhotoPopoutRef = useRef(setPhotoPopout);
+
   // Sync visibility state → D3 element display whenever toggles change
   useEffect(() => {
     const g = gRef.current;
@@ -95,13 +100,13 @@ export default function CDTmap() {
     }
     if (!zoomRef.current || !ref.current) return;
 
-    // Set first item (chronological) as the active item shown on the left
-    const getTime = (item) =>
-      clusterPanel.type === "photo"
-        ? new Date((item.properties.dateTime ?? "").replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3"))
-        : parseGPSTime(item.properties.GPSTime);
-    const first = clusterPanel.items.slice().sort((a, b) => getTime(a) - getTime(b))[0];
-    setActiveItem(first);
+    // Photo clusters: just zoom + show popout — no left panel needed.
+    // Message/campsite clusters: set active item for the left panel.
+    if (clusterPanel.type !== "photo") {
+      const getTime = (item) => parseGPSTime(item.properties.GPSTime);
+      const first = clusterPanel.items.slice().sort((a, b) => getTime(a) - getTime(b))[0];
+      setActiveItem(first);
+    }
 
     // Hide data points for the duration of the zoom transition — their sizes
     // are fixed in projection space and balloon visually as the transform scales
@@ -121,18 +126,33 @@ export default function CDTmap() {
     const minY = Math.min(...ys),
       maxY = Math.max(...ys);
     const PADDING = 80;
-    // The overlay panel covers the left half of the SVG viewBox.
-    // Fit the cluster into the visible right half and center it there.
+
+    // Panel covers the left half for both photos and message/campsite —
+    // fit the cluster into the visible right half and center it there.
     const visibleLeft = width / 2;
     const visibleWidth = width / 2;
     const scale = Math.min(
       (visibleWidth - 2 * PADDING) / Math.max(maxX - minX, 1),
       (height - 2 * PADDING) / Math.max(maxY - minY, 1),
-      500, // matches scaleExtent max
+      500,
     );
-    const visibleCenterX = visibleLeft + visibleWidth / 2; // 675
+    const visibleCenterX = visibleLeft + visibleWidth / 2;
     const tx = visibleCenterX - (scale * (minX + maxX)) / 2;
     const ty = height / 2 - (scale * (minY + maxY)) / 2;
+
+    if (clusterPanel.type === "photo") {
+      // Show the first photo (by timestamp) in the cluster as the left-panel popout.
+      const firstPhoto = clusterPanel.items
+        .slice()
+        .sort((a, b) => {
+          const ta = new Date((a.properties.dateTime ?? "").replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3"));
+          const tb = new Date((b.properties.dateTime ?? "").replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3"));
+          return ta - tb;
+        })[0];
+      if (firstPhoto) {
+        setPhotoPopoutRef.current({ item: firstPhoto });
+      }
+    }
     d3.select(ref.current)
       .transition()
       .duration(1200)
@@ -325,7 +345,7 @@ export default function CDTmap() {
 
     function updateConnectorLine(item) {
       const activeI = item !== undefined ? item : activeItemRef.current;
-      if (!activeI || !clusterPanelRef.current) {
+      if (!activeI || !clusterPanelRef.current || clusterPanelRef.current.type === "photo") {
         connectorLine.attr("display", "none");
         return;
       }
@@ -347,7 +367,14 @@ export default function CDTmap() {
 
     svg.on("click", (event) => {
       if (!event.target.classList.contains("state-clickable")) {
-        svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
+        if (clusterPanelRef.current?.type === "photo") {
+          // No close button for photo clusters — background click resets everything.
+          // setClusterPanel(null) triggers the useEffect which resets zoom.
+          setClusterPanel(null);
+        } else {
+          svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
+        }
+        setPhotoPopoutRef.current(null);
       }
     });
 
@@ -764,47 +791,6 @@ export default function CDTmap() {
       *  Photo points — clustered by zoom level
       ----------------------------------------------------- */
 
-      function showPhotoTooltip(d) {
-        const { path: photoPath, dateTime } = d.properties;
-        if (!dateTime) return;
-        const normalized = dateTime.replace(
-          /^(\d{4}):(\d{2}):(\d{2})/,
-          "$1-$2-$3",
-        );
-        const photoDate = new Date(normalized);
-        const dateStr = photoDate.toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        });
-        const timeStr = photoDate.toLocaleTimeString("en-US", {
-          hour: "numeric",
-          minute: "2-digit",
-          hour12: true,
-        });
-        const tooltip = document.getElementById("tooltip");
-        tooltip.classList.remove("invisible", "opacity-0");
-        tooltip.classList.add("visible", "opacity-100");
-        tooltip.innerHTML = `<img src="${photoPath}" width="200" style="display:block;border-radius:4px"><p style="margin-top:6px"><strong>${dateStr}</strong></p><p>${timeStr}</p>`;
-      }
-
-      function showClusterTooltip(_event, d) {
-        const { path: photoPath, dateTime } = d.points[0].properties;
-        if (!dateTime) return;
-        const normalized = dateTime.replace(
-          /^(\d{4}):(\d{2}):(\d{2})/,
-          "$1-$2-$3",
-        );
-        const dateStr = new Date(normalized).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        });
-        const tooltip = document.getElementById("tooltip");
-        tooltip.classList.remove("invisible", "opacity-0");
-        tooltip.classList.add("visible", "opacity-100");
-        tooltip.innerHTML = `<img src="${photoPath}" width="200" style="display:block;border-radius:4px"><p style="margin-top:6px;font-weight:600">${d.count} photos</p><p>${dateStr}</p>`;
-      }
 
       const CLUSTER_RADIUS = 20; // screen pixels — clusters dissolve naturally as zoom increases
 
@@ -883,16 +869,11 @@ export default function CDTmap() {
           .attr("r", 14 / k)
           .attr("fill", "transparent")
           .attr("stroke", "none")
-          .on("mouseover", function (_event, d) {
-            if (clusterPanelRef.current?.type === "photo") {
-              setActiveItem(d);
-              updateConnectorLine(d);
-            } else {
-              showPhotoTooltip(d);
-            }
-          })
-          .on("mousemove", handleMouseMove)
-          .on("mouseout", handleMouseOut);
+          .style("cursor", "pointer")
+          .on("click", function (event, d) {
+            event.stopPropagation();
+            setPhotoPopoutRef.current({ item: d });
+          });
 
         // Cluster circles — radius grows with log of count so large clusters
         // don't dwarf individual dots
@@ -921,9 +902,6 @@ export default function CDTmap() {
           .attr("fill", "transparent")
           .attr("stroke", "none")
           .style("cursor", "pointer")
-          .on("mouseover", function (event, d) {
-            showClusterTooltip(event, d);
-          })
           .on("mousemove", handleMouseMove)
           .on("mouseout", handleMouseOut)
           .on("click", function (event, d) {
@@ -1251,24 +1229,9 @@ export default function CDTmap() {
     }
   };
 
-  // Render the single active item in the left panel
+  // Render the single active item in the left panel (message / campsite only)
   const renderAgendaItem = (item) => {
     if (!item || !clusterPanel) return null;
-    if (clusterPanel.type === "photo") {
-      const { path: photoPath, dateTime } = item.properties;
-      if (!dateTime) return null;
-      const normalized = dateTime.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
-      const dt = new Date(normalized);
-      const dateStr = dt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-      const timeStr = dt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-      return (
-        <div className="flex flex-col">
-          <img src={photoPath} alt="Trail photo" className="w-full rounded-lg object-cover" />
-          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-3">{dateStr}</p>
-          <p className="text-xs text-gray-500">{timeStr}</p>
-        </div>
-      );
-    }
     const { GPSTime, MessageText, Recipients } = item.properties;
     const dt = parseGPSTime(GPSTime);
     const dateStr = dt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
@@ -1286,21 +1249,64 @@ export default function CDTmap() {
     );
   };
 
-  const panelTypeLabel = clusterPanel
-    ? clusterPanel.type === "photo"
-      ? "Photos"
-      : clusterPanel.type === "message"
-        ? "Messages"
-        : "Campsites"
-    : "";
+  const panelTypeLabel = clusterPanel?.type === "message" ? "Messages" : "Campsites";
+
+  // Derive popout display values in render (no extra state needed)
+  const popoutProps = photoPopout?.item?.properties ?? null;
+  const popoutDate = (() => {
+    if (!popoutProps?.dateTime) return { dateStr: "", timeStr: "" };
+    const normalized = popoutProps.dateTime.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
+    const dt = new Date(normalized);
+    return {
+      dateStr: dt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+      timeStr: dt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
+    };
+  })();
 
   return (
     <div className="relative w-full">
-      {/* SVG always full width — never shrinks when panel opens */}
+      {/* SVG always full width */}
       <svg ref={ref}></svg>
 
-      {/* Agenda panel — overlays the left half when a cluster is clicked */}
-      {clusterPanel && (
+      {/* Photo panel — overlays the left half, just the photo with overlaid date/time */}
+      {photoPopout && (
+        <div
+          className={`absolute inset-y-0 left-0 w-1/2 z-10 overflow-hidden ${notoSans.className}`}
+          style={{ borderRight: "1px solid rgba(0,0,0,0.15)" }}
+        >
+          {/* Close button sits inside the photo */}
+          <button
+            onClick={(e) => { e.stopPropagation(); setPhotoPopout(null); setClusterPanel(null); }}
+            aria-label="Close"
+            style={{
+              position: "absolute", top: 12, right: 12,
+              width: 28, height: 28, borderRadius: "50%",
+              background: "rgba(0,0,0,0.5)", color: "#fff",
+              border: "none", cursor: "pointer",
+              fontSize: 18, lineHeight: 1,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              zIndex: 1,
+            }}
+          >×</button>
+          <img
+            src={popoutProps?.path}
+            alt="Trail photo"
+            style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
+          />
+          {/* Date / time gradient overlay at the bottom */}
+          <div style={{
+            position: "absolute", bottom: 0, left: 0, right: 0,
+            background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
+            padding: "40px 16px 16px", color: "#fff",
+          }}>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{popoutDate.dateStr}</p>
+            <p style={{ margin: "4px 0 0", fontSize: 12, opacity: 0.85 }}>{popoutDate.timeStr}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Agenda panel — overlays the left half for message/campsite clusters only */}
+      {clusterPanel && clusterPanel.type !== "photo" && (
         <div
           className={`absolute inset-y-0 left-0 w-1/2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm flex flex-col border-r border-gray-200 dark:border-gray-700 z-10 ${notoSans.className}`}
         >
