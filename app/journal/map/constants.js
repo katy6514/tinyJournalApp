@@ -16,13 +16,13 @@ export const dataTypes = {
 
 export const colors = {
   oddDays: "#6CCFF6",
-  campSites: "#337357",
-  campSitesLight: "#5aad87",
+  campSites: "#8B3424",
+  campSitesLight: "#E26D5A",
   messages: "#F9A620",
   messagesDark: "#b06b00",
   evenDays: "#2E2D4D",
-  photos: "#E26D5A",
-  photosDark: "#8B3424",
+  photos: "#5aad87",
+  photosDark: "#337357",
   black: "#000000",
 };
 
