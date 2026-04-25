@@ -96,6 +96,17 @@ export default function CDTmap() {
     const first = clusterPanel.items.slice().sort((a, b) => getTime(a) - getTime(b))[0];
     setActiveItem(first);
 
+    // Hide data points for the duration of the zoom transition — their sizes
+    // are fixed in projection space and balloon visually as the transform scales
+    // up. The zoom "end" handler re-renders them at the correct size.
+    if (gRef.current) {
+      gRef.current.selectAll(
+        ".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel," +
+        ".messagePoints, .msgCluster, .msgClusterHit, .msgClusterLabel," +
+        ".campPoints, .campCluster, .campClusterHit, .campClusterLabel"
+      ).attr("display", "none");
+    }
+
     const xs = clusterPanel.projPoints.map((p) => p[0]);
     const ys = clusterPanel.projPoints.map((p) => p[1]);
     const minX = Math.min(...xs),
