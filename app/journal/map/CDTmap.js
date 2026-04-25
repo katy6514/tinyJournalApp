@@ -47,7 +47,16 @@ export default function CDTmap() {
   const [clusterPanel, setClusterPanel] = useState(null);
   const setClusterPanelRef = useRef(null);
   setClusterPanelRef.current = setClusterPanel;
+  const clusterPanelRef = useRef(clusterPanel);
+  clusterPanelRef.current = clusterPanel;
   const zoomRef = useRef(null);
+
+  const [activeItem, setActiveItem] = useState(null);
+  const setActiveItemRef = useRef(null);
+  setActiveItemRef.current = setActiveItem;
+  const activeItemRef = useRef(activeItem);
+  activeItemRef.current = activeItem;
+  const updateConnectorLineRef = useRef(() => {});
 
   // Sync visibility state → D3 element display whenever toggles change
   useEffect(() => {
@@ -74,9 +83,23 @@ export default function CDTmap() {
     );
   }, [visibility]);
 
-  // When a cluster panel opens, zoom the map to fit all its points
+  // When a cluster panel opens, zoom the map to fit all its points and set first active item.
+  // When it closes, clear the active item.
   useEffect(() => {
-    if (!clusterPanel || !zoomRef.current || !ref.current) return;
+    if (!clusterPanel) {
+      setActiveItem(null);
+      return;
+    }
+    if (!zoomRef.current || !ref.current) return;
+
+    // Set first item (chronological) as the active item shown on the left
+    const getTime = (item) =>
+      clusterPanel.type === "photo"
+        ? new Date(item.properties.dateTime.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3"))
+        : parseGPSTime(item.properties.GPSTime);
+    const first = clusterPanel.items.slice().sort((a, b) => getTime(a) - getTime(b))[0];
+    setActiveItem(first);
+
     const xs = clusterPanel.projPoints.map((p) => p[0]);
     const ys = clusterPanel.projPoints.map((p) => p[1]);
     const minX = Math.min(...xs),
@@ -100,6 +123,11 @@ export default function CDTmap() {
         d3.zoomIdentity.translate(tx, ty).scale(scale),
       );
   }, [clusterPanel]);
+
+  // Keep connector line in sync whenever activeItem changes
+  useEffect(() => {
+    updateConnectorLineRef.current();
+  }, [activeItem]);
 
   // ✅ Define projection + path WITHIN component and memoize
   const projection = useMemo(() => {
@@ -248,6 +276,8 @@ export default function CDTmap() {
             el.attr("display", "none");
           }
         });
+
+        updateConnectorLineRef.current();
       })
 
       .on("end", (event) => {
@@ -262,6 +292,39 @@ export default function CDTmap() {
 
     zoomRef.current = zoom;
     svg.call(zoom);
+
+    // Connector line: lives on svg (not g) so it isn't affected by the zoom
+    // transform on g — its coordinates are always in SVG viewBox space.
+    const connectorLine = svg
+      .append("line")
+      .attr("class", "connector-line")
+      .attr("stroke", "#9ca3af")
+      .attr("stroke-width", 1.5)
+      .attr("stroke-dasharray", "5,4")
+      .attr("pointer-events", "none")
+      .attr("display", "none");
+
+    function updateConnectorLine(item) {
+      const activeI = item !== undefined ? item : activeItemRef.current;
+      if (!activeI || !clusterPanelRef.current) {
+        connectorLine.attr("display", "none");
+        return;
+      }
+      const coords = activeI.geometry.coordinates;
+      const projected = projection(coords);
+      if (!projected) { connectorLine.attr("display", "none"); return; }
+      const t = currentTransformRef.current ?? d3.zoomIdentity;
+      const [sx, sy] = t.apply(projected);
+      if (sx < 0 || sx > width || sy < 0 || sy > height) {
+        connectorLine.attr("display", "none");
+        return;
+      }
+      connectorLine
+        .attr("display", null)
+        .attr("x1", sx).attr("y1", sy)
+        .attr("x2", 0).attr("y2", sy);
+    }
+    updateConnectorLineRef.current = updateConnectorLine;
 
     svg.on("click", (event) => {
       if (!event.target.classList.contains("state-clickable")) {
@@ -436,7 +499,12 @@ export default function CDTmap() {
           .attr("stroke-width", 1.5)
           .attr("vector-effect", "non-scaling-stroke")
           .on("mouseover", function (event, d) {
-            showMessagePanel(event, d, currentUserRef.current);
+            if (clusterPanelRef.current?.type === "message") {
+              setActiveItemRef.current(d);
+              updateConnectorLine(d);
+            } else {
+              showMessagePanel(event, d, currentUserRef.current);
+            }
           })
           .on("mousemove", moveMessagePanel)
           .on("mouseout", hideMessagePanel);
@@ -579,7 +647,12 @@ export default function CDTmap() {
           .attr("stroke-width", 1.5)
           .attr("vector-effect", "non-scaling-stroke")
           .on("mouseover", function (event, d) {
-            showMessagePanel(event, d, currentUserRef.current);
+            if (clusterPanelRef.current?.type === "campsite") {
+              setActiveItemRef.current(d);
+              updateConnectorLine(d);
+            } else {
+              showMessagePanel(event, d, currentUserRef.current);
+            }
           })
           .on("mousemove", moveMessagePanel)
           .on("mouseout", hideMessagePanel);
@@ -790,7 +863,12 @@ export default function CDTmap() {
           .attr("fill", "transparent")
           .attr("stroke", "none")
           .on("mouseover", function (_event, d) {
-            showPhotoTooltip(d);
+            if (clusterPanelRef.current?.type === "photo") {
+              setActiveItemRef.current(d);
+              updateConnectorLine(d);
+            } else {
+              showPhotoTooltip(d);
+            }
           })
           .on("mousemove", handleMouseMove)
           .on("mouseout", handleMouseOut);
@@ -1230,75 +1308,36 @@ export default function CDTmap() {
     }
   };
 
-  // Render one agenda item depending on cluster type
-  const renderAgendaItem = (item, i) => {
+  // Render the single active item in the left panel
+  const renderAgendaItem = (item) => {
+    if (!item || !clusterPanel) return null;
     if (clusterPanel.type === "photo") {
       const { path: photoPath, dateTime } = item.properties;
-      const normalized = dateTime.replace(
-        /^(\d{4}):(\d{2}):(\d{2})/,
-        "$1-$2-$3",
-      );
+      const normalized = dateTime.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
       const dt = new Date(normalized);
-      const dateStr = dt.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-      const timeStr = dt.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      });
+      const dateStr = dt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+      const timeStr = dt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
       return (
-        <div
-          key={i}
-          className="border-b border-gray-100 dark:border-gray-800 pb-4"
-        >
-          <img
-            src={photoPath}
-            alt="Trail photo"
-            className="w-full rounded-lg mb-2 object-cover"
-          />
-          <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-            {dateStr}
-          </p>
+        <div className="flex flex-col">
+          <img src={photoPath} alt="Trail photo" className="w-full rounded-lg object-cover" />
+          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-3">{dateStr}</p>
           <p className="text-xs text-gray-500">{timeStr}</p>
         </div>
       );
     }
-    // message or campsite
     const { GPSTime, MessageText, Recipients } = item.properties;
     const dt = parseGPSTime(GPSTime);
-    const dateStr = dt.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    const timeStr = dt.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
+    const dateStr = dt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    const timeStr = dt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
     const isOwner = currentUserRef.current?.email === "katy6514@gmail.com";
     return (
-      <div
-        key={i}
-        className="border-b border-gray-100 dark:border-gray-800 pb-4"
-      >
-        <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-          {dateStr}
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{dateStr}</p>
+        <p className="text-xs text-gray-500">{timeStr}</p>
+        <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+          {isOwner ? MessageText : <span className="italic text-gray-400">Message hidden</span>}
         </p>
-        <p className="text-xs text-gray-500 mb-2">{timeStr}</p>
-        <p className="text-sm text-gray-700 dark:text-gray-300">
-          {isOwner ? (
-            MessageText
-          ) : (
-            <span className="italic text-gray-400">Message hidden</span>
-          )}
-        </p>
-        {Recipients && (
-          <p className="text-xs text-gray-400 mt-1">To: {Recipients}</p>
-        )}
+        {Recipients && <p className="text-xs text-gray-400">To: {Recipients}</p>}
       </div>
     );
   };
@@ -1330,31 +1369,11 @@ export default function CDTmap() {
               ×
             </button>
           </div>
-          <div className="overflow-y-auto flex-1 p-4 space-y-4">
-            {clusterPanel.items
-              .slice()
-              .sort((a, b) => {
-                const ta =
-                  clusterPanel.type === "photo"
-                    ? new Date(
-                        a.properties.dateTime.replace(
-                          /^(\d{4}):(\d{2}):(\d{2})/,
-                          "$1-$2-$3",
-                        ),
-                      )
-                    : parseGPSTime(a.properties.GPSTime);
-                const tb =
-                  clusterPanel.type === "photo"
-                    ? new Date(
-                        b.properties.dateTime.replace(
-                          /^(\d{4}):(\d{2}):(\d{2})/,
-                          "$1-$2-$3",
-                        ),
-                      )
-                    : parseGPSTime(b.properties.GPSTime);
-                return ta - tb;
-              })
-              .map(renderAgendaItem)}
+          <div className="flex-1 p-4">
+            {activeItem
+              ? renderAgendaItem(activeItem)
+              : <p className="text-sm text-gray-400 italic text-center mt-8">Hover over a point on the map</p>
+            }
           </div>
         </div>
       )}
