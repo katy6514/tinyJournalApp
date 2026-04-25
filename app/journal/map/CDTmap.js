@@ -151,6 +151,8 @@ export default function CDTmap() {
         const MARGIN = 10;
         const showLabels = t.k > 2.35;
 
+        g.selectAll(".trail, .trail-hit").attr("display", showLabels ? null : "none");
+
         svg.selectAll(".city_labels").each(function () {
           const el = d3.select(this);
           const [dotSx, dotSy] = t.apply([+el.attr("data-dot-x"), +el.attr("data-dot-y")]);
@@ -533,7 +535,8 @@ export default function CDTmap() {
         .attr("stroke", (d) => getAlternatingColor(d.properties))
         .attr("stroke-width", 2)
         .attr("vector-effect", "non-scaling-stroke")
-        .attr("pointer-events", "none");
+        .attr("pointer-events", "none")
+        .attr("display", "none");
 
       // Transparent wide hit areas on top for easier hover detection
       const trailData = trackData.features.filter(
@@ -580,7 +583,8 @@ export default function CDTmap() {
           handleMouseOut();
           routerRef.current.push(`/journal/${entryId}`);
         })
-        .style("cursor", (d) => d.properties.entry_id ? "pointer" : "default");
+        .style("cursor", (d) => d.properties.entry_id ? "pointer" : "default")
+        .attr("display", "none");
 
       /* -----------------------------------------------------
       /* -----------------------------------------------------
