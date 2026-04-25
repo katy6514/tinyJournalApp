@@ -34,9 +34,7 @@ export default async function Page() {
           </Link>
         </div>
       )}
-      <div className="w-[80vw]">
-        <CDTmap />
-      </div>
+      <CDTmap />
       {/* <div>
         <section>
           <header>
