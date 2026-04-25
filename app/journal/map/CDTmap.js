@@ -98,7 +98,7 @@ export default function CDTmap() {
     // Set first item (chronological) as the active item shown on the left
     const getTime = (item) =>
       clusterPanel.type === "photo"
-        ? new Date(item.properties.dateTime.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3"))
+        ? new Date((item.properties.dateTime ?? "").replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3"))
         : parseGPSTime(item.properties.GPSTime);
     const first = clusterPanel.items.slice().sort((a, b) => getTime(a) - getTime(b))[0];
     setActiveItem(first);
@@ -766,6 +766,7 @@ export default function CDTmap() {
 
       function showPhotoTooltip(d) {
         const { path: photoPath, dateTime } = d.properties;
+        if (!dateTime) return;
         const normalized = dateTime.replace(
           /^(\d{4}):(\d{2}):(\d{2})/,
           "$1-$2-$3",
@@ -789,6 +790,7 @@ export default function CDTmap() {
 
       function showClusterTooltip(_event, d) {
         const { path: photoPath, dateTime } = d.points[0].properties;
+        if (!dateTime) return;
         const normalized = dateTime.replace(
           /^(\d{4}):(\d{2}):(\d{2})/,
           "$1-$2-$3",
@@ -1254,6 +1256,7 @@ export default function CDTmap() {
     if (!item || !clusterPanel) return null;
     if (clusterPanel.type === "photo") {
       const { path: photoPath, dateTime } = item.properties;
+      if (!dateTime) return null;
       const normalized = dateTime.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
       const dt = new Date(normalized);
       const dateStr = dt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
