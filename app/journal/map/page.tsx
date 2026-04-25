@@ -1,6 +1,5 @@
 import Link from "next/link";
 import CDTmap from "./CDTmap";
-import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 import { auth } from "@/auth";
 
 export default async function Page() {
@@ -8,16 +7,7 @@ export default async function Page() {
 
   return (
     <main className="bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
-      <Breadcrumbs
-        breadcrumbs={[
-          { label: "Journal", href: "/journal/listView" },
-          {
-            label: "The Map",
-            href: `/journal/map`,
-            active: true,
-          },
-        ]}
-      />
+      <CDTmap />
       {session && (
         <div className="flex justify-end gap-4 px-4 py-2">
           <Link
@@ -34,7 +24,6 @@ export default async function Page() {
           </Link>
         </div>
       )}
-      <CDTmap />
       <div
         id="tooltip"
         role="tooltip"
