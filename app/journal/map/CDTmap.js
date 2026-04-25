@@ -84,6 +84,13 @@ export default function CDTmap() {
   useEffect(() => {
     if (!clusterPanel) {
       setActiveItem(null);
+      if (zoomRef.current && ref.current) {
+        d3.select(ref.current)
+          .transition()
+          .duration(750)
+          .ease(d3.easeCubicInOut)
+          .call(zoomRef.current.transform, d3.zoomIdentity);
+      }
       return;
     }
     if (!zoomRef.current || !ref.current) return;
