@@ -33,11 +33,6 @@ export default function CDTmap() {
   const routerRef = useRef(router);
   routerRef.current = router;
 
-  const [photoPanel, setPhotoPanel] = useState(null);
-  const setPhotoPanelRef = useRef(null);
-  setPhotoPanelRef.current = setPhotoPanel;
-  const photoPanelTimeoutRef = useRef(null);
-
   const [visibility, setVisibility] = useState({
     photos: true,
     campsites: true,
@@ -370,8 +365,8 @@ export default function CDTmap() {
         .attr("vector-effect", "non-scaling-stroke")
         .attr("pointer-events", "none");
 
-      // Show photo panel on the left half of the screen on hover
-      function showPhotoPanel(d) {
+      // Show one or multiple photos in the tooltip depending on overlap
+      function showPhotoTooltip(d) {
         const t = currentTransformRef.current ?? d3.zoomIdentity;
         const [hx, hy] = projection(d.geometry.coordinates);
         const [hsx, hsy] = t.apply([hx, hy]);
@@ -384,31 +379,56 @@ export default function CDTmap() {
           return Math.sqrt(dx * dx + dy * dy) <= 14;
         });
 
-        const parseDateTime = (dateTime) => {
-          const normalized = dateTime.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
-          return new Date(normalized);
-        };
+        const tooltip = document.getElementById("tooltip");
+        tooltip.classList.remove("invisible", "opacity-0");
+        tooltip.classList.add("visible", "opacity-100");
 
-        const firstDate = parseDateTime(nearby[0].properties.dateTime);
-        const dateStr = firstDate.toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        });
-
-        const photos = nearby.map((f) => {
-          const dt = parseDateTime(f.properties.dateTime);
-          return {
-            path: f.properties.path,
-            timeStr: dt.toLocaleTimeString("en-US", {
-              hour: "numeric",
-              minute: "2-digit",
-              hour12: true,
-            }),
-          };
-        });
-
-        setPhotoPanelRef.current({ photos, dateStr });
+        if (nearby.length === 1) {
+          const { path: photoPath, dateTime } = d.properties;
+          const normalized = dateTime.replace(
+            /^(\d{4}):(\d{2}):(\d{2})/,
+            "$1-$2-$3",
+          );
+          const photoDate = new Date(normalized);
+          const dateStr = photoDate.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+          const timeStr = photoDate.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+          });
+          tooltip.innerHTML = `<img src="${photoPath}" width="550"><br /><p><strong>Date:</strong> ${dateStr}</p><p><strong>Time:</strong> ${timeStr}</p>`;
+        } else {
+          const { dateTime: firstDT } = nearby[0].properties;
+          const normalized = firstDT.replace(
+            /^(\d{4}):(\d{2}):(\d{2})/,
+            "$1-$2-$3",
+          );
+          const dateStr = new Date(normalized).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+          const photoItems = nearby
+            .map((f) => {
+              const { path: photoPath, dateTime } = f.properties;
+              const dt = dateTime.replace(
+                /^(\d{4}):(\d{2}):(\d{2})/,
+                "$1-$2-$3",
+              );
+              const timeStr = new Date(dt).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              });
+              return `<div style="flex-shrink:0;text-align:center"><img src="${photoPath}" style="width:250px;display:block"><p style="font-size:11px;margin-top:4px">${timeStr}</p></div>`;
+            })
+            .join("");
+          tooltip.innerHTML = `<p style="font-weight:600;margin-bottom:6px">${nearby.length} photos — ${dateStr}</p><div style="display:flex;gap:8px;overflow-x:auto;max-width:600px">${photoItems}</div>`;
+        }
       }
 
       // Transparent larger hit areas on top for easier interaction
@@ -423,14 +443,10 @@ export default function CDTmap() {
         .attr("fill", "transparent")
         .attr("stroke", "none")
         .on("mouseover", function (_event, d) {
-          clearTimeout(photoPanelTimeoutRef.current);
-          showPhotoPanel(d);
+          showPhotoTooltip(d);
         })
-        .on("mouseout", function () {
-          photoPanelTimeoutRef.current = setTimeout(() => {
-            setPhotoPanelRef.current(null);
-          }, 3000);
-        });
+        .on("mousemove", handleMouseMove)
+        .on("mouseout", handleMouseOut);
 
       /* -----------------------------------------------------
       *  Track mapping functionality (rendered last = on top)
@@ -761,35 +777,11 @@ export default function CDTmap() {
   };
 
   return (
-    <div className="flex w-full">
-      {/* Photo panel — left half when a photo dot is hovered */}
-      {photoPanel && (
-        <div className="w-1/2 bg-black flex flex-col items-center justify-center gap-4 p-6 overflow-y-auto" style={{ minHeight: "600px" }}>
-          <p className="text-white/60 text-sm font-medium">{photoPanel.dateStr}</p>
-          <div className="flex flex-col items-center gap-6 w-full">
-            {photoPanel.photos.map((p, i) => (
-              <div key={i} className="text-center">
-                <img
-                  src={p.path}
-                  alt="Trail photo"
-                  className="max-w-full object-contain rounded"
-                  style={{ maxHeight: "75vh" }}
-                />
-                {photoPanel.photos.length > 1 && (
-                  <p className="text-white/40 text-xs mt-1">{p.timeStr}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Map panel */}
-      <div className={`relative ${photoPanel ? "w-1/2" : "w-full"}`}>
-        {/* Layer toggle panel */}
-        <div
-          className={`absolute top-100 left-3 z-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg shadow-md p-3 text-xs ${notoSans.className}`}
-        >
+    <div className="relative">
+      {/* Layer toggle panel */}
+      <div
+        className={`absolute top-100 left-3 z-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg shadow-md p-3 text-xs ${notoSans.className}`}
+      >
         <p className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
           Legend
         </p>
@@ -842,7 +834,6 @@ export default function CDTmap() {
           lineHeight: "1.6",
         }}
       />
-      </div>{/* end map panel */}
     </div>
   );
 }
