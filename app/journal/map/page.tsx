@@ -6,10 +6,10 @@ export default async function Page() {
   const session = await auth();
 
   return (
-    <main className="bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
+    <main className="-m-6 md:-m-12 h-full overflow-hidden relative bg-gray-50 dark:bg-gray-800">
       <CDTmap />
       {session && (
-        <div className="flex justify-end gap-4 px-4 py-2">
+        <div className="absolute bottom-3 right-3 z-20 flex gap-4 px-4 py-2">
           <Link
             href="/uploadTrack"
             className="text-sm font-medium text-blue-600 hover:text-blue-800 underline"
