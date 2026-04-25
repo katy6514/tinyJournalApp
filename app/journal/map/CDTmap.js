@@ -41,14 +41,16 @@ export default function CDTmap() {
     trail: true,
     stateLabels: true,
   });
+  const visibilityRef = useRef(visibility);
+  visibilityRef.current = visibility;
 
   // Sync visibility state → D3 element display whenever toggles change
   useEffect(() => {
     const g = gRef.current;
     if (!g) return;
     const photoDisplay = visibility.photos ? null : "none";
-    g.selectAll(".photoPoints").attr("display", photoDisplay);
-    g.selectAll(".photoHitAreas").attr("display", photoDisplay);
+    g.selectAll(".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel")
+      .attr("display", photoDisplay);
     g.selectAll(".campPoints").attr(
       "display",
       visibility.campsites ? null : "none",
@@ -133,6 +135,9 @@ export default function CDTmap() {
     const triangle = d3.symbol().type(d3.symbolTriangle).size(128);
     const cross = d3.symbol().type(d3.symbolCross).size(128);
 
+    // Placeholder — assigned inside Promise.all so zoom "end" can call it
+    let renderPhotoClusters = () => {};
+
     // Add zoom behavior
     const zoom = d3
       .zoom()
@@ -179,8 +184,7 @@ export default function CDTmap() {
       .on("end", (event) => {
         // console.log("Zoom level:", event.transform.k);
         const newSize = 128 / (event.transform.k * event.transform.k);
-        g.selectAll(".photoPoints").attr("r", 6 / event.transform.k);
-        g.selectAll(".photoHitAreas").attr("r", 14 / event.transform.k);
+        renderPhotoClusters(event.transform);
         g.selectAll(".campPoints").attr("d", triangle.size(newSize));
         g.selectAll(".messagePoints").attr("d", square.size(newSize));
         g.selectAll(".cityPoints").attr("d", cross.size(newSize));
@@ -350,103 +354,164 @@ export default function CDTmap() {
           projection(d.geometry.coordinates),
       );
 
-      // Visible photo dots – pointer events handled by hit areas below
-      g.selectAll(".photoPoints")
-        .data(validPhotoPoints)
-        .enter()
-        .append("circle")
-        .attr("class", "photoPoints")
-        .attr("cx", (d) => projection(d.geometry.coordinates)[0])
-        .attr("cy", (d) => projection(d.geometry.coordinates)[1])
-        .attr("r", 6)
-        .attr("fill", colors.photos)
-        .attr("stroke", colors.photosDark)
-        .attr("stroke-width", 1.5)
-        .attr("vector-effect", "non-scaling-stroke")
-        .attr("pointer-events", "none");
+      /* -----------------------------------------------------
+      *  Photo points — clustered by zoom level
+      ----------------------------------------------------- */
 
-      // Show one or multiple photos in the tooltip depending on overlap
       function showPhotoTooltip(d) {
-        const t = currentTransformRef.current ?? d3.zoomIdentity;
-        const [hx, hy] = projection(d.geometry.coordinates);
-        const [hsx, hsy] = t.apply([hx, hy]);
-
-        const nearby = validPhotoPoints.filter((f) => {
-          const [fx, fy] = projection(f.geometry.coordinates);
-          const [fsx, fsy] = t.apply([fx, fy]);
-          const dx = fsx - hsx;
-          const dy = fsy - hsy;
-          return Math.sqrt(dx * dx + dy * dy) <= 14;
+        const { path: photoPath, dateTime } = d.properties;
+        const normalized = dateTime.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
+        const photoDate = new Date(normalized);
+        const dateStr = photoDate.toLocaleDateString("en-US", {
+          year: "numeric", month: "long", day: "numeric",
         });
-
+        const timeStr = photoDate.toLocaleTimeString("en-US", {
+          hour: "numeric", minute: "2-digit", hour12: true,
+        });
         const tooltip = document.getElementById("tooltip");
         tooltip.classList.remove("invisible", "opacity-0");
         tooltip.classList.add("visible", "opacity-100");
-
-        if (nearby.length === 1) {
-          const { path: photoPath, dateTime } = d.properties;
-          const normalized = dateTime.replace(
-            /^(\d{4}):(\d{2}):(\d{2})/,
-            "$1-$2-$3",
-          );
-          const photoDate = new Date(normalized);
-          const dateStr = photoDate.toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          });
-          const timeStr = photoDate.toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-          });
-          tooltip.innerHTML = `<img src="${photoPath}" width="550"><br /><p><strong>Date:</strong> ${dateStr}</p><p><strong>Time:</strong> ${timeStr}</p>`;
-        } else {
-          const { dateTime: firstDT } = nearby[0].properties;
-          const normalized = firstDT.replace(
-            /^(\d{4}):(\d{2}):(\d{2})/,
-            "$1-$2-$3",
-          );
-          const dateStr = new Date(normalized).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          });
-          const photoItems = nearby
-            .map((f) => {
-              const { path: photoPath, dateTime } = f.properties;
-              const dt = dateTime.replace(
-                /^(\d{4}):(\d{2}):(\d{2})/,
-                "$1-$2-$3",
-              );
-              const timeStr = new Date(dt).toLocaleTimeString("en-US", {
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true,
-              });
-              return `<div style="flex-shrink:0;text-align:center"><img src="${photoPath}" style="width:250px;display:block"><p style="font-size:11px;margin-top:4px">${timeStr}</p></div>`;
-            })
-            .join("");
-          tooltip.innerHTML = `<p style="font-weight:600;margin-bottom:6px">${nearby.length} photos — ${dateStr}</p><div style="display:flex;gap:8px;overflow-x:auto;max-width:600px">${photoItems}</div>`;
-        }
+        tooltip.innerHTML = `<img src="${photoPath}" width="200" style="display:block;border-radius:4px"><p style="margin-top:6px"><strong>${dateStr}</strong></p><p>${timeStr}</p>`;
       }
 
-      // Transparent larger hit areas on top for easier interaction
-      g.selectAll(".photoHitAreas")
-        .data(validPhotoPoints)
-        .enter()
-        .append("circle")
-        .attr("class", "photoHitAreas")
-        .attr("cx", (d) => projection(d.geometry.coordinates)[0])
-        .attr("cy", (d) => projection(d.geometry.coordinates)[1])
-        .attr("r", 14)
-        .attr("fill", "transparent")
-        .attr("stroke", "none")
-        .on("mouseover", function (_event, d) {
-          showPhotoTooltip(d);
-        })
-        .on("mousemove", handleMouseMove)
-        .on("mouseout", handleMouseOut);
+      function showClusterTooltip(_event, d) {
+        const { path: photoPath, dateTime } = d.points[0].properties;
+        const normalized = dateTime.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
+        const dateStr = new Date(normalized).toLocaleDateString("en-US", {
+          year: "numeric", month: "long", day: "numeric",
+        });
+        const tooltip = document.getElementById("tooltip");
+        tooltip.classList.remove("invisible", "opacity-0");
+        tooltip.classList.add("visible", "opacity-100");
+        tooltip.innerHTML = `<img src="${photoPath}" width="200" style="display:block;border-radius:4px"><p style="margin-top:6px;font-weight:600">${d.count} photos</p><p>${dateStr}</p>`;
+      }
+
+      const CLUSTER_RADIUS = 20; // screen pixels — clusters dissolve naturally as zoom increases
+
+      renderPhotoClusters = function (transform) {
+        const k = transform.k;
+
+        // Remove previous photo layers entirely and re-render from scratch
+        g.selectAll(".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel").remove();
+
+        // Pre-compute both screen-space and projection-space positions
+        const positions = validPhotoPoints.map((p) => {
+          const [px, py] = projection(p.geometry.coordinates);
+          const [sx, sy] = transform.apply([px, py]);
+          return { px, py, sx, sy };
+        });
+
+        // Greedy single-pass clustering in screen-pixel space
+        const assigned = new Set();
+        const solos = [];
+        const groups = [];
+
+        for (let i = 0; i < validPhotoPoints.length; i++) {
+          if (assigned.has(i)) continue;
+          const members = [i];
+          assigned.add(i);
+          for (let j = i + 1; j < validPhotoPoints.length; j++) {
+            if (assigned.has(j)) continue;
+            const dx = positions[j].sx - positions[i].sx;
+            const dy = positions[j].sy - positions[i].sy;
+            if (Math.sqrt(dx * dx + dy * dy) <= CLUSTER_RADIUS) {
+              members.push(j);
+              assigned.add(j);
+            }
+          }
+          if (members.length === 1) {
+            solos.push(validPhotoPoints[members[0]]);
+          } else {
+            // Centroid in projection space so the circle stays stable across zoom
+            const cx = members.reduce((s, i) => s + positions[i].px, 0) / members.length;
+            const cy = members.reduce((s, i) => s + positions[i].py, 0) / members.length;
+            groups.push({ points: members.map((i) => validPhotoPoints[i]), cx, cy, count: members.length });
+          }
+        }
+
+        // Individual dots (pointer events on hit areas)
+        g.selectAll(".photoPoints")
+          .data(solos)
+          .enter()
+          .append("circle")
+          .attr("class", "photoPoints")
+          .attr("cx", (d) => projection(d.geometry.coordinates)[0])
+          .attr("cy", (d) => projection(d.geometry.coordinates)[1])
+          .attr("r", 6 / k)
+          .attr("fill", colors.photos)
+          .attr("stroke", colors.photosDark)
+          .attr("stroke-width", 1.5)
+          .attr("vector-effect", "non-scaling-stroke")
+          .attr("pointer-events", "none");
+
+        g.selectAll(".photoHitAreas")
+          .data(solos)
+          .enter()
+          .append("circle")
+          .attr("class", "photoHitAreas")
+          .attr("cx", (d) => projection(d.geometry.coordinates)[0])
+          .attr("cy", (d) => projection(d.geometry.coordinates)[1])
+          .attr("r", 14 / k)
+          .attr("fill", "transparent")
+          .attr("stroke", "none")
+          .on("mouseover", function (_event, d) { showPhotoTooltip(d); })
+          .on("mousemove", handleMouseMove)
+          .on("mouseout", handleMouseOut);
+
+        // Cluster circles — radius grows with log of count so large clusters
+        // don't dwarf individual dots
+        g.selectAll(".photoCluster")
+          .data(groups)
+          .enter()
+          .append("circle")
+          .attr("class", "photoCluster")
+          .attr("cx", (d) => d.cx)
+          .attr("cy", (d) => d.cy)
+          .attr("r", (d) => (6 + Math.log(d.count + 1) * 4) / k)
+          .attr("fill", colors.photos)
+          .attr("stroke", colors.photosDark)
+          .attr("stroke-width", 1.5)
+          .attr("vector-effect", "non-scaling-stroke")
+          .attr("pointer-events", "none");
+
+        g.selectAll(".photoClusterHit")
+          .data(groups)
+          .enter()
+          .append("circle")
+          .attr("class", "photoClusterHit")
+          .attr("cx", (d) => d.cx)
+          .attr("cy", (d) => d.cy)
+          .attr("r", (d) => (6 + Math.log(d.count + 1) * 4 + 8) / k)
+          .attr("fill", "transparent")
+          .attr("stroke", "none")
+          .on("mouseover", function (event, d) { showClusterTooltip(event, d); })
+          .on("mousemove", handleMouseMove)
+          .on("mouseout", handleMouseOut);
+
+        g.selectAll(".photoClusterLabel")
+          .data(groups)
+          .enter()
+          .append("text")
+          .attr("class", "photoClusterLabel")
+          .attr("x", (d) => d.cx)
+          .attr("y", (d) => d.cy)
+          .attr("text-anchor", "middle")
+          .attr("dominant-baseline", "middle")
+          .attr("font-size", 8 / k)
+          .attr("fill", "white")
+          .attr("stroke", "none")
+          .attr("pointer-events", "none")
+          .text((d) => d.count);
+
+        // Honour current visibility toggle
+        if (!visibilityRef.current.photos) {
+          g.selectAll(".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel")
+            .attr("display", "none");
+        }
+      };
+
+      // Initial render at current zoom (identity if user hasn't zoomed yet)
+      renderPhotoClusters(currentTransformRef.current ?? d3.zoomIdentity);
 
       /* -----------------------------------------------------
       *  Track mapping functionality (rendered last = on top)
