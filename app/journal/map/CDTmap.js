@@ -55,7 +55,7 @@ export default function CDTmap() {
       "display",
       visibility.campsites ? null : "none",
     );
-    g.selectAll(".messagePoints").attr(
+    g.selectAll(".messagePoints, .msgCluster, .msgClusterHit, .msgClusterLabel").attr(
       "display",
       visibility.messages ? null : "none",
     );
@@ -136,6 +136,7 @@ export default function CDTmap() {
     const cross = d3.symbol().type(d3.symbolCross).size(128);
 
     // Placeholders — assigned inside Promise.all so zoom "end" can call them
+    let renderMessageClusters = () => {};
     let renderPhotoClusters = () => {};
     let renderCampClusters = () => {};
 
@@ -188,8 +189,8 @@ export default function CDTmap() {
         // console.log("Zoom level:", event.transform.k);
         const newSize = 128 / (event.transform.k * event.transform.k);
         renderPhotoClusters(event.transform);
+        renderMessageClusters(event.transform);
         renderCampClusters(event.transform);
-        g.selectAll(".messagePoints").attr("d", square.size(newSize));
         g.selectAll(".cityPoints").attr("d", cross.size(newSize));
         g.selectAll(".state-label").attr("font-size", 20 / event.transform.k);
       });
@@ -305,25 +306,124 @@ export default function CDTmap() {
         }
       });
 
-      g.selectAll(".messagePoints")
-        .data(messageSites)
-        .enter()
-        .append("path")
-        .attr("class", "messagePoints")
-        .attr("d", square)
-        .attr("transform", (d) => {
-          const [x, y] = projection(d.geometry.coordinates);
-          return `translate(${x}, ${y})`;
-        })
-        .attr("fill", colors.messages)
-        .attr("stroke", colors.messagesDark)
-        .attr("stroke-width", 1.5)
-        .attr("vector-effect", "non-scaling-stroke")
-        .on("mouseover", function (event, d) {
-          showMessagePanel(event, d, currentUserRef.current);
-        })
-        .on("mousemove", moveMessagePanel)
-        .on("mouseout", hideMessagePanel);
+      renderMessageClusters = function (transform) {
+        const k = transform.k;
+        const CLUSTER_RADIUS = 20;
+
+        g.selectAll(".messagePoints, .msgCluster, .msgClusterHit, .msgClusterLabel").remove();
+
+        const positions = messageSites.map((p) => {
+          const [px, py] = projection(p.geometry.coordinates);
+          const [sx, sy] = transform.apply([px, py]);
+          return { px, py, sx, sy };
+        });
+
+        const assigned = new Set();
+        const solos = [];
+        const groups = [];
+
+        for (let i = 0; i < messageSites.length; i++) {
+          if (assigned.has(i)) continue;
+          const members = [i];
+          assigned.add(i);
+          for (let j = i + 1; j < messageSites.length; j++) {
+            if (assigned.has(j)) continue;
+            const dx = positions[j].sx - positions[i].sx;
+            const dy = positions[j].sy - positions[i].sy;
+            if (Math.sqrt(dx * dx + dy * dy) <= CLUSTER_RADIUS) {
+              members.push(j);
+              assigned.add(j);
+            }
+          }
+          if (members.length === 1) {
+            solos.push(messageSites[members[0]]);
+          } else {
+            const cx = members.reduce((s, i) => s + positions[i].px, 0) / members.length;
+            const cy = members.reduce((s, i) => s + positions[i].py, 0) / members.length;
+            groups.push({ points: members.map((i) => messageSites[i]), cx, cy, count: members.length });
+          }
+        }
+
+        const newSize = 128 / (k * k);
+
+        g.selectAll(".messagePoints")
+          .data(solos)
+          .enter()
+          .append("path")
+          .attr("class", "messagePoints")
+          .attr("d", square.size(newSize))
+          .attr("transform", (d) => {
+            const [x, y] = projection(d.geometry.coordinates);
+            return `translate(${x}, ${y})`;
+          })
+          .attr("fill", colors.messages)
+          .attr("stroke", colors.messagesDark)
+          .attr("stroke-width", 1.5)
+          .attr("vector-effect", "non-scaling-stroke")
+          .on("mouseover", function (event, d) { showMessagePanel(event, d, currentUserRef.current); })
+          .on("mousemove", moveMessagePanel)
+          .on("mouseout", hideMessagePanel);
+
+        g.selectAll(".msgCluster")
+          .data(groups)
+          .enter()
+          .append("path")
+          .attr("class", "msgCluster")
+          .attr("d", (d) => {
+            const r = (6 + Math.log(d.count + 1) * 4) / k;
+            return square.size(r * r * 2)();
+          })
+          .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
+          .attr("fill", colors.messages)
+          .attr("stroke", colors.messagesDark)
+          .attr("stroke-width", 1.5)
+          .attr("vector-effect", "non-scaling-stroke")
+          .attr("pointer-events", "none");
+
+        g.selectAll(".msgClusterHit")
+          .data(groups)
+          .enter()
+          .append("path")
+          .attr("class", "msgClusterHit")
+          .attr("d", (d) => {
+            const r = (6 + Math.log(d.count + 1) * 4) / k;
+            return square.size(r * r * 2)();
+          })
+          .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
+          .attr("fill", "transparent")
+          .attr("stroke", "none")
+          .attr("pointer-events", "all")
+          .on("mouseover", function (_event, d) {
+            const tooltip = document.getElementById("tooltip");
+            tooltip.classList.remove("invisible", "opacity-0");
+            tooltip.classList.add("visible", "opacity-100");
+            tooltip.innerHTML = `<p style="font-weight:600">${d.count} messages</p>`;
+          })
+          .on("mousemove", handleMouseMove)
+          .on("mouseout", handleMouseOut);
+
+        g.selectAll(".msgClusterLabel")
+          .data(groups)
+          .enter()
+          .append("text")
+          .attr("class", "msgClusterLabel")
+          .attr("x", (d) => d.cx)
+          .attr("y", (d) => d.cy)
+          .attr("text-anchor", "middle")
+          .attr("dominant-baseline", "middle")
+          .attr("font-size", 8 / k)
+          .attr("fill", "white")
+          .attr("stroke", "none")
+          .attr("pointer-events", "none")
+          .text((d) => d.count);
+
+        if (!visibilityRef.current.messages) {
+          g.selectAll(".messagePoints, .msgCluster, .msgClusterHit, .msgClusterLabel")
+            .attr("display", "none");
+        }
+      };
+
+      // initial call deferred — rendered in order below alongside photos and campsites
 
       renderCampClusters = function (transform) {
         const k = transform.k;
@@ -402,13 +502,16 @@ export default function CDTmap() {
         g.selectAll(".campClusterHit")
           .data(groups)
           .enter()
-          .append("circle")
+          .append("path")
           .attr("class", "campClusterHit")
-          .attr("cx", (d) => d.cx)
-          .attr("cy", (d) => d.cy)
-          .attr("r", (d) => (6 + Math.log(d.count + 1) * 4 + 8) / k)
+          .attr("d", (d) => {
+            const r = (6 + Math.log(d.count + 1) * 4) / k;
+            return triangle.size(r * r * 2)();
+          })
+          .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
           .attr("fill", "transparent")
           .attr("stroke", "none")
+          .attr("pointer-events", "all")
           .on("mouseover", function (_event, d) {
             const tooltip = document.getElementById("tooltip");
             tooltip.classList.remove("invisible", "opacity-0");
@@ -607,8 +710,9 @@ export default function CDTmap() {
         }
       };
 
-      // Initial render — photos first, campsites second so campsites appear on top
+      // Initial render order matches zoom-end order: photos → messages → campsites
       renderPhotoClusters(currentTransformRef.current ?? d3.zoomIdentity);
+      renderMessageClusters(currentTransformRef.current ?? d3.zoomIdentity);
       renderCampClusters(currentTransformRef.current ?? d3.zoomIdentity);
 
       /* -----------------------------------------------------
