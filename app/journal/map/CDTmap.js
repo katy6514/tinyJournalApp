@@ -1311,7 +1311,7 @@ export default function CDTmap() {
       <div className={`relative ${clusterPanel ? "w-1/2" : "w-full"}`}>
         {/* Layer toggle panel */}
         <div
-          className={`absolute top-100 left-3 z-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg shadow-md p-3 text-xs ${notoSans.className}`}
+          className={`absolute top-3 right-3 z-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg shadow-md p-3 text-xs ${notoSans.className}`}
         >
           <p className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
             Legend
