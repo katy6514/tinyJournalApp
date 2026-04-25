@@ -34,25 +34,7 @@ export default async function Page() {
           </Link>
         </div>
       )}
-      <div className="w-[80vw]">
-        <CDTmap />
-      </div>
-      {/* <div>
-        <section>
-          <header>
-            <h3>Helpful Hints</h3>
-          </header>
-          <div>
-            <ul>
-              <li>Click once to zoom in on a state</li>
-              <li>Double click to increase zoom</li>
-              <li>Click and drag to pan</li>
-              <li>Click outside state lines to reset zoom</li>
-              <li>Hover over the photo points to see the photo</li>
-            </ul>
-          </div>
-        </section>
-      </div> */}
+      <CDTmap />
       <div
         id="tooltip"
         role="tooltip"
