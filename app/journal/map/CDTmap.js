@@ -45,15 +45,11 @@ export default function CDTmap() {
   visibilityRef.current = visibility;
 
   const [clusterPanel, setClusterPanel] = useState(null);
-  const setClusterPanelRef = useRef(null);
-  setClusterPanelRef.current = setClusterPanel;
   const clusterPanelRef = useRef(clusterPanel);
   clusterPanelRef.current = clusterPanel;
   const zoomRef = useRef(null);
 
   const [activeItem, setActiveItem] = useState(null);
-  const setActiveItemRef = useRef(null);
-  setActiveItemRef.current = setActiveItem;
   const activeItemRef = useRef(activeItem);
   activeItemRef.current = activeItem;
   const updateConnectorLineRef = useRef(() => {});
@@ -500,7 +496,7 @@ export default function CDTmap() {
           .attr("vector-effect", "non-scaling-stroke")
           .on("mouseover", function (event, d) {
             if (clusterPanelRef.current?.type === "message") {
-              setActiveItemRef.current(d);
+              setActiveItem(d);
               updateConnectorLine(d);
             } else {
               showMessagePanel(event, d, currentUserRef.current);
@@ -550,7 +546,7 @@ export default function CDTmap() {
           .on("click", function (event, d) {
             event.stopPropagation();
             handleMouseOut();
-            setClusterPanelRef.current({
+            setClusterPanel({
               type: "message",
               items: d.points,
               projPoints: d.points.map((p) =>
@@ -648,7 +644,7 @@ export default function CDTmap() {
           .attr("vector-effect", "non-scaling-stroke")
           .on("mouseover", function (event, d) {
             if (clusterPanelRef.current?.type === "campsite") {
-              setActiveItemRef.current(d);
+              setActiveItem(d);
               updateConnectorLine(d);
             } else {
               showMessagePanel(event, d, currentUserRef.current);
@@ -698,7 +694,7 @@ export default function CDTmap() {
           .on("click", function (event, d) {
             event.stopPropagation();
             handleMouseOut();
-            setClusterPanelRef.current({
+            setClusterPanel({
               type: "campsite",
               items: d.points,
               projPoints: d.points.map((p) =>
@@ -864,7 +860,7 @@ export default function CDTmap() {
           .attr("stroke", "none")
           .on("mouseover", function (_event, d) {
             if (clusterPanelRef.current?.type === "photo") {
-              setActiveItemRef.current(d);
+              setActiveItem(d);
               updateConnectorLine(d);
             } else {
               showPhotoTooltip(d);
@@ -908,7 +904,7 @@ export default function CDTmap() {
           .on("click", function (event, d) {
             event.stopPropagation();
             handleMouseOut();
-            setClusterPanelRef.current({
+            setClusterPanel({
               type: "photo",
               items: d.points,
               projPoints: d.points.map((p) =>
@@ -1089,84 +1085,6 @@ export default function CDTmap() {
       .attr("fill", colors.black)
       .attr("stroke", "none");
 
-    /* -----------------------------------------------------
- *  Legend
- ----------------------------------------------------- */
-
-    // g.append("path")
-    //   .attr("d", square)
-    //   .attr("transform", "translate(100,430)")
-    //   .style("fill", colors.messages)
-    //   .style("stroke", "none");
-    // g.append("path")
-    //   .attr("d", triangle)
-    //   .attr("transform", "translate(100,460)")
-    //   .style("fill", colors.campSites)
-    //   .style("stroke", "none");
-    // g.append("circle")
-    //   .attr("cx", 100)
-    //   .attr("cy", 490)
-    //   .attr("r", 6)
-    //   .style("fill", colors.photos)
-    //   .style("stroke", "none");
-
-    // g.append("path")
-    //   .attr("d", cross)
-    //   .attr("transform", "translate(100,520)")
-    //   .style("fill", "black")
-    //   .style("stroke", "none");
-
-    // g.append("line")
-    //   .attr("x1", 90)
-    //   .attr("x2", 110)
-    //   .attr("y1", 550)
-    //   .attr("y2", 550)
-    //   .attr("stroke", colors.evenDays) // Set the line color
-    //   .attr("stroke-width", 3); // Set the line width
-    // g.append("line")
-    //   .attr("x1", 90)
-    //   .attr("x2", 110)
-    //   .attr("y1", 580)
-    //   .attr("y2", 580)
-    //   .attr("stroke", colors.oddDays) // Set the line color
-    //   .attr("stroke-width", 3); // Set the line width
-
-    // g.append("text")
-    //   .attr("x", 120)
-    //   .attr("y", 430)
-    //   .text("Garmin Message Sent")
-    //   .style("font-size", "15px")
-    //   .attr("alignment-baseline", "middle");
-    // g.append("text")
-    //   .attr("x", 120)
-    //   .attr("y", 460)
-    //   .text("Campsite Location")
-    //   .style("font-size", "15px")
-    //   .attr("alignment-baseline", "middle");
-    // g.append("text")
-    //   .attr("x", 120)
-    //   .attr("y", 490)
-    //   .text("Photo Location")
-    //   .style("font-size", "15px")
-    //   .attr("alignment-baseline", "middle");
-    // g.append("text")
-    //   .attr("x", 120)
-    //   .attr("y", 520)
-    //   .text("Resupply Stops")
-    //   .style("font-size", "15px")
-    //   .attr("alignment-baseline", "middle");
-    // g.append("text")
-    //   .attr("x", 120)
-    //   .attr("y", 550)
-    //   .text("Even days")
-    //   .style("font-size", "15px")
-    //   .attr("alignment-baseline", "middle");
-    // g.append("text")
-    //   .attr("x", 120)
-    //   .attr("y", 580)
-    //   .text("Odd days")
-    //   .style("font-size", "15px")
-    //   .attr("alignment-baseline", "middle");
   }, [path, projection]);
 
   const LAYERS = [
