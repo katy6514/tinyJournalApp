@@ -45,7 +45,7 @@ export default function CDTmap() {
   clusterPanelRef.current = clusterPanel;
   const zoomRef = useRef(null);
 
-  const updateConnectorLineRef = useRef(() => {});
+  const updateActiveRingRef = useRef(() => {});
 
   // Floating photo popout: shown when a photo point or cluster is clicked
   const [photoPopout, setPhotoPopout] = useState(null);
@@ -55,8 +55,6 @@ export default function CDTmap() {
   // Read ref so D3 closures can read the current photoPopout value
   const photoPopoutRef = useRef(photoPopout);
   photoPopoutRef.current = photoPopout;
-  // Ref on the rendered photo wrapper div — used to measure its SVG-space bounds
-  const photoWrapperRef = useRef(null);
 
   // Sync visibility state → D3 element display whenever toggles change
   useEffect(() => {
@@ -141,7 +139,7 @@ export default function CDTmap() {
   }, [clusterPanel]);
 
   useEffect(() => {
-    updateConnectorLineRef.current();
+    updateActiveRingRef.current();
   }, [photoPopout]);
 
   const projection = useMemo(() => {
@@ -311,7 +309,8 @@ export default function CDTmap() {
         g.selectAll(".campCluster, .campClusterHit").attr("d", (d) => { const r = (6 + Math.log(d.count + 1) * 4) / k; return triangle.size(r * r * 2)(); });
         g.selectAll(".campClusterLabel").attr("font-size", 8 / k);
 
-        updateConnectorLineRef.current();
+        // Keep active ring scaled to constant visual size
+        g.selectAll(".activeRing").attr("r", 10 / k);
       })
 
       .on("end", (event) => {
@@ -337,59 +336,31 @@ export default function CDTmap() {
     zoomRef.current = zoom;
     svg.call(zoom);
 
-    // Connector triangle: lives on svg (not g) so it isn't affected by the zoom
-    // transform. Tip points at the active data point; flat edge is flush with
-    // the panel boundary at x = width/2.
-    const connectorTriangle = svg
-      .append("polygon")
-      .attr("class", "connector-triangle")
-      .attr("fill", "rgba(156,163,175,0.35)")
-      .attr("stroke", "none")
+    // Pulsing ring drawn in g-space (zoom-aware) around the active photo dot.
+    const activeRing = g.append("circle")
+      .attr("class", "activeRing")
+      .attr("fill", "none")
+      .attr("stroke", colors.photosDark)
+      .attr("stroke-width", 2)
+      .attr("vector-effect", "non-scaling-stroke")
       .attr("pointer-events", "none")
       .attr("display", "none");
 
-    function updateConnectorLine() {
-      const isPhoto = !!photoPopoutRef.current;
-      const activeI = isPhoto ? photoPopoutRef.current.item : null;
-
-      if (!activeI) {
-        connectorTriangle.attr("display", "none");
-        return;
-      }
-      const coords = activeI.geometry.coordinates;
-      const projected = projection(coords);
-      if (!projected) { connectorTriangle.attr("display", "none"); return; }
+    function updateActiveRing() {
+      const photo = photoPopoutRef.current;
       const t = currentTransformRef.current ?? d3.zoomIdentity;
-      const [sx, sy] = t.apply(projected);
-      // Hide if dot is off-screen or behind the panel
-      if (sx <= width / 2 || sx > width || sy < 0 || sy > height) {
-        connectorTriangle.attr("display", "none");
+      if (!photo) {
+        activeRing.attr("display", "none");
         return;
       }
-
-      const panelEdgeX = width / 2;
-      let yTop, yBottom;
-
-      // Measure the rendered photo element's top/bottom in SVG viewbox space
-      if (photoWrapperRef.current && ref.current) {
-        const svgRect = ref.current.getBoundingClientRect();
-        const photoRect = photoWrapperRef.current.getBoundingClientRect();
-        if (svgRect.width > 0) {
-          const scale = svgRect.width / width;
-          yTop = (photoRect.top - svgRect.top) / scale;
-          yBottom = (photoRect.bottom - svgRect.top) / scale;
-        }
-      }
-      if (yTop === undefined) {
-        connectorTriangle.attr("display", "none");
-        return;
-      }
-
-      connectorTriangle
+      const [px, py] = projection(photo.item.geometry.coordinates);
+      activeRing
         .attr("display", null)
-        .attr("points", `${sx},${sy} ${panelEdgeX},${yTop} ${panelEdgeX},${yBottom}`);
+        .attr("cx", px)
+        .attr("cy", py)
+        .attr("r", 10 / t.k);
     }
-    updateConnectorLineRef.current = updateConnectorLine;
+    updateActiveRingRef.current = updateActiveRing;
 
     svg.on("click", (event) => {
       if (!event.target.classList.contains("state-clickable")) {
@@ -1147,6 +1118,7 @@ export default function CDTmap() {
 
   return (
     <div className="relative w-full h-full overflow-hidden">
+      <style>{`@keyframes ring-pulse { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.2; } } .activeRing { animation: ring-pulse 1.5s ease-in-out infinite; }`}</style>
       <svg ref={ref} aria-label="Continental Divide Trail interactive map" style={{ display: "block", width: "100%", height: "auto", maxHeight: "100%", aspectRatio: `${width} / ${height}` }}></svg>
 
       {/* Photo panel — overlays the left half, photo at natural proportions */}
@@ -1154,8 +1126,7 @@ export default function CDTmap() {
         <div
           className={`absolute inset-y-0 left-0 w-1/2 z-10 flex items-center justify-center pl-6 pt-6 pb-6 ${notoSans.className}`}
         >
-          {/* Wrapper sizes to the image, so the date overlay and close button sit inside the photo */}
-          <div ref={photoWrapperRef} style={{ position: "relative", maxWidth: "100%", maxHeight: "100%", borderRadius: 8, overflow: "hidden" }}>
+          <div style={{ position: "relative", maxWidth: "100%", maxHeight: "100%", borderRadius: 8, overflow: "hidden" }}>
             <button
               onClick={(e) => { e.stopPropagation(); setPhotoPopout(null); setClusterPanel(null); }}
               aria-label="Close"
@@ -1173,7 +1144,6 @@ export default function CDTmap() {
               src={popoutProps?.path}
               alt="Trail photo"
               style={{ display: "block", maxWidth: "100%", maxHeight: "100%", width: "auto", height: "auto" }}
-              onLoad={() => updateConnectorLineRef.current()}
             />
             {/* Date / time gradient overlay at the bottom edge of the photo */}
             <div style={{
