@@ -33,9 +33,6 @@ export default function CDTmap() {
     photos: true,
     campsites: true,
     messages: true,
-    cities: true,
-    trail: true,
-    stateLabels: true,
   });
   const visibilityRef = useRef(visibility);
   visibilityRef.current = visibility;
@@ -70,15 +67,6 @@ export default function CDTmap() {
     g.selectAll(
       ".messagePoints, .msgCluster, .msgClusterHit, .msgClusterLabel",
     ).attr("display", visibility.messages ? null : "none");
-    g.selectAll(".cities").attr("display", visibility.cities ? null : "none");
-    d3.select(ref.current)
-      .selectAll(".city_label_layer")
-      .attr("display", visibility.cities ? null : "none");
-    g.selectAll(".trail").attr("display", visibility.trail ? null : "none");
-    g.selectAll(".state-label").attr(
-      "display",
-      visibility.stateLabels ? null : "none",
-    );
   }, [visibility]);
 
   // When a cluster panel opens, zoom the map to fit all its points.
@@ -469,7 +457,7 @@ export default function CDTmap() {
       const messageSites = [];
 
       validPoints.forEach((d) => {
-        if (checkForCampsite(d) === true) {
+        if (checkForCampsite(d)) {
           campSites.push(d);
         } else {
           messageSites.push(d);
@@ -567,8 +555,6 @@ export default function CDTmap() {
           ).attr("display", "none");
         }
       };
-
-      // initial call deferred — rendered in order below alongside photos and campsites
 
       renderCampClusters = function (transform) {
         const k = transform.k;
@@ -677,7 +663,6 @@ export default function CDTmap() {
       /* -----------------------------------------------------
       *  Photo points — clustered by zoom level
       ----------------------------------------------------- */
-
 
       renderPhotoClusters = function (transform) {
         const k = transform.k;
