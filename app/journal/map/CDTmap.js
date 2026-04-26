@@ -92,30 +92,16 @@ export default function CDTmap() {
       maxY = Math.max(...ys);
     const PADDING = 80;
 
-    // Panel covers the left half — fit the cluster into the visible right half.
-    const visibleWidth = width / 2;
+    // Fit the cluster into the full viewport — the left-half shift happens
+    // later, when the user clicks an individual photo point.
     const scale = Math.min(
-      (visibleWidth - 2 * PADDING) / Math.max(maxX - minX, 1),
+      (width - 2 * PADDING) / Math.max(maxX - minX, 1),
       (height - 2 * PADDING) / Math.max(maxY - minY, 1),
       500,
     );
-    const visibleCenterX = (3 * width) / 4;
-    const tx = visibleCenterX - (scale * (minX + maxX)) / 2;
+    const tx = width / 2 - (scale * (minX + maxX)) / 2;
     const ty = height / 2 - (scale * (minY + maxY)) / 2;
 
-    if (clusterPanel.type === "photo") {
-      // Show the first photo (by timestamp) in the cluster as the left-panel popout.
-      const firstPhoto = clusterPanel.items
-        .slice()
-        .sort((a, b) => {
-          const ta = new Date((a.properties.dateTime ?? "").replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3"));
-          const tb = new Date((b.properties.dateTime ?? "").replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3"));
-          return ta - tb;
-        })[0];
-      if (firstPhoto) {
-        setPhotoPopoutRef.current({ item: firstPhoto });
-      }
-    }
     d3.select(ref.current)
       .transition()
       .duration(1200)
@@ -128,7 +114,18 @@ export default function CDTmap() {
 
   useEffect(() => {
     updateActiveRingRef.current();
-  }, [photoPopout]);
+    if (!photoPopout || !zoomRef.current || !ref.current) return;
+
+    // Shift the map so the active dot sits in the center of the right half,
+    // making room for the photo panel on the left.
+    const t = currentTransformRef.current ?? d3.zoomIdentity;
+    const [px, py] = projection(photoPopout.item.geometry.coordinates);
+    const newX = (3 * width) / 4 - px * t.k;
+    const newY = height / 2 - py * t.k;
+    d3.select(ref.current)
+      .transition().duration(400).ease(d3.easeCubicInOut)
+      .call(zoomRef.current.transform, d3.zoomIdentity.translate(newX, newY).scale(t.k));
+  }, [photoPopout]); // projection omitted: memoized with [] so never changes
 
   const projection = useMemo(() => {
     return d3
