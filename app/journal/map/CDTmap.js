@@ -17,10 +17,6 @@ import {
   handleMouseOver,
 } from "./utils";
 
-// interface CDTmapProps {
-//   user: any; // 👈 Replace `any` with your actual user type if available
-// }
-
 export default function CDTmap() {
   const ref = useRef();
   const gRef = useRef(null);
@@ -110,16 +106,14 @@ export default function CDTmap() {
       maxY = Math.max(...ys);
     const PADDING = 80;
 
-    // Panel covers the left half for both photos and message/campsite —
-    // fit the cluster into the visible right half and center it there.
-    const visibleLeft = width / 2;
+    // Panel covers the left half — fit the cluster into the visible right half.
     const visibleWidth = width / 2;
     const scale = Math.min(
       (visibleWidth - 2 * PADDING) / Math.max(maxX - minX, 1),
       (height - 2 * PADDING) / Math.max(maxY - minY, 1),
       500,
     );
-    const visibleCenterX = visibleLeft + visibleWidth / 2;
+    const visibleCenterX = (3 * width) / 4;
     const tx = visibleCenterX - (scale * (minX + maxX)) / 2;
     const ty = height / 2 - (scale * (minY + maxY)) / 2;
 
@@ -150,7 +144,6 @@ export default function CDTmap() {
     updateConnectorLineRef.current();
   }, [photoPopout]);
 
-  // ✅ Define projection + path WITHIN component and memoize
   const projection = useMemo(() => {
     return d3
       .geoAlbersUsa()
@@ -173,11 +166,47 @@ export default function CDTmap() {
     svg.selectAll("*").remove();
 
     const g = svg.append("g").attr("class", "mapLayer");
-    gRef.current = g; // ✅ store g in a ref for later access
+    gRef.current = g;
 
     const square = d3.symbol().type(d3.symbolSquare).size(128);
     const triangle = d3.symbol().type(d3.symbolTriangle).size(128);
     const cross = d3.symbol().type(d3.symbolCross).size(128);
+
+    // Shared greedy clustering: groups sites whose screen-space positions are
+    // within CLUSTER_RADIUS pixels of each other at the current transform.
+    // Returns { solos, groups } where groups carry projection-space centroids.
+    function computeClusters(sites, transform, CLUSTER_RADIUS = 20) {
+      const positions = sites.map((p) => {
+        const [px, py] = projection(p.geometry.coordinates);
+        const [sx, sy] = transform.apply([px, py]);
+        return { px, py, sx, sy };
+      });
+      const assigned = new Set();
+      const solos = [];
+      const groups = [];
+      for (let i = 0; i < sites.length; i++) {
+        if (assigned.has(i)) continue;
+        const members = [i];
+        assigned.add(i);
+        for (let j = i + 1; j < sites.length; j++) {
+          if (assigned.has(j)) continue;
+          const dx = positions[j].sx - positions[i].sx;
+          const dy = positions[j].sy - positions[i].sy;
+          if (Math.sqrt(dx * dx + dy * dy) <= CLUSTER_RADIUS) {
+            members.push(j);
+            assigned.add(j);
+          }
+        }
+        if (members.length === 1) {
+          solos.push(sites[members[0]]);
+        } else {
+          const cx = members.reduce((s, i) => s + positions[i].px, 0) / members.length;
+          const cy = members.reduce((s, i) => s + positions[i].py, 0) / members.length;
+          groups.push({ points: members.map((i) => sites[i]), cx, cy, count: members.length });
+        }
+      }
+      return { solos, groups };
+    }
 
     // Placeholders — assigned inside Promise.all so zoom "end" can call them
     let renderMessageClusters = () => {};
@@ -274,14 +303,12 @@ export default function CDTmap() {
 
         // Messages
         g.selectAll(".messagePoints").attr("d", square.size(symbolSize));
-        g.selectAll(".msgCluster").attr("d", (d) => { const r = (6 + Math.log(d.count + 1) * 4) / k; return square.size(r * r * 2)(); });
-        g.selectAll(".msgClusterHit").attr("d", (d) => { const r = (6 + Math.log(d.count + 1) * 4) / k; return square.size(r * r * 2)(); });
+        g.selectAll(".msgCluster, .msgClusterHit").attr("d", (d) => { const r = (6 + Math.log(d.count + 1) * 4) / k; return square.size(r * r * 2)(); });
         g.selectAll(".msgClusterLabel").attr("font-size", 8 / k);
 
         // Campsites
         g.selectAll(".campPoints").attr("d", triangle.size(symbolSize));
-        g.selectAll(".campCluster").attr("d", (d) => { const r = (6 + Math.log(d.count + 1) * 4) / k; return triangle.size(r * r * 2)(); });
-        g.selectAll(".campClusterHit").attr("d", (d) => { const r = (6 + Math.log(d.count + 1) * 4) / k; return triangle.size(r * r * 2)(); });
+        g.selectAll(".campCluster, .campClusterHit").attr("d", (d) => { const r = (6 + Math.log(d.count + 1) * 4) / k; return triangle.size(r * r * 2)(); });
         g.selectAll(".campClusterLabel").attr("font-size", 8 / k);
 
         updateConnectorLineRef.current();
@@ -480,51 +507,12 @@ export default function CDTmap() {
 
       renderMessageClusters = function (transform) {
         const k = transform.k;
-        const CLUSTER_RADIUS = 20;
 
         g.selectAll(
           ".messagePoints, .msgCluster, .msgClusterHit, .msgClusterLabel",
         ).remove();
 
-        const positions = messageSites.map((p) => {
-          const [px, py] = projection(p.geometry.coordinates);
-          const [sx, sy] = transform.apply([px, py]);
-          return { px, py, sx, sy };
-        });
-
-        const assigned = new Set();
-        const solos = [];
-        const groups = [];
-
-        for (let i = 0; i < messageSites.length; i++) {
-          if (assigned.has(i)) continue;
-          const members = [i];
-          assigned.add(i);
-          for (let j = i + 1; j < messageSites.length; j++) {
-            if (assigned.has(j)) continue;
-            const dx = positions[j].sx - positions[i].sx;
-            const dy = positions[j].sy - positions[i].sy;
-            if (Math.sqrt(dx * dx + dy * dy) <= CLUSTER_RADIUS) {
-              members.push(j);
-              assigned.add(j);
-            }
-          }
-          if (members.length === 1) {
-            solos.push(messageSites[members[0]]);
-          } else {
-            const cx =
-              members.reduce((s, i) => s + positions[i].px, 0) / members.length;
-            const cy =
-              members.reduce((s, i) => s + positions[i].py, 0) / members.length;
-            groups.push({
-              points: members.map((i) => messageSites[i]),
-              cx,
-              cy,
-              count: members.length,
-            });
-          }
-        }
-
+        const { solos, groups } = computeClusters(messageSites, transform);
         const newSize = 128 / (k * k);
 
         g.selectAll(".messagePoints")
@@ -611,51 +599,12 @@ export default function CDTmap() {
 
       renderCampClusters = function (transform) {
         const k = transform.k;
-        const CLUSTER_RADIUS = 20;
 
         g.selectAll(
           ".campPoints, .campCluster, .campClusterHit, .campClusterLabel",
         ).remove();
 
-        const positions = campSites.map((p) => {
-          const [px, py] = projection(p.geometry.coordinates);
-          const [sx, sy] = transform.apply([px, py]);
-          return { px, py, sx, sy };
-        });
-
-        const assigned = new Set();
-        const solos = [];
-        const groups = [];
-
-        for (let i = 0; i < campSites.length; i++) {
-          if (assigned.has(i)) continue;
-          const members = [i];
-          assigned.add(i);
-          for (let j = i + 1; j < campSites.length; j++) {
-            if (assigned.has(j)) continue;
-            const dx = positions[j].sx - positions[i].sx;
-            const dy = positions[j].sy - positions[i].sy;
-            if (Math.sqrt(dx * dx + dy * dy) <= CLUSTER_RADIUS) {
-              members.push(j);
-              assigned.add(j);
-            }
-          }
-          if (members.length === 1) {
-            solos.push(campSites[members[0]]);
-          } else {
-            const cx =
-              members.reduce((s, i) => s + positions[i].px, 0) / members.length;
-            const cy =
-              members.reduce((s, i) => s + positions[i].py, 0) / members.length;
-            groups.push({
-              points: members.map((i) => campSites[i]),
-              cx,
-              cy,
-              count: members.length,
-            });
-          }
-        }
-
+        const { solos, groups } = computeClusters(campSites, transform);
         const newSize = 128 / (k * k);
 
         g.selectAll(".campPoints")
@@ -755,57 +704,14 @@ export default function CDTmap() {
       ----------------------------------------------------- */
 
 
-      const CLUSTER_RADIUS = 20; // screen pixels — clusters dissolve naturally as zoom increases
-
       renderPhotoClusters = function (transform) {
         const k = transform.k;
 
-        // Remove previous photo layers entirely and re-render from scratch
         g.selectAll(
           ".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel",
         ).remove();
 
-        // Pre-compute both screen-space and projection-space positions
-        const positions = validPhotoPoints.map((p) => {
-          const [px, py] = projection(p.geometry.coordinates);
-          const [sx, sy] = transform.apply([px, py]);
-          return { px, py, sx, sy };
-        });
-
-        // Greedy single-pass clustering in screen-pixel space
-        const assigned = new Set();
-        const solos = [];
-        const groups = [];
-
-        for (let i = 0; i < validPhotoPoints.length; i++) {
-          if (assigned.has(i)) continue;
-          const members = [i];
-          assigned.add(i);
-          for (let j = i + 1; j < validPhotoPoints.length; j++) {
-            if (assigned.has(j)) continue;
-            const dx = positions[j].sx - positions[i].sx;
-            const dy = positions[j].sy - positions[i].sy;
-            if (Math.sqrt(dx * dx + dy * dy) <= CLUSTER_RADIUS) {
-              members.push(j);
-              assigned.add(j);
-            }
-          }
-          if (members.length === 1) {
-            solos.push(validPhotoPoints[members[0]]);
-          } else {
-            // Centroid in projection space so the circle stays stable across zoom
-            const cx =
-              members.reduce((s, i) => s + positions[i].px, 0) / members.length;
-            const cy =
-              members.reduce((s, i) => s + positions[i].py, 0) / members.length;
-            groups.push({
-              points: members.map((i) => validPhotoPoints[i]),
-              cx,
-              cy,
-              count: members.length,
-            });
-          }
-        }
+        const { solos, groups } = computeClusters(validPhotoPoints, transform);
 
         // Individual dots (pointer events on hit areas)
         g.selectAll(".photoPoints")
@@ -911,14 +817,14 @@ export default function CDTmap() {
       *  Track mapping functionality (rendered last = on top)
       ----------------------------------------------------- */
 
+      const trailFeatures = trackData.features.filter(
+        (d) =>
+          Array.isArray(d.geometry?.coordinates) &&
+          d.geometry.coordinates.length > 0,
+      );
+
       g.selectAll(".trail")
-        .data(
-          trackData.features.filter(
-            (d) =>
-              Array.isArray(d.geometry?.coordinates) &&
-              d.geometry.coordinates.length > 0,
-          ),
-        )
+        .data(trailFeatures)
         .enter()
         .append("path")
         .attr("class", "trail")
@@ -931,14 +837,9 @@ export default function CDTmap() {
         .attr("display", "none");
 
       // Transparent wide hit areas on top for easier hover detection
-      const trailData = trackData.features.filter(
-        (d) =>
-          Array.isArray(d.geometry?.coordinates) &&
-          d.geometry.coordinates.length > 0,
-      );
 
       g.selectAll(".trail-hit")
-        .data(trailData)
+        .data(trailFeatures)
         .enter()
         .append("path")
         .attr("class", "trail-hit")
@@ -978,7 +879,6 @@ export default function CDTmap() {
         .style("cursor", (d) => (d.properties.entry_id ? "pointer" : "default"))
         .attr("display", "none");
 
-      /* -----------------------------------------------------
       /* -----------------------------------------------------
       *  City labels (rendered last so they float above state lines)
       ----------------------------------------------------- */
