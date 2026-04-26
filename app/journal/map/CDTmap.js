@@ -755,6 +755,7 @@ export default function CDTmap() {
           })
           .attr("aria-describedby", "tooltip")
           .style("cursor", "pointer")
+          .style("outline", "none")
           .on("keydown", function (event, d) {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
@@ -797,6 +798,7 @@ export default function CDTmap() {
           .attr("aria-label", (d) => `View cluster of ${d.count} photos`)
           .attr("aria-describedby", "tooltip")
           .style("cursor", "pointer")
+          .style("outline", "none")
           .on("mousemove", handleMouseMove)
           .on("mouseout", handleMouseOut)
           .on("keydown", function (event, d) {
@@ -1144,8 +1146,7 @@ export default function CDTmap() {
 
   return (
     <div className="relative w-full h-full overflow-hidden">
-      {/* SVG is full width; its aspect-ratio height is clipped by the h-full overflow-hidden container */}
-      <svg ref={ref} aria-label="Continental Divide Trail interactive map"></svg>
+      <svg ref={ref} aria-label="Continental Divide Trail interactive map" style={{ display: "block", width: "100%", height: "auto", maxHeight: "100%", aspectRatio: `${width} / ${height}` }}></svg>
 
       {/* Photo panel — overlays the left half, photo at natural proportions */}
       {photoPopout && (
