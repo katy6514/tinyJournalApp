@@ -911,12 +911,13 @@ export default function CDTmap() {
         .on("mousemove", handleMouseMove)
         .on("mouseout", handleMouseOut)
         .on("click", function (_event, d) {
+          if (!currentUserRef.current) return;
           const entryId = d.properties.entry_id;
           if (!entryId) return;
           handleMouseOut();
           routerRef.current.push(`/journal/${entryId}`);
         })
-        .style("cursor", (d) => (d.properties.entry_id ? "pointer" : "default"))
+        .style("cursor", (d) => (d.properties.entry_id && currentUserRef.current ? "pointer" : "default"))
         .attr("display", "none");
 
       /* -----------------------------------------------------
