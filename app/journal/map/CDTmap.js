@@ -102,17 +102,6 @@ export default function CDTmap() {
     }
     if (!zoomRef.current || !ref.current) return;
 
-    // Hide data points for the duration of the zoom transition — their sizes
-    // are fixed in projection space and balloon visually as the transform scales
-    // up. The zoom "end" handler re-renders them at the correct size.
-    if (gRef.current) {
-      gRef.current.selectAll(
-        ".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel," +
-        ".messagePoints, .msgCluster, .msgClusterHit, .msgClusterLabel," +
-        ".campPoints, .campCluster, .campClusterHit, .campClusterLabel"
-      ).attr("display", "none");
-    }
-
     const xs = clusterPanel.projPoints.map((p) => p[0]);
     const ys = clusterPanel.projPoints.map((p) => p[1]);
     const minX = Math.min(...xs),
@@ -269,17 +258,40 @@ export default function CDTmap() {
           }
         });
 
+        const k = t.k;
+        const symbolSize = 128 / (k * k);
+
+        // City crosses
+        g.selectAll(".cityPoints").attr("d", cross.size(symbolSize));
+        g.selectAll(".state-label").attr("font-size", 20 / k);
+
+        // Photos
+        g.selectAll(".photoPoints").attr("r", 6 / k);
+        g.selectAll(".photoHitAreas").attr("r", 14 / k);
+        g.selectAll(".photoCluster").attr("r", (d) => (6 + Math.log(d.count + 1) * 4) / k);
+        g.selectAll(".photoClusterHit").attr("r", (d) => (6 + Math.log(d.count + 1) * 4 + 8) / k);
+        g.selectAll(".photoClusterLabel").attr("font-size", 8 / k);
+
+        // Messages
+        g.selectAll(".messagePoints").attr("d", square.size(symbolSize));
+        g.selectAll(".msgCluster").attr("d", (d) => { const r = (6 + Math.log(d.count + 1) * 4) / k; return square.size(r * r * 2)(); });
+        g.selectAll(".msgClusterHit").attr("d", (d) => { const r = (6 + Math.log(d.count + 1) * 4) / k; return square.size(r * r * 2)(); });
+        g.selectAll(".msgClusterLabel").attr("font-size", 8 / k);
+
+        // Campsites
+        g.selectAll(".campPoints").attr("d", triangle.size(symbolSize));
+        g.selectAll(".campCluster").attr("d", (d) => { const r = (6 + Math.log(d.count + 1) * 4) / k; return triangle.size(r * r * 2)(); });
+        g.selectAll(".campClusterHit").attr("d", (d) => { const r = (6 + Math.log(d.count + 1) * 4) / k; return triangle.size(r * r * 2)(); });
+        g.selectAll(".campClusterLabel").attr("font-size", 8 / k);
+
         updateConnectorLineRef.current();
       })
 
       .on("end", (event) => {
-        // console.log("Zoom level:", event.transform.k);
-        const newSize = 128 / (event.transform.k * event.transform.k);
+        // Recompute cluster membership now that zoom has settled
         renderPhotoClusters(event.transform);
         renderMessageClusters(event.transform);
         renderCampClusters(event.transform);
-        g.selectAll(".cityPoints").attr("d", cross.size(newSize));
-        g.selectAll(".state-label").attr("font-size", 20 / event.transform.k);
       });
 
     zoomRef.current = zoom;
