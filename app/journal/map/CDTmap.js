@@ -288,10 +288,23 @@ export default function CDTmap() {
       })
 
       .on("end", (event) => {
-        // Recompute cluster membership now that zoom has settled
-        renderPhotoClusters(event.transform);
-        renderMessageClusters(event.transform);
-        renderCampClusters(event.transform);
+        const FADE = 120;
+        const allPoints =
+          ".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel," +
+          ".messagePoints, .msgCluster, .msgClusterHit, .msgClusterLabel," +
+          ".campPoints, .campCluster, .campClusterHit, .campClusterLabel";
+
+        // Fade out, recompute while invisible, fade back in
+        g.selectAll(allPoints).transition().duration(FADE).attr("opacity", 0);
+
+        setTimeout(() => {
+          renderPhotoClusters(event.transform);
+          renderMessageClusters(event.transform);
+          renderCampClusters(event.transform);
+          g.selectAll(allPoints)
+            .attr("opacity", 0)
+            .transition().duration(FADE).attr("opacity", 1);
+        }, FADE);
       });
 
     zoomRef.current = zoom;
