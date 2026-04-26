@@ -529,6 +529,7 @@ export default function CDTmap() {
           .attr("stroke", colors.messagesDark)
           .attr("stroke-width", 1.5)
           .attr("vector-effect", "non-scaling-stroke")
+          .attr("aria-describedby", "tooltip")
           .style("cursor", "default")
           .on("mouseover", function (event, d) { handleMouseOver(currentUserRef.current)(event, d); })
           .on("mousemove", handleMouseMove)
@@ -563,6 +564,7 @@ export default function CDTmap() {
           .attr("fill", "transparent")
           .attr("stroke", "none")
           .attr("pointer-events", "all")
+          .attr("aria-describedby", "tooltip")
           .style("cursor", "pointer")
           .on("mouseover", function (_event, d) {
             const tooltip = document.getElementById("tooltip");
@@ -621,6 +623,7 @@ export default function CDTmap() {
           .attr("stroke", colors.campSites)
           .attr("stroke-width", 1.5)
           .attr("vector-effect", "non-scaling-stroke")
+          .attr("aria-describedby", "tooltip")
           .style("cursor", "default")
           .on("mouseover", function (event, d) { handleMouseOver(currentUserRef.current)(event, d); })
           .on("mousemove", handleMouseMove)
@@ -655,6 +658,7 @@ export default function CDTmap() {
           .attr("fill", "transparent")
           .attr("stroke", "none")
           .attr("pointer-events", "all")
+          .attr("aria-describedby", "tooltip")
           .style("cursor", "pointer")
           .on("mouseover", function (_event, d) {
             const tooltip = document.getElementById("tooltip");
@@ -738,7 +742,25 @@ export default function CDTmap() {
           .attr("r", 14 / k)
           .attr("fill", "transparent")
           .attr("stroke", "none")
+          .attr("role", "button")
+          .attr("tabindex", "0")
+          .attr("aria-label", (d) => {
+            const dt = d.properties?.dateTime;
+            if (!dt) return "View photo";
+            const normalized = dt.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
+            const dateStr = new Date(normalized).toLocaleDateString("en-US", {
+              month: "long", day: "numeric", year: "numeric",
+            });
+            return `View photo from ${dateStr}`;
+          })
+          .attr("aria-describedby", "tooltip")
           .style("cursor", "pointer")
+          .on("keydown", function (event, d) {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setPhotoPopoutRef.current({ item: d });
+            }
+          })
           .on("click", function (event, d) {
             event.stopPropagation();
             setPhotoPopoutRef.current({ item: d });
@@ -770,9 +792,24 @@ export default function CDTmap() {
           .attr("r", (d) => (6 + Math.log(d.count + 1) * 4 + 8) / k)
           .attr("fill", "transparent")
           .attr("stroke", "none")
+          .attr("role", "button")
+          .attr("tabindex", "0")
+          .attr("aria-label", (d) => `View cluster of ${d.count} photos`)
+          .attr("aria-describedby", "tooltip")
           .style("cursor", "pointer")
           .on("mousemove", handleMouseMove)
           .on("mouseout", handleMouseOut)
+          .on("keydown", function (event, d) {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              handleMouseOut();
+              setClusterPanel({
+                type: "photo",
+                items: d.points,
+                projPoints: d.points.map((p) => projection(p.geometry.coordinates)),
+              });
+            }
+          })
           .on("click", function (event, d) {
             event.stopPropagation();
             handleMouseOut();
@@ -848,6 +885,7 @@ export default function CDTmap() {
         .attr("stroke", "transparent")
         .attr("stroke-width", 12)
         .attr("vector-effect", "non-scaling-stroke")
+        .attr("aria-describedby", "tooltip")
         .on("mouseover", function (event, d) {
           if ((currentTransformRef.current?.k ?? 0) <= 20) return;
           const raw = d.properties.date;
@@ -1107,7 +1145,7 @@ export default function CDTmap() {
   return (
     <div className="relative w-full h-full overflow-hidden">
       {/* SVG is full width; its aspect-ratio height is clipped by the h-full overflow-hidden container */}
-      <svg ref={ref}></svg>
+      <svg ref={ref} aria-label="Continental Divide Trail interactive map"></svg>
 
       {/* Photo panel — overlays the left half, photo at natural proportions */}
       {photoPopout && (
