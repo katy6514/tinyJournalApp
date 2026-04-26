@@ -12,9 +12,9 @@ import { notoSans } from "@/app/ui/fonts";
 import {
   getAlternatingColor,
   checkForCampsite,
-  parseGPSTime,
   handleMouseMove,
   handleMouseOut,
+  handleMouseOver,
 } from "./utils";
 
 // interface CDTmapProps {
@@ -49,15 +49,18 @@ export default function CDTmap() {
   clusterPanelRef.current = clusterPanel;
   const zoomRef = useRef(null);
 
-  const [activeItem, setActiveItem] = useState(null);
-  const activeItemRef = useRef(activeItem);
-  activeItemRef.current = activeItem;
   const updateConnectorLineRef = useRef(() => {});
 
   // Floating photo popout: shown when a photo point or cluster is clicked
   const [photoPopout, setPhotoPopout] = useState(null);
+
   // Stable setter ref so D3 closures can call it without stale-closure issues
   const setPhotoPopoutRef = useRef(setPhotoPopout);
+  // Read ref so D3 closures can read the current photoPopout value
+  const photoPopoutRef = useRef(photoPopout);
+  photoPopoutRef.current = photoPopout;
+  // Ref on the rendered photo wrapper div — used to measure its SVG-space bounds
+  const photoWrapperRef = useRef(null);
 
   // Sync visibility state → D3 element display whenever toggles change
   useEffect(() => {
@@ -84,11 +87,10 @@ export default function CDTmap() {
     );
   }, [visibility]);
 
-  // When a cluster panel opens, zoom the map to fit all its points and set first active item.
-  // When it closes, clear the active item.
+  // When a cluster panel opens, zoom the map to fit all its points.
+  // When it closes, reset the zoom.
   useEffect(() => {
     if (!clusterPanel) {
-      setActiveItem(null);
       if (zoomRef.current && ref.current) {
         d3.select(ref.current)
           .transition()
@@ -99,14 +101,6 @@ export default function CDTmap() {
       return;
     }
     if (!zoomRef.current || !ref.current) return;
-
-    // Photo clusters: just zoom + show popout — no left panel needed.
-    // Message/campsite clusters: set active item for the left panel.
-    if (clusterPanel.type !== "photo") {
-      const getTime = (item) => parseGPSTime(item.properties.GPSTime);
-      const first = clusterPanel.items.slice().sort((a, b) => getTime(a) - getTime(b))[0];
-      setActiveItem(first);
-    }
 
     // Hide data points for the duration of the zoom transition — their sizes
     // are fixed in projection space and balloon visually as the transform scales
@@ -163,10 +157,9 @@ export default function CDTmap() {
       );
   }, [clusterPanel]);
 
-  // Keep connector line in sync whenever activeItem changes
   useEffect(() => {
     updateConnectorLineRef.current();
-  }, [activeItem]);
+  }, [photoPopout]);
 
   // ✅ Define projection + path WITHIN component and memoize
   const projection = useMemo(() => {
@@ -177,44 +170,6 @@ export default function CDTmap() {
   }, []);
 
   const path = useMemo(() => d3.geoPath().projection(projection), [projection]);
-
-  function showMessagePanel(event, d, currentUser) {
-    const panel = document.getElementById("message-panel");
-    const messageDate = parseGPSTime(d.properties.GPSTime);
-    const dateStr = messageDate.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    const timeStr = messageDate.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-    const isOwner = currentUser?.email === "katy6514@gmail.com";
-    const messageText = isOwner ? d.properties.MessageText : "Message hidden";
-    panel.innerHTML = `
-      <p style="font-weight:600;margin-bottom:8px;">Garmin Message</p>
-      <p><strong>Date:</strong> ${dateStr}</p>
-      <p><strong>Time:</strong> ${timeStr}</p>
-      <p><strong>To:</strong> ${d.properties.Recipients}</p>
-      <p style="margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;">${messageText}</p>
-    `;
-    panel.style.display = "block";
-    panel.style.left = event.pageX + 15 + "px";
-    panel.style.top = event.pageY - 50 + "px";
-  }
-
-  function moveMessagePanel(event) {
-    const panel = document.getElementById("message-panel");
-    panel.style.left = event.pageX + 15 + "px";
-    panel.style.top = event.pageY - 50 + "px";
-  }
-
-  function hideMessagePanel() {
-    const panel = document.getElementById("message-panel");
-    panel.style.display = "none";
-  }
 
   useEffect(() => {
     const svg = d3
@@ -251,8 +206,6 @@ export default function CDTmap() {
         const cls = event.target?.classList;
         if (
           cls?.contains("photoClusterHit") ||
-          cls?.contains("msgClusterHit") ||
-          cls?.contains("campClusterHit") ||
           cls?.contains("photoHitAreas")
         ) {
           return false;
@@ -332,44 +285,63 @@ export default function CDTmap() {
     zoomRef.current = zoom;
     svg.call(zoom);
 
-    // Connector line: lives on svg (not g) so it isn't affected by the zoom
-    // transform on g — its coordinates are always in SVG viewBox space.
-    const connectorLine = svg
-      .append("line")
-      .attr("class", "connector-line")
-      .attr("stroke", "#9ca3af")
-      .attr("stroke-width", 1.5)
-      .attr("stroke-dasharray", "5,4")
+    // Connector triangle: lives on svg (not g) so it isn't affected by the zoom
+    // transform. Tip points at the active data point; flat edge is flush with
+    // the panel boundary at x = width/2.
+    const connectorTriangle = svg
+      .append("polygon")
+      .attr("class", "connector-triangle")
+      .attr("fill", "rgba(156,163,175,0.35)")
+      .attr("stroke", "none")
       .attr("pointer-events", "none")
       .attr("display", "none");
 
-    function updateConnectorLine(item) {
-      const activeI = item !== undefined ? item : activeItemRef.current;
-      if (!activeI || !clusterPanelRef.current || clusterPanelRef.current.type === "photo") {
-        connectorLine.attr("display", "none");
+    function updateConnectorLine() {
+      const isPhoto = !!photoPopoutRef.current;
+      const activeI = isPhoto ? photoPopoutRef.current.item : null;
+
+      if (!activeI) {
+        connectorTriangle.attr("display", "none");
         return;
       }
       const coords = activeI.geometry.coordinates;
       const projected = projection(coords);
-      if (!projected) { connectorLine.attr("display", "none"); return; }
+      if (!projected) { connectorTriangle.attr("display", "none"); return; }
       const t = currentTransformRef.current ?? d3.zoomIdentity;
       const [sx, sy] = t.apply(projected);
-      if (sx < 0 || sx > width || sy < 0 || sy > height) {
-        connectorLine.attr("display", "none");
+      // Hide if dot is off-screen or behind the panel
+      if (sx <= width / 2 || sx > width || sy < 0 || sy > height) {
+        connectorTriangle.attr("display", "none");
         return;
       }
-      connectorLine
+
+      const panelEdgeX = width / 2;
+      let yTop, yBottom;
+
+      // Measure the rendered photo element's top/bottom in SVG viewbox space
+      if (photoWrapperRef.current && ref.current) {
+        const svgRect = ref.current.getBoundingClientRect();
+        const photoRect = photoWrapperRef.current.getBoundingClientRect();
+        if (svgRect.width > 0) {
+          const scale = svgRect.width / width;
+          yTop = (photoRect.top - svgRect.top) / scale;
+          yBottom = (photoRect.bottom - svgRect.top) / scale;
+        }
+      }
+      if (yTop === undefined) {
+        connectorTriangle.attr("display", "none");
+        return;
+      }
+
+      connectorTriangle
         .attr("display", null)
-        .attr("x1", sx).attr("y1", sy)
-        .attr("x2", 0).attr("y2", sy);
+        .attr("points", `${sx},${sy} ${panelEdgeX},${yTop} ${panelEdgeX},${yBottom}`);
     }
     updateConnectorLineRef.current = updateConnectorLine;
 
     svg.on("click", (event) => {
       if (!event.target.classList.contains("state-clickable")) {
-        if (clusterPanelRef.current?.type === "photo") {
-          // No close button for photo clusters — background click resets everything.
-          // setClusterPanel(null) triggers the useEffect which resets zoom.
+        if (clusterPanelRef.current) {
           setClusterPanel(null);
         } else {
           svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
@@ -544,16 +516,10 @@ export default function CDTmap() {
           .attr("stroke", colors.messagesDark)
           .attr("stroke-width", 1.5)
           .attr("vector-effect", "non-scaling-stroke")
-          .on("mouseover", function (event, d) {
-            if (clusterPanelRef.current?.type === "message") {
-              setActiveItem(d);
-              updateConnectorLine(d);
-            } else {
-              showMessagePanel(event, d, currentUserRef.current);
-            }
-          })
-          .on("mousemove", moveMessagePanel)
-          .on("mouseout", hideMessagePanel);
+          .style("cursor", "default")
+          .on("mouseover", function (event, d) { handleMouseOver(currentUserRef.current)(event, d); })
+          .on("mousemove", handleMouseMove)
+          .on("mouseout", handleMouseOut);
 
         g.selectAll(".msgCluster")
           .data(groups)
@@ -592,18 +558,7 @@ export default function CDTmap() {
             tooltip.innerHTML = `<p style="font-weight:600">${d.count} messages</p>`;
           })
           .on("mousemove", handleMouseMove)
-          .on("mouseout", handleMouseOut)
-          .on("click", function (event, d) {
-            event.stopPropagation();
-            handleMouseOut();
-            setClusterPanel({
-              type: "message",
-              items: d.points,
-              projPoints: d.points.map((p) =>
-                projection(p.geometry.coordinates),
-              ),
-            });
-          });
+          .on("mouseout", handleMouseOut);
 
         g.selectAll(".msgClusterLabel")
           .data(groups)
@@ -692,16 +647,10 @@ export default function CDTmap() {
           .attr("stroke", colors.campSites)
           .attr("stroke-width", 1.5)
           .attr("vector-effect", "non-scaling-stroke")
-          .on("mouseover", function (event, d) {
-            if (clusterPanelRef.current?.type === "campsite") {
-              setActiveItem(d);
-              updateConnectorLine(d);
-            } else {
-              showMessagePanel(event, d, currentUserRef.current);
-            }
-          })
-          .on("mousemove", moveMessagePanel)
-          .on("mouseout", hideMessagePanel);
+          .style("cursor", "default")
+          .on("mouseover", function (event, d) { handleMouseOver(currentUserRef.current)(event, d); })
+          .on("mousemove", handleMouseMove)
+          .on("mouseout", handleMouseOut);
 
         g.selectAll(".campCluster")
           .data(groups)
@@ -740,18 +689,7 @@ export default function CDTmap() {
             tooltip.innerHTML = `<p style="font-weight:600">${d.count} campsites</p>`;
           })
           .on("mousemove", handleMouseMove)
-          .on("mouseout", handleMouseOut)
-          .on("click", function (event, d) {
-            event.stopPropagation();
-            handleMouseOut();
-            setClusterPanel({
-              type: "campsite",
-              items: d.points,
-              projPoints: d.points.map((p) =>
-                projection(p.geometry.coordinates),
-              ),
-            });
-          });
+          .on("mouseout", handleMouseOut);
 
         g.selectAll(".campClusterLabel")
           .data(groups)
@@ -1229,28 +1167,6 @@ export default function CDTmap() {
     }
   };
 
-  // Render the single active item in the left panel (message / campsite only)
-  const renderAgendaItem = (item) => {
-    if (!item || !clusterPanel) return null;
-    const { GPSTime, MessageText, Recipients } = item.properties;
-    const dt = parseGPSTime(GPSTime);
-    const dateStr = dt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-    const timeStr = dt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-    const isOwner = currentUserRef.current?.email === "katy6514@gmail.com";
-    return (
-      <div className="flex flex-col gap-2">
-        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{dateStr}</p>
-        <p className="text-xs text-gray-500">{timeStr}</p>
-        <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-          {isOwner ? MessageText : <span className="italic text-gray-400">Message hidden</span>}
-        </p>
-        {Recipients && <p className="text-xs text-gray-400">To: {Recipients}</p>}
-      </div>
-    );
-  };
-
-  const panelTypeLabel = clusterPanel?.type === "message" ? "Messages" : "Campsites";
-
   // Derive popout display values in render (no extra state needed)
   const popoutProps = photoPopout?.item?.properties ?? null;
   const popoutDate = (() => {
@@ -1264,69 +1180,45 @@ export default function CDTmap() {
   })();
 
   return (
-    <div className="relative w-full">
-      {/* SVG always full width */}
+    <div className="relative w-full h-full overflow-hidden">
+      {/* SVG is full width; its aspect-ratio height is clipped by the h-full overflow-hidden container */}
       <svg ref={ref}></svg>
 
-      {/* Photo panel — overlays the left half, just the photo with overlaid date/time */}
+      {/* Photo panel — overlays the left half, photo at natural proportions */}
       {photoPopout && (
         <div
-          className={`absolute inset-y-0 left-0 w-1/2 z-10 overflow-hidden ${notoSans.className}`}
-          style={{ borderRight: "1px solid rgba(0,0,0,0.15)" }}
+          className={`absolute inset-y-0 left-0 w-1/2 z-10 flex items-center justify-center pl-6 pt-6 pb-6 ${notoSans.className}`}
         >
-          {/* Close button sits inside the photo */}
-          <button
-            onClick={(e) => { e.stopPropagation(); setPhotoPopout(null); setClusterPanel(null); }}
-            aria-label="Close"
-            style={{
-              position: "absolute", top: 12, right: 12,
-              width: 28, height: 28, borderRadius: "50%",
-              background: "rgba(0,0,0,0.5)", color: "#fff",
-              border: "none", cursor: "pointer",
-              fontSize: 18, lineHeight: 1,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              zIndex: 1,
-            }}
-          >×</button>
-          <img
-            src={popoutProps?.path}
-            alt="Trail photo"
-            style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
-          />
-          {/* Date / time gradient overlay at the bottom */}
-          <div style={{
-            position: "absolute", bottom: 0, left: 0, right: 0,
-            background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
-            padding: "40px 16px 16px", color: "#fff",
-          }}>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{popoutDate.dateStr}</p>
-            <p style={{ margin: "4px 0 0", fontSize: 12, opacity: 0.85 }}>{popoutDate.timeStr}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Agenda panel — overlays the left half for message/campsite clusters only */}
-      {clusterPanel && clusterPanel.type !== "photo" && (
-        <div
-          className={`absolute inset-y-0 left-0 w-1/2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm flex flex-col border-r border-gray-200 dark:border-gray-700 z-10 ${notoSans.className}`}
-        >
-          <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="font-semibold text-gray-800 dark:text-gray-200">
-              {clusterPanel.items.length} {panelTypeLabel}
-            </h2>
+          {/* Wrapper sizes to the image, so the date overlay and close button sit inside the photo */}
+          <div ref={photoWrapperRef} style={{ position: "relative", maxWidth: "100%", maxHeight: "100%", borderRadius: 8, overflow: "hidden" }}>
             <button
-              onClick={() => setClusterPanel(null)}
-              className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl leading-none px-1"
-              aria-label="Close panel"
-            >
-              ×
-            </button>
-          </div>
-          <div className="flex-1 p-4 overflow-y-auto">
-            {activeItem
-              ? renderAgendaItem(activeItem)
-              : <p className="text-sm text-gray-400 italic text-center mt-8">Hover over a point on the map</p>
-            }
+              onClick={(e) => { e.stopPropagation(); setPhotoPopout(null); setClusterPanel(null); }}
+              aria-label="Close"
+              style={{
+                position: "absolute", top: 10, right: 10,
+                width: 28, height: 28, borderRadius: "50%",
+                background: "rgba(0,0,0,0.5)", color: "#fff",
+                border: "none", cursor: "pointer",
+                fontSize: 18, lineHeight: 1,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                zIndex: 1,
+              }}
+            >×</button>
+            <img
+              src={popoutProps?.path}
+              alt="Trail photo"
+              style={{ display: "block", maxWidth: "100%", maxHeight: "100%", width: "auto", height: "auto" }}
+              onLoad={() => updateConnectorLineRef.current()}
+            />
+            {/* Date / time gradient overlay at the bottom edge of the photo */}
+            <div style={{
+              position: "absolute", bottom: 0, left: 0, right: 0,
+              background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
+              padding: "40px 16px 16px", color: "#fff",
+            }}>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{popoutDate.dateStr}</p>
+              <p style={{ margin: "4px 0 0", fontSize: 12, opacity: 0.85 }}>{popoutDate.timeStr}</p>
+            </div>
           </div>
         </div>
       )}
@@ -1369,24 +1261,6 @@ export default function CDTmap() {
         </div>
       </div>
 
-      <div
-        id="message-panel"
-        style={{
-          display: "none",
-          position: "fixed",
-          zIndex: 50,
-          backgroundColor: "white",
-          border: "1px solid #e5e7eb",
-          borderRadius: "8px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
-          padding: "12px 16px",
-          fontSize: "14px",
-          color: "#4b5563",
-          maxWidth: "320px",
-          pointerEvents: "none",
-          lineHeight: "1.6",
-        }}
-      />
     </div>
   );
 }
