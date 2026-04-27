@@ -53,14 +53,27 @@ export default function CDTmap() {
   const photoPopoutRef = useRef(photoPopout);
   photoPopoutRef.current = photoPopout;
 
+  // displayedPopout lags behind photoPopout by ~320ms so the panel can fade
+  // out before unmounting.
+  const [displayedPopout, setDisplayedPopout] = useState(null);
+  const fadeTimerRef = useRef(null);
+  useEffect(() => {
+    clearTimeout(fadeTimerRef.current);
+    if (photoPopout) {
+      setDisplayedPopout(photoPopout);
+    } else {
+      fadeTimerRef.current = setTimeout(() => setDisplayedPopout(null), 320);
+    }
+    return () => clearTimeout(fadeTimerRef.current);
+  }, [photoPopout]);
+
   // Sync visibility state → D3 element display whenever toggles change
   useEffect(() => {
     const g = gRef.current;
     if (!g) return;
-    const photoDisplay = visibility.photos ? null : "none";
     g.selectAll(
       ".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel",
-    ).attr("display", photoDisplay);
+    ).attr("display", visibility.photos ? null : "none");
     g.selectAll(
       ".campPoints, .campCluster, .campClusterHit, .campClusterLabel",
     ).attr("display", visibility.campsites ? null : "none");
@@ -116,15 +129,40 @@ export default function CDTmap() {
     updateActiveRingRef.current();
     if (!photoPopout || !zoomRef.current || !ref.current) return;
 
-    // Shift the map so the active dot sits in the center of the right half,
-    // making room for the photo panel on the left.
-    const t = currentTransformRef.current ?? d3.zoomIdentity;
+    // Shift the map so the active dot sits in the center of the visible
+    // map area (to the right of the photo panel).
+    const svgEl = ref.current;
+    const svgRect = svgEl.getBoundingClientRect();
+    const cRect = svgEl.parentElement?.getBoundingClientRect() ?? svgRect;
+
+    // The photo panel is absolute left-0 w-1/2 of the container.
+    const panelRight = cRect.left + cRect.width / 2; // screen px
+    if (panelRight >= svgRect.right) return; // panel fully covers SVG
+
+    // Target screen position: center of the visible map strip (right of photo panel).
+    const targetScreenX = (panelRight + svgRect.right) / 2;
+    const targetScreenY = (svgRect.top + svgRect.bottom) / 2;
+
+    // The SVG uses preserveAspectRatio="xMidYMid meet" by default.  When the
+    // container is wider than the 900×700 viewBox ratio the rendered content is
+    // horizontally letterboxed inside the CSS box, so we must account for that
+    // offset and scale when converting screen px → viewBox units for translateTo.
+    const renderScale = Math.min(svgRect.width / width, svgRect.height / height);
+    const renderOffsetX = (svgRect.width - width * renderScale) / 2;
+    const renderOffsetY = (svgRect.height - height * renderScale) / 2;
+
+    const targetX = (targetScreenX - svgRect.left - renderOffsetX) / renderScale;
+    const targetY = (targetScreenY - svgRect.top - renderOffsetY) / renderScale;
+
     const [px, py] = projection(photoPopout.item.geometry.coordinates);
-    const newX = (3 * width) / 4 - px * t.k;
-    const newY = height / 2 - py * t.k;
+
+    // translateTo pans so that world point [px, py] appears at [targetX, targetY]
+    // in the SVG viewport, preserving the current scale.
     d3.select(ref.current)
-      .transition().duration(400).ease(d3.easeCubicInOut)
-      .call(zoomRef.current.transform, d3.zoomIdentity.translate(newX, newY).scale(t.k));
+      .transition()
+      .duration(400)
+      .ease(d3.easeCubicInOut)
+      .call(zoomRef.current.translateTo, px, py, [targetX, targetY]);
   }, [photoPopout]); // projection omitted: memoized with [] so never changes
 
   const projection = useMemo(() => {
@@ -183,9 +221,16 @@ export default function CDTmap() {
         if (members.length === 1) {
           solos.push(sites[members[0]]);
         } else {
-          const cx = members.reduce((s, i) => s + positions[i].px, 0) / members.length;
-          const cy = members.reduce((s, i) => s + positions[i].py, 0) / members.length;
-          groups.push({ points: members.map((i) => sites[i]), cx, cy, count: members.length });
+          const cx =
+            members.reduce((s, i) => s + positions[i].px, 0) / members.length;
+          const cy =
+            members.reduce((s, i) => s + positions[i].py, 0) / members.length;
+          groups.push({
+            points: members.map((i) => sites[i]),
+            cx,
+            cy,
+            count: members.length,
+          });
         }
       }
       return { solos, groups };
@@ -280,18 +325,30 @@ export default function CDTmap() {
         // Photos
         g.selectAll(".photoPoints").attr("r", 6 / k);
         g.selectAll(".photoHitAreas").attr("r", 14 / k);
-        g.selectAll(".photoCluster").attr("r", (d) => (6 + Math.log(d.count + 1) * 4) / k);
-        g.selectAll(".photoClusterHit").attr("r", (d) => (6 + Math.log(d.count + 1) * 4 + 8) / k);
+        g.selectAll(".photoCluster").attr(
+          "r",
+          (d) => (6 + Math.log(d.count + 1) * 4) / k,
+        );
+        g.selectAll(".photoClusterHit").attr(
+          "r",
+          (d) => (6 + Math.log(d.count + 1) * 4 + 8) / k,
+        );
         g.selectAll(".photoClusterLabel").attr("font-size", 8 / k);
 
         // Messages
         g.selectAll(".messagePoints").attr("d", square.size(symbolSize));
-        g.selectAll(".msgCluster, .msgClusterHit").attr("d", (d) => { const r = (6 + Math.log(d.count + 1) * 4) / k; return square.size(r * r * 2)(); });
+        g.selectAll(".msgCluster, .msgClusterHit").attr("d", (d) => {
+          const r = (6 + Math.log(d.count + 1) * 4) / k;
+          return square.size(r * r * 2)();
+        });
         g.selectAll(".msgClusterLabel").attr("font-size", 8 / k);
 
         // Campsites
         g.selectAll(".campPoints").attr("d", triangle.size(symbolSize));
-        g.selectAll(".campCluster, .campClusterHit").attr("d", (d) => { const r = (6 + Math.log(d.count + 1) * 4) / k; return triangle.size(r * r * 2)(); });
+        g.selectAll(".campCluster, .campClusterHit").attr("d", (d) => {
+          const r = (6 + Math.log(d.count + 1) * 4) / k;
+          return triangle.size(r * r * 2)();
+        });
         g.selectAll(".campClusterLabel").attr("font-size", 8 / k);
 
         // Keep active ring scaled to constant visual size
@@ -314,7 +371,9 @@ export default function CDTmap() {
           renderCampClusters(event.transform);
           g.selectAll(allPoints)
             .attr("opacity", 0)
-            .transition().duration(FADE).attr("opacity", 1);
+            .transition()
+            .duration(FADE)
+            .attr("opacity", 1);
         }, FADE);
       });
 
@@ -322,7 +381,8 @@ export default function CDTmap() {
     svg.call(zoom);
 
     // Pulsing ring drawn in g-space (zoom-aware) around the active photo dot.
-    const activeRing = g.append("circle")
+    const activeRing = g
+      .append("circle")
       .attr("class", "activeRing")
       .attr("fill", "none")
       .attr("stroke", colors.photosDark)
@@ -487,7 +547,9 @@ export default function CDTmap() {
           .attr("vector-effect", "non-scaling-stroke")
           .attr("aria-describedby", "tooltip")
           .style("cursor", "default")
-          .on("mouseover", function (event, d) { handleMouseOver(currentUserRef.current)(event, d); })
+          .on("mouseover", function (event, d) {
+            handleMouseOver(currentUserRef.current)(event, d);
+          })
           .on("mousemove", handleMouseMove)
           .on("mouseout", handleMouseOut);
 
@@ -579,7 +641,9 @@ export default function CDTmap() {
           .attr("vector-effect", "non-scaling-stroke")
           .attr("aria-describedby", "tooltip")
           .style("cursor", "default")
-          .on("mouseover", function (event, d) { handleMouseOver(currentUserRef.current)(event, d); })
+          .on("mouseover", function (event, d) {
+            handleMouseOver(currentUserRef.current)(event, d);
+          })
           .on("mousemove", handleMouseMove)
           .on("mouseout", handleMouseOut);
 
@@ -700,9 +764,14 @@ export default function CDTmap() {
           .attr("aria-label", (d) => {
             const dt = d.properties?.dateTime;
             if (!dt) return "View photo";
-            const normalized = dt.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
+            const normalized = dt.replace(
+              /^(\d{4}):(\d{2}):(\d{2})/,
+              "$1-$2-$3",
+            );
             const dateStr = new Date(normalized).toLocaleDateString("en-US", {
-              month: "long", day: "numeric", year: "numeric",
+              month: "long",
+              day: "numeric",
+              year: "numeric",
             });
             return `View photo from ${dateStr}`;
           })
@@ -761,7 +830,9 @@ export default function CDTmap() {
               setClusterPanel({
                 type: "photo",
                 items: d.points,
-                projPoints: d.points.map((p) => projection(p.geometry.coordinates)),
+                projPoints: d.points.map((p) =>
+                  projection(p.geometry.coordinates),
+                ),
               });
             }
           })
@@ -870,7 +941,11 @@ export default function CDTmap() {
           handleMouseOut();
           routerRef.current.push(`/journal/${entryId}`);
         })
-        .style("cursor", (d) => (d.properties.entry_id && currentUserRef.current ? "pointer" : "default"))
+        .style("cursor", (d) =>
+          d.properties.entry_id && currentUserRef.current
+            ? "pointer"
+            : "default",
+        )
         .attr("display", "none");
 
       /* -----------------------------------------------------
@@ -944,7 +1019,6 @@ export default function CDTmap() {
       })
       .attr("fill", colors.black)
       .attr("stroke", "none");
-
   }, [path, projection]);
 
   const LAYERS = [
@@ -1086,59 +1160,131 @@ export default function CDTmap() {
     }
   };
 
-  // Derive popout display values in render (no extra state needed)
-  const popoutProps = photoPopout?.item?.properties ?? null;
+  // Use displayedPopout for rendering so content stays visible during fade-out
+  const popoutProps = displayedPopout?.item?.properties ?? null;
   const popoutDate = (() => {
     if (!popoutProps?.dateTime) return { dateStr: "", timeStr: "" };
-    const normalized = popoutProps.dateTime.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
+    const normalized = popoutProps.dateTime.replace(
+      /^(\d{4}):(\d{2}):(\d{2})/,
+      "$1-$2-$3",
+    );
     const dt = new Date(normalized);
     return {
-      dateStr: dt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
-      timeStr: dt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
+      dateStr: dt.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      timeStr: dt.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }),
     };
   })();
 
   return (
     <div className="relative w-full h-full overflow-hidden">
-      <style>{`@keyframes ring-pulse { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.2; } } .activeRing { animation: ring-pulse 1.5s ease-in-out infinite; }`}</style>
-      <svg ref={ref} aria-label="Continental Divide Trail interactive map" style={{ display: "block", width: "100%", height: "auto", maxHeight: "100%", aspectRatio: `${width} / ${height}` }}></svg>
+      <style>{`
+        @keyframes ring-pulse { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.2; } }
+        .activeRing { animation: ring-pulse 1.5s ease-in-out infinite; }
+        @keyframes photo-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes photo-fade-out { from { opacity: 1; } to { opacity: 0; } }
+      `}</style>
+      <svg
+        ref={ref}
+        aria-label="Continental Divide Trail interactive map"
+        style={{
+          display: "block",
+          width: "100%",
+          height: "auto",
+          maxHeight: "100%",
+          aspectRatio: `${width} / ${height}`,
+        }}
+      ></svg>
 
       {/* Photo panel — overlays the left half, photo at natural proportions */}
-      {photoPopout && (
+      {displayedPopout && (
         <div
           className={`absolute inset-y-0 left-0 w-1/2 z-10 flex items-center justify-center pl-6 pt-6 pb-6 ${notoSans.className}`}
+          style={{
+            animation: photoPopout
+              ? "photo-fade-in 0.3s ease-in-out forwards"
+              : "photo-fade-out 0.3s ease-in-out forwards",
+            pointerEvents: photoPopout ? "auto" : "none",
+          }}
         >
-          <div style={{ position: "relative", maxWidth: "100%", maxHeight: "100%", borderRadius: 8, overflow: "hidden" }}>
+          <div
+            style={{
+              position: "relative",
+              maxWidth: "100%",
+              maxHeight: "100%",
+              borderRadius: 8,
+              overflow: "hidden",
+            }}
+          >
             <button
-              onClick={(e) => { e.stopPropagation(); setPhotoPopout(null); setClusterPanel(null); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setPhotoPopout(null);
+                setClusterPanel(null);
+              }}
               aria-label="Close"
               style={{
-                position: "absolute", top: 10, right: 10,
-                width: 28, height: 28, borderRadius: "50%",
-                background: "rgba(0,0,0,0.5)", color: "#fff",
-                border: "none", cursor: "pointer",
-                fontSize: 18, lineHeight: 1,
-                display: "flex", alignItems: "center", justifyContent: "center",
+                position: "absolute",
+                top: 10,
+                right: 10,
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                background: "rgba(0,0,0,0.5)",
+                color: "#fff",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 18,
+                lineHeight: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 zIndex: 1,
               }}
-            >×</button>
+            >
+              ×
+            </button>
             <img
               src={popoutProps?.path}
               alt="Trail photo"
-              style={{ display: "block", maxWidth: "100%", maxHeight: "100%", width: "auto", height: "auto" }}
+              style={{
+                display: "block",
+                maxWidth: "100%",
+                maxHeight: "100%",
+                width: "auto",
+                height: "auto",
+              }}
             />
             {/* Date / time gradient overlay at the bottom edge of the photo */}
-            <div style={{
-              position: "absolute", bottom: 0, left: 0, right: 0,
-              background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
-              padding: "40px 16px 16px", color: "#fff",
-            }}>
-              <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{popoutDate.dateStr}</p>
-              <p style={{ margin: "4px 0 0", fontSize: 12, opacity: 0.85 }}>{popoutDate.timeStr}</p>
+            <div
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
+                padding: "40px 16px 16px",
+                color: "#fff",
+              }}
+            >
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                {popoutDate.dateStr}
+              </p>
+              <p style={{ margin: "4px 0 0", fontSize: 12, opacity: 0.85 }}>
+                {popoutDate.timeStr}
+              </p>
             </div>
           </div>
         </div>
       )}
+
 
       {/* Legend — top right, above the panel if panel is open */}
       <div
@@ -1177,7 +1323,6 @@ export default function CDTmap() {
           ))}
         </div>
       </div>
-
     </div>
   );
 }
