@@ -43,6 +43,7 @@ export default function CDTmap() {
   const zoomRef = useRef(null);
 
   const updateActiveRingRef = useRef(() => {});
+  const updateConnectingTriangleRef = useRef(() => {});
 
   // Floating photo popout: shown when a photo point or cluster is clicked
   const [photoPopout, setPhotoPopout] = useState(null);
@@ -52,6 +53,15 @@ export default function CDTmap() {
   // Read ref so D3 closures can read the current photoPopout value
   const photoPopoutRef = useRef(photoPopout);
   photoPopoutRef.current = photoPopout;
+
+  // Pending popout: set immediately on click; photoPopout is set after pan completes
+  const [pendingPhotoPopout, setPendingPhotoPopout] = useState(null);
+  const setPendingPhotoPopoutRef = useRef(setPendingPhotoPopout);
+  const panTimerRef = useRef(null);
+
+  // Disambiguation menu: shown when a photo dot overlaps a camp/message point
+  const [disambigMenu, setDisambigMenu] = useState(null);
+  const setDisambigMenuRef = useRef(setDisambigMenu);
 
   // displayedPopout lags behind photoPopout by ~320ms so the panel can fade
   // out before unmounting.
@@ -125,45 +135,51 @@ export default function CDTmap() {
       );
   }, [clusterPanel]);
 
+  // When a dot is clicked, pan the map first; reveal the photo panel after.
   useEffect(() => {
-    updateActiveRingRef.current();
-    if (!photoPopout || !zoomRef.current || !ref.current) return;
+    clearTimeout(panTimerRef.current);
+    if (!pendingPhotoPopout) return;
+    if (!zoomRef.current || !ref.current) {
+      setPhotoPopout(pendingPhotoPopout);
+      return;
+    }
 
-    // Shift the map so the active dot sits in the center of the visible
-    // map area (to the right of the photo panel).
     const svgEl = ref.current;
     const svgRect = svgEl.getBoundingClientRect();
     const cRect = svgEl.parentElement?.getBoundingClientRect() ?? svgRect;
+    const panelRight = cRect.left + cRect.width / 2;
+    if (panelRight >= svgRect.right) {
+      setPhotoPopout(pendingPhotoPopout);
+      return;
+    }
 
-    // The photo panel is absolute left-0 w-1/2 of the container.
-    const panelRight = cRect.left + cRect.width / 2; // screen px
-    if (panelRight >= svgRect.right) return; // panel fully covers SVG
-
-    // Target screen position: center of the visible map strip (right of photo panel).
     const targetScreenX = (panelRight + svgRect.right) / 2;
     const targetScreenY = (svgRect.top + svgRect.bottom) / 2;
-
-    // The SVG uses preserveAspectRatio="xMidYMid meet" by default.  When the
-    // container is wider than the 900×700 viewBox ratio the rendered content is
-    // horizontally letterboxed inside the CSS box, so we must account for that
-    // offset and scale when converting screen px → viewBox units for translateTo.
     const renderScale = Math.min(svgRect.width / width, svgRect.height / height);
     const renderOffsetX = (svgRect.width - width * renderScale) / 2;
     const renderOffsetY = (svgRect.height - height * renderScale) / 2;
-
     const targetX = (targetScreenX - svgRect.left - renderOffsetX) / renderScale;
     const targetY = (targetScreenY - svgRect.top - renderOffsetY) / renderScale;
+    const [px, py] = projection(pendingPhotoPopout.item.geometry.coordinates);
 
-    const [px, py] = projection(photoPopout.item.geometry.coordinates);
-
-    // translateTo pans so that world point [px, py] appears at [targetX, targetY]
-    // in the SVG viewport, preserving the current scale.
     d3.select(ref.current)
       .transition()
       .duration(400)
       .ease(d3.easeCubicInOut)
       .call(zoomRef.current.translateTo, px, py, [targetX, targetY]);
-  }, [photoPopout]); // projection omitted: memoized with [] so never changes
+
+    panTimerRef.current = setTimeout(
+      () => setPhotoPopout(pendingPhotoPopout),
+      420,
+    );
+    return () => clearTimeout(panTimerRef.current);
+  }, [pendingPhotoPopout]); // projection omitted: memoized with [] so never changes
+
+  // Once the photo is revealed, update the ring and triangle.
+  useEffect(() => {
+    updateActiveRingRef.current();
+    updateConnectingTriangleRef.current();
+  }, [photoPopout]);
 
   const projection = useMemo(() => {
     return d3
@@ -189,14 +205,14 @@ export default function CDTmap() {
     const g = svg.append("g").attr("class", "mapLayer");
     gRef.current = g;
 
-    const square = d3.symbol().type(d3.symbolSquare).size(128);
-    const triangle = d3.symbol().type(d3.symbolTriangle).size(128);
-    const cross = d3.symbol().type(d3.symbolCross).size(128);
+    const square = d3.symbol().type(d3.symbolSquare).size(256);
+    const triangle = d3.symbol().type(d3.symbolTriangle).size(256);
+    const cross = d3.symbol().type(d3.symbolCross).size(256);
 
     // Shared greedy clustering: groups sites whose screen-space positions are
     // within CLUSTER_RADIUS pixels of each other at the current transform.
     // Returns { solos, groups } where groups carry projection-space centroids.
-    function computeClusters(sites, transform, CLUSTER_RADIUS = 20) {
+    function computeClusters(sites, transform, CLUSTER_RADIUS = 30) {
       const positions = sites.map((p) => {
         const [px, py] = projection(p.geometry.coordinates);
         const [sx, sy] = transform.apply([px, py]);
@@ -240,6 +256,64 @@ export default function CDTmap() {
     let renderMessageClusters = () => {};
     let renderPhotoClusters = () => {};
     let renderCampClusters = () => {};
+
+    // Push overlapping solo points apart using a D3 force simulation so they
+    // are individually clickable. Runs synchronously after every cluster render.
+    function separateOverlappingPoints(transform) {
+      const k = transform.k;
+      leaderLinesGroup.selectAll("*").remove();
+      if (k < 2) return;
+
+      const nodes = [];
+      g.selectAll(".photoPoints").each(function (d) {
+        const [px, py] = projection(d.geometry.coordinates);
+        nodes.push({ type: "photo", data: d, x: px, y: py, ox: px, oy: py });
+      });
+      g.selectAll(".campPoints").each(function (d) {
+        const [px, py] = projection(d.geometry.coordinates);
+        nodes.push({ type: "camp", data: d, x: px, y: py, ox: px, oy: py });
+      });
+      g.selectAll(".messagePoints").each(function (d) {
+        const [px, py] = projection(d.geometry.coordinates);
+        nodes.push({ type: "msg", data: d, x: px, y: py, ox: px, oy: py });
+      });
+
+      if (nodes.length === 0) return;
+
+      // Collision radius ≈ 10 screen px in projection space; anchoring strength
+      // keeps each node tethered to its true geographic position.
+      const colR = 14 / k;
+      d3.forceSimulation(nodes)
+        .force("collide", d3.forceCollide(colR).strength(1).iterations(4))
+        .force("x", d3.forceX((d) => d.ox).strength(0.15))
+        .force("y", d3.forceY((d) => d.oy).strength(0.15))
+        .stop()
+        .tick(80);
+
+      nodes.forEach(({ type, data, x, y, ox, oy }) => {
+        if (Math.abs(x - ox) < 0.01 && Math.abs(y - oy) < 0.01) return;
+
+        leaderLinesGroup
+          .append("line")
+          .attr("x1", ox).attr("y1", oy)
+          .attr("x2", x).attr("y2", y)
+          .attr("stroke", "rgba(100,100,100,0.5)")
+          .attr("stroke-width", 1)
+          .attr("vector-effect", "non-scaling-stroke")
+          .attr("pointer-events", "none");
+
+        if (type === "photo") {
+          g.selectAll(".photoPoints, .photoHitAreas")
+            .filter((d) => d === data)
+            .attr("cx", x)
+            .attr("cy", y);
+        } else {
+          g.selectAll(type === "camp" ? ".campPoints" : ".messagePoints")
+            .filter((d) => d === data)
+            .attr("transform", `translate(${x}, ${y})`);
+        }
+      });
+    }
 
     // Add zoom behavior
     const zoom = d3
@@ -316,43 +390,45 @@ export default function CDTmap() {
         });
 
         const k = t.k;
-        const symbolSize = 128 / (k * k);
+        const symbolSize = 256 / (k * k);
 
         // City crosses
         g.selectAll(".cityPoints").attr("d", cross.size(symbolSize));
         g.selectAll(".state-label").attr("font-size", 20 / k);
 
         // Photos
-        g.selectAll(".photoPoints").attr("r", 6 / k);
-        g.selectAll(".photoHitAreas").attr("r", 14 / k);
+        g.selectAll(".photoPoints").attr("r", 9 / k);
+        g.selectAll(".photoHitAreas").attr("r", 20 / k);
         g.selectAll(".photoCluster").attr(
           "r",
-          (d) => (6 + Math.log(d.count + 1) * 4) / k,
+          (d) => (9 + Math.log(d.count + 1) * 5) / k,
         );
         g.selectAll(".photoClusterHit").attr(
           "r",
-          (d) => (6 + Math.log(d.count + 1) * 4 + 8) / k,
+          (d) => (9 + Math.log(d.count + 1) * 5 + 11) / k,
         );
-        g.selectAll(".photoClusterLabel").attr("font-size", 8 / k);
+        g.selectAll(".photoClusterLabel").attr("font-size", 11 / k);
 
         // Messages
         g.selectAll(".messagePoints").attr("d", square.size(symbolSize));
         g.selectAll(".msgCluster, .msgClusterHit").attr("d", (d) => {
-          const r = (6 + Math.log(d.count + 1) * 4) / k;
+          const r = (9 + Math.log(d.count + 1) * 5) / k;
           return square.size(r * r * 2)();
         });
-        g.selectAll(".msgClusterLabel").attr("font-size", 8 / k);
+        g.selectAll(".msgClusterLabel").attr("font-size", 11 / k);
 
         // Campsites
         g.selectAll(".campPoints").attr("d", triangle.size(symbolSize));
         g.selectAll(".campCluster, .campClusterHit").attr("d", (d) => {
-          const r = (6 + Math.log(d.count + 1) * 4) / k;
+          const r = (9 + Math.log(d.count + 1) * 5) / k;
           return triangle.size(r * r * 2)();
         });
-        g.selectAll(".campClusterLabel").attr("font-size", 8 / k);
+        g.selectAll(".campClusterLabel").attr("font-size", 11 / k);
 
         // Keep active ring scaled to constant visual size
-        g.selectAll(".activeRing").attr("r", 10 / k);
+        g.selectAll(".activeRing").attr("r", 13 / k);
+
+        updateConnectingTriangleRef.current();
       })
 
       .on("end", (event) => {
@@ -369,6 +445,8 @@ export default function CDTmap() {
           renderPhotoClusters(event.transform);
           renderMessageClusters(event.transform);
           renderCampClusters(event.transform);
+          g.selectAll(".photoHitAreas, .photoClusterHit").raise();
+          separateOverlappingPoints(event.transform);
           g.selectAll(allPoints)
             .attr("opacity", 0)
             .transition()
@@ -379,6 +457,9 @@ export default function CDTmap() {
 
     zoomRef.current = zoom;
     svg.call(zoom);
+
+    // Group for leader lines — appended before data points so lines stay behind dots.
+    const leaderLinesGroup = g.append("g").attr("class", "leaderLinesGroup");
 
     // Pulsing ring drawn in g-space (zoom-aware) around the active photo dot.
     const activeRing = g
@@ -407,6 +488,37 @@ export default function CDTmap() {
     }
     updateActiveRingRef.current = updateActiveRing;
 
+    // Connecting triangle: appended to the SVG viewport (not the zoom-transformed
+    // g) so its coordinates stay in viewBox space.  The tip tracks the dot by
+    // computing viewBox coords from the current zoom transform each frame.
+    // Left vertices are fixed at viewBox x = -100 — always off-screen behind the
+    // photo panel — with a constant visual height of 60 viewBox units.
+    const connectingTriangle = svg
+      .append("polygon")
+      .attr("class", "connectingTriangle")
+      .attr("fill", "rgba(128,128,128,0.22)")
+      .attr("stroke", "none")
+      .attr("pointer-events", "none")
+      .attr("display", "none");
+
+    function updateConnectingTriangle() {
+      const photo = photoPopoutRef.current;
+      const t = currentTransformRef.current ?? d3.zoomIdentity;
+      if (!photo) {
+        connectingTriangle.attr("display", "none");
+        return;
+      }
+      const [px, py] = projection(photo.item.geometry.coordinates);
+      // Tip in viewBox coords = zoom transform applied to the projection point
+      const tipX = t.x + t.k * px;
+      const tipY = t.y + t.k * py;
+      const halfH = 150; // constant viewBox units — visually stable at any zoom
+      connectingTriangle
+        .attr("display", null)
+        .attr("points", `${tipX},${tipY} ${width / 2},${tipY - halfH} ${width / 2},${tipY + halfH}`);
+    }
+    updateConnectingTriangleRef.current = updateConnectingTriangle;
+
     svg.on("click", (event) => {
       if (!event.target.classList.contains("state-clickable")) {
         if (clusterPanelRef.current) {
@@ -414,7 +526,10 @@ export default function CDTmap() {
         } else {
           svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
         }
+        clearTimeout(panTimerRef.current);
+        setPendingPhotoPopoutRef.current(null);
         setPhotoPopoutRef.current(null);
+        setDisambigMenuRef.current(null);
       }
     });
 
@@ -529,7 +644,7 @@ export default function CDTmap() {
         ).remove();
 
         const { solos, groups } = computeClusters(messageSites, transform);
-        const newSize = 128 / (k * k);
+        const newSize = 256 / (k * k);
 
         g.selectAll(".messagePoints")
           .data(solos)
@@ -559,7 +674,7 @@ export default function CDTmap() {
           .append("path")
           .attr("class", "msgCluster")
           .attr("d", (d) => {
-            const r = (6 + Math.log(d.count + 1) * 4) / k;
+            const r = (9 + Math.log(d.count + 1) * 5) / k;
             return square.size(r * r * 2)();
           })
           .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
@@ -575,7 +690,7 @@ export default function CDTmap() {
           .append("path")
           .attr("class", "msgClusterHit")
           .attr("d", (d) => {
-            const r = (6 + Math.log(d.count + 1) * 4) / k;
+            const r = (9 + Math.log(d.count + 1) * 5) / k;
             return square.size(r * r * 2)();
           })
           .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
@@ -602,7 +717,7 @@ export default function CDTmap() {
           .attr("y", (d) => d.cy)
           .attr("text-anchor", "middle")
           .attr("dominant-baseline", "middle")
-          .attr("font-size", 8 / k)
+          .attr("font-size", 11 / k)
           .attr("fill", "white")
           .attr("stroke", "none")
           .attr("pointer-events", "none")
@@ -623,7 +738,7 @@ export default function CDTmap() {
         ).remove();
 
         const { solos, groups } = computeClusters(campSites, transform);
-        const newSize = 128 / (k * k);
+        const newSize = 256 / (k * k);
 
         g.selectAll(".campPoints")
           .data(solos)
@@ -653,7 +768,7 @@ export default function CDTmap() {
           .append("path")
           .attr("class", "campCluster")
           .attr("d", (d) => {
-            const r = (6 + Math.log(d.count + 1) * 4) / k;
+            const r = (9 + Math.log(d.count + 1) * 5) / k;
             return triangle.size(r * r * 2)();
           })
           .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
@@ -669,7 +784,7 @@ export default function CDTmap() {
           .append("path")
           .attr("class", "campClusterHit")
           .attr("d", (d) => {
-            const r = (6 + Math.log(d.count + 1) * 4) / k;
+            const r = (9 + Math.log(d.count + 1) * 5) / k;
             return triangle.size(r * r * 2)();
           })
           .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
@@ -696,7 +811,7 @@ export default function CDTmap() {
           .attr("y", (d) => d.cy)
           .attr("text-anchor", "middle")
           .attr("dominant-baseline", "middle")
-          .attr("font-size", 8 / k)
+          .attr("font-size", 11 / k)
           .attr("fill", "white")
           .attr("stroke", "none")
           .attr("pointer-events", "none")
@@ -742,7 +857,7 @@ export default function CDTmap() {
           .attr("class", "photoPoints")
           .attr("cx", (d) => projection(d.geometry.coordinates)[0])
           .attr("cy", (d) => projection(d.geometry.coordinates)[1])
-          .attr("r", 6 / k)
+          .attr("r", 9 / k)
           .attr("fill", colors.photos)
           .attr("stroke", colors.photosDark)
           .attr("stroke-width", 1.5)
@@ -756,7 +871,7 @@ export default function CDTmap() {
           .attr("class", "photoHitAreas")
           .attr("cx", (d) => projection(d.geometry.coordinates)[0])
           .attr("cy", (d) => projection(d.geometry.coordinates)[1])
-          .attr("r", 14 / k)
+          .attr("r", 20 / k)
           .attr("fill", "transparent")
           .attr("stroke", "none")
           .attr("role", "button")
@@ -781,12 +896,37 @@ export default function CDTmap() {
           .on("keydown", function (event, d) {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
-              setPhotoPopoutRef.current({ item: d });
+              setPhotoPopoutRef.current(null);
+              setPendingPhotoPopoutRef.current({ item: d });
             }
           })
           .on("click", function (event, d) {
             event.stopPropagation();
-            setPhotoPopoutRef.current({ item: d });
+            const t = currentTransformRef.current ?? d3.zoomIdentity;
+            const hitR = 20 / t.k;
+            const [dpx, dpy] = projection(d.geometry.coordinates);
+            const others = [];
+            for (const site of campSites) {
+              const pos = projection(site.geometry.coordinates);
+              if (pos && Math.hypot(pos[0] - dpx, pos[1] - dpy) <= hitR)
+                others.push({ kind: "campsite", data: site });
+            }
+            for (const site of messageSites) {
+              const pos = projection(site.geometry.coordinates);
+              if (pos && Math.hypot(pos[0] - dpx, pos[1] - dpy) <= hitR)
+                others.push({ kind: "message", data: site });
+            }
+            if (others.length > 0) {
+              setDisambigMenuRef.current({
+                x: event.clientX,
+                y: event.clientY,
+                photo: d,
+                others,
+              });
+            } else {
+              setPhotoPopoutRef.current(null);
+              setPendingPhotoPopoutRef.current({ item: d });
+            }
           });
 
         // Cluster circles — radius grows with log of count so large clusters
@@ -798,7 +938,7 @@ export default function CDTmap() {
           .attr("class", "photoCluster")
           .attr("cx", (d) => d.cx)
           .attr("cy", (d) => d.cy)
-          .attr("r", (d) => (6 + Math.log(d.count + 1) * 4) / k)
+          .attr("r", (d) => (9 + Math.log(d.count + 1) * 5) / k)
           .attr("fill", colors.photos)
           .attr("stroke", colors.photosDark)
           .attr("stroke-width", 1.5)
@@ -812,7 +952,7 @@ export default function CDTmap() {
           .attr("class", "photoClusterHit")
           .attr("cx", (d) => d.cx)
           .attr("cy", (d) => d.cy)
-          .attr("r", (d) => (6 + Math.log(d.count + 1) * 4 + 8) / k)
+          .attr("r", (d) => (9 + Math.log(d.count + 1) * 5 + 11) / k)
           .attr("fill", "transparent")
           .attr("stroke", "none")
           .attr("role", "button")
@@ -827,6 +967,9 @@ export default function CDTmap() {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
               handleMouseOut();
+              clearTimeout(panTimerRef.current);
+              setPendingPhotoPopoutRef.current(null);
+              setPhotoPopoutRef.current(null);
               setClusterPanel({
                 type: "photo",
                 items: d.points,
@@ -839,6 +982,9 @@ export default function CDTmap() {
           .on("click", function (event, d) {
             event.stopPropagation();
             handleMouseOut();
+            clearTimeout(panTimerRef.current);
+            setPendingPhotoPopoutRef.current(null);
+            setPhotoPopoutRef.current(null);
             setClusterPanel({
               type: "photo",
               items: d.points,
@@ -857,7 +1003,7 @@ export default function CDTmap() {
           .attr("y", (d) => d.cy)
           .attr("text-anchor", "middle")
           .attr("dominant-baseline", "middle")
-          .attr("font-size", 8 / k)
+          .attr("font-size", 11 / k)
           .attr("fill", "white")
           .attr("stroke", "none")
           .attr("pointer-events", "none")
@@ -875,6 +1021,8 @@ export default function CDTmap() {
       renderPhotoClusters(currentTransformRef.current ?? d3.zoomIdentity);
       renderMessageClusters(currentTransformRef.current ?? d3.zoomIdentity);
       renderCampClusters(currentTransformRef.current ?? d3.zoomIdentity);
+      g.selectAll(".photoHitAreas, .photoClusterHit").raise();
+      separateOverlappingPoints(currentTransformRef.current ?? d3.zoomIdentity);
 
       /* -----------------------------------------------------
       *  Track mapping functionality (rendered last = on top)
@@ -1226,8 +1374,11 @@ export default function CDTmap() {
             <button
               onClick={(e) => {
                 e.stopPropagation();
+                clearTimeout(panTimerRef.current);
+                setPendingPhotoPopout(null);
                 setPhotoPopout(null);
                 setClusterPanel(null);
+                setDisambigMenu(null);
               }}
               aria-label="Close"
               style={{
@@ -1285,6 +1436,75 @@ export default function CDTmap() {
         </div>
       )}
 
+
+      {/* Disambiguation menu — shown when a photo dot overlaps another point type */}
+      {disambigMenu && (
+        <div
+          className={`fixed z-50 rounded-lg shadow-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 overflow-hidden ${notoSans.className}`}
+          style={{ left: disambigMenu.x + 8, top: disambigMenu.y - 8 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide border-b border-gray-100 dark:border-gray-800">
+            Select item
+          </div>
+          <button
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
+            onClick={() => {
+              setPhotoPopout(null);
+              setPendingPhotoPopout({ item: disambigMenu.photo });
+              setDisambigMenu(null);
+            }}
+          >
+            <span style={{ color: colors.photosDark }}>●</span>
+            <span>
+              Photo
+              {disambigMenu.photo.properties?.dateTime
+                ? " — " +
+                  new Date(
+                    disambigMenu.photo.properties.dateTime.replace(
+                      /^(\d{4}):(\d{2}):(\d{2})/,
+                      "$1-$2-$3",
+                    ),
+                  ).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })
+                : ""}
+            </span>
+          </button>
+          {disambigMenu.others.map((item, i) => {
+            const dt =
+              item.data.properties?.dateTime ?? item.data.properties?.DateTime;
+            const dateLabel = dt
+              ? " — " +
+                new Date(
+                  dt.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3"),
+                ).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+              : "";
+            return (
+              <div
+                key={i}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 select-none"
+              >
+                <span
+                  style={{
+                    color:
+                      item.kind === "campsite"
+                        ? colors.campSites
+                        : colors.messagesDark,
+                  }}
+                >
+                  {item.kind === "campsite" ? "▲" : "■"}
+                </span>
+                <span className="capitalize">
+                  {item.kind}
+                  {dateLabel}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Legend — top right, above the panel if panel is open */}
       <div
