@@ -396,7 +396,7 @@ export default function CDTmap() {
           .force(
             "collide",
             d3
-              .forceCollide((d) => d.r * 1.1)
+              .forceCollide((d) => d.r * 1.6)
               .strength(1)
               .iterations(4),
           )
@@ -404,8 +404,8 @@ export default function CDTmap() {
             "charge",
             d3.forceManyBody().strength((d) => -(d.r * d.r) * 0.4),
           )
-          .force("x", d3.forceX(cx).strength(0.25))
-          .force("y", d3.forceY(cy).strength(0.25))
+          .force("x", d3.forceX(cx).strength(0.2))
+          .force("y", d3.forceY(cy).strength(0.2))
           .stop()
           .tick(150);
       });
