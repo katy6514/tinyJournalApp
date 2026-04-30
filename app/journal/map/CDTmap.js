@@ -155,10 +155,14 @@ export default function CDTmap() {
 
     const targetScreenX = (panelRight + svgRect.right) / 2;
     const targetScreenY = (svgRect.top + svgRect.bottom) / 2;
-    const renderScale = Math.min(svgRect.width / width, svgRect.height / height);
+    const renderScale = Math.min(
+      svgRect.width / width,
+      svgRect.height / height,
+    );
     const renderOffsetX = (svgRect.width - width * renderScale) / 2;
     const renderOffsetY = (svgRect.height - height * renderScale) / 2;
-    const targetX = (targetScreenX - svgRect.left - renderOffsetX) / renderScale;
+    const targetX =
+      (targetScreenX - svgRect.left - renderOffsetX) / renderScale;
     const targetY = (targetScreenY - svgRect.top - renderOffsetY) / renderScale;
     const [px, py] = projection(pendingPhotoPopout.item.geometry.coordinates);
 
@@ -257,48 +261,184 @@ export default function CDTmap() {
     let renderPhotoClusters = () => {};
     let renderCampClusters = () => {};
 
-    // Push overlapping solo points apart using a D3 force simulation so they
-    // are individually clickable. Runs synchronously after every cluster render.
+    // Separate overlapping solo points using per-hotspot force simulations.
+    // Points are first grouped into geographic hotspots via BFS; each hotspot
+    // with >1 node gets its own simulation anchored to the hotspot centroid
+    // rather than individual origins, so nodes spread freely without the anchor
+    // force fighting the collision force.
     function separateOverlappingPoints(transform) {
       const k = transform.k;
       leaderLinesGroup.selectAll("*").remove();
       if (k < 2) return;
 
+      // Match the visual radii used in renderPhotoClusters / zoom handler
+      const photoR = k >= 8 ? 36 / k : 9 / k;
+      const symbolR = Math.sqrt(256 / Math.PI) / k; // ≈ 9/k
+      const clusterR = (d) => (9 + Math.log(d.count + 1) * 5) / k;
+
       const nodes = [];
+
+      // Movable solo points
       g.selectAll(".photoPoints").each(function (d) {
         const [px, py] = projection(d.geometry.coordinates);
-        nodes.push({ type: "photo", data: d, x: px, y: py, ox: px, oy: py });
+        nodes.push({
+          type: "photo",
+          data: d,
+          x: px,
+          y: py,
+          ox: px,
+          oy: py,
+          r: photoR,
+        });
       });
       g.selectAll(".campPoints").each(function (d) {
         const [px, py] = projection(d.geometry.coordinates);
-        nodes.push({ type: "camp", data: d, x: px, y: py, ox: px, oy: py });
+        nodes.push({
+          type: "camp",
+          data: d,
+          x: px,
+          y: py,
+          ox: px,
+          oy: py,
+          r: symbolR,
+        });
       });
       g.selectAll(".messagePoints").each(function (d) {
         const [px, py] = projection(d.geometry.coordinates);
-        nodes.push({ type: "msg", data: d, x: px, y: py, ox: px, oy: py });
+        nodes.push({
+          type: "msg",
+          data: d,
+          x: px,
+          y: py,
+          ox: px,
+          oy: py,
+          r: symbolR,
+        });
+      });
+
+      // Cluster bubbles — fully movable, same as solos
+      g.selectAll(".photoCluster").each(function (d) {
+        const r = clusterR(d);
+        nodes.push({
+          type: "photo-cluster",
+          data: d,
+          x: d.cx,
+          y: d.cy,
+          ox: d.cx,
+          oy: d.cy,
+          r,
+        });
+      });
+      g.selectAll(".msgCluster").each(function (d) {
+        const r = clusterR(d);
+        nodes.push({
+          type: "msg-cluster",
+          data: d,
+          x: d.cx,
+          y: d.cy,
+          ox: d.cx,
+          oy: d.cy,
+          r,
+        });
+      });
+      g.selectAll(".campCluster").each(function (d) {
+        const r = clusterR(d);
+        nodes.push({
+          type: "camp-cluster",
+          data: d,
+          x: d.cx,
+          y: d.cy,
+          ox: d.cx,
+          oy: d.cy,
+          r,
+        });
       });
 
       if (nodes.length === 0) return;
 
-      // Collision radius ≈ 10 screen px in projection space; anchoring strength
-      // keeps each node tethered to its true geographic position.
-      const colR = 40 / k;
-      d3.forceSimulation(nodes)
-        .force("collide", d3.forceCollide(colR).strength(1).iterations(4))
-        .force("x", d3.forceX((d) => d.ox).strength(0.15))
-        .force("y", d3.forceY((d) => d.oy).strength(0.15))
-        .stop()
-        .tick(80);
+      // BFS to find connected components (hotspots) of nearby nodes.
+      // groupThresh is based on the largest node radius so clusters pull in
+      // nearby solos regardless of their relative sizes.
+      const maxR = Math.max(...nodes.map((n) => n.r));
+      const groupThresh = maxR;
+      const assigned = new Array(nodes.length).fill(-1);
+      const hotspots = [];
+      for (let i = 0; i < nodes.length; i++) {
+        if (assigned[i] !== -1) continue;
+        const queue = [i];
+        assigned[i] = hotspots.length;
+        const members = [];
+        let qi = 0;
+        while (qi < queue.length) {
+          const curr = queue[qi++];
+          members.push(curr);
+          for (let j = 0; j < nodes.length; j++) {
+            if (assigned[j] !== -1) continue;
+            const dx = nodes[j].ox - nodes[curr].ox;
+            const dy = nodes[j].oy - nodes[curr].oy;
+            if (Math.hypot(dx, dy) <= groupThresh) {
+              assigned[j] = hotspots.length;
+              queue.push(j);
+            }
+          }
+        }
+        hotspots.push(members);
+      }
+
+      // Simulate each multi-node hotspot independently.
+      hotspots.forEach((members) => {
+        if (members.length <= 1) return;
+        const hotNodes = members.map((i) => nodes[i]);
+        const cx = hotNodes.reduce((s, n) => s + n.ox, 0) / hotNodes.length;
+        const cy = hotNodes.reduce((s, n) => s + n.oy, 0) / hotNodes.length;
+        d3.forceSimulation(hotNodes)
+          .force(
+            "collide",
+            d3
+              .forceCollide((d) => d.r * 1.1)
+              .strength(1)
+              .iterations(4),
+          )
+          .force(
+            "charge",
+            d3.forceManyBody().strength((d) => -(d.r * d.r) * 0.4),
+          )
+          .force("x", d3.forceX(cx).strength(0.25))
+          .force("y", d3.forceY(cy).strength(0.25))
+          .stop()
+          .tick(150);
+      });
 
       nodes.forEach(({ type, data, x, y, ox, oy }) => {
         if (Math.abs(x - ox) < 0.01 && Math.abs(y - oy) < 0.01) return;
 
+        const lineColor =
+          type === "photo" || type === "photo-cluster"
+            ? colors.photosDark
+            : type === "camp" || type === "camp-cluster"
+              ? colors.campSites
+              : colors.messagesDark;
+
         leaderLinesGroup
           .append("line")
-          .attr("x1", ox).attr("y1", oy)
-          .attr("x2", x).attr("y2", y)
-          .attr("stroke", "rgba(100,100,100,0.5)")
-          .attr("stroke-width", 1)
+          .attr("x1", ox)
+          .attr("y1", oy)
+          .attr("x2", x)
+          .attr("y2", y)
+          .attr("stroke", lineColor)
+          .attr("stroke-width", 2)
+          .attr("opacity", 0.6)
+          .attr("vector-effect", "non-scaling-stroke")
+          .attr("pointer-events", "none");
+
+        leaderLinesGroup
+          .append("circle")
+          .attr("cx", ox)
+          .attr("cy", oy)
+          .attr("r", 3 / k)
+          .attr("fill", lineColor)
+          .attr("stroke", "white")
+          .attr("stroke-width", 0.5)
           .attr("vector-effect", "non-scaling-stroke")
           .attr("pointer-events", "none");
 
@@ -307,6 +447,31 @@ export default function CDTmap() {
             .filter((d) => d === data)
             .attr("cx", x)
             .attr("cy", y);
+        } else if (type === "photo-cluster") {
+          g.selectAll(".photoCluster, .photoClusterHit")
+            .filter((d) => d === data)
+            .attr("cx", x)
+            .attr("cy", y);
+          g.selectAll(".photoClusterLabel")
+            .filter((d) => d === data)
+            .attr("x", x)
+            .attr("y", y);
+        } else if (type === "msg-cluster") {
+          g.selectAll(".msgCluster, .msgClusterHit")
+            .filter((d) => d === data)
+            .attr("transform", `translate(${x}, ${y})`);
+          g.selectAll(".msgClusterLabel")
+            .filter((d) => d === data)
+            .attr("x", x)
+            .attr("y", y);
+        } else if (type === "camp-cluster") {
+          g.selectAll(".campCluster, .campClusterHit")
+            .filter((d) => d === data)
+            .attr("transform", `translate(${x}, ${y})`);
+          g.selectAll(".campClusterLabel")
+            .filter((d) => d === data)
+            .attr("x", x)
+            .attr("y", y);
         } else {
           g.selectAll(type === "camp" ? ".campPoints" : ".messagePoints")
             .filter((d) => d === data)
@@ -396,9 +561,9 @@ export default function CDTmap() {
         g.selectAll(".cityPoints").attr("d", cross.size(symbolSize));
         g.selectAll(".state-label").attr("font-size", 20 / k);
 
-        // Photos
-        g.selectAll(".photoPoints").attr("r", 36 / k);
-        g.selectAll(".photoHitAreas").attr("r", 40 / k);
+        // Photos — thumbnail size above k=8, small dot below
+        g.selectAll(".photoPoints").attr("r", k >= 8 ? 36 / k : 9 / k);
+        g.selectAll(".photoHitAreas").attr("r", k >= 8 ? 40 / k : 20 / k);
         g.selectAll(".photoCluster").attr(
           "r",
           (d) => (9 + Math.log(d.count + 1) * 5) / k,
@@ -426,7 +591,7 @@ export default function CDTmap() {
         g.selectAll(".campClusterLabel").attr("font-size", 11 / k);
 
         // Keep active ring scaled to constant visual size
-        g.selectAll(".activeRing").attr("r", 40 / k);
+        g.selectAll(".activeRing").attr("r", k >= 8 ? 44 / k : 13 / k);
 
         updateConnectingTriangleRef.current();
       })
@@ -458,7 +623,7 @@ export default function CDTmap() {
     zoomRef.current = zoom;
     svg.call(zoom);
 
-    // Group for leader lines — appended before data points so lines stay behind dots.
+    // Leader lines and origin dots — rendered behind all data points.
     const leaderLinesGroup = g.append("g").attr("class", "leaderLinesGroup");
 
     // Pulsing ring drawn in g-space (zoom-aware) around the active photo dot.
@@ -484,7 +649,7 @@ export default function CDTmap() {
         .attr("display", null)
         .attr("cx", px)
         .attr("cy", py)
-        .attr("r", 10 / t.k);
+        .attr("r", t.k >= 8 ? 44 / t.k : 13 / t.k);
     }
     updateActiveRingRef.current = updateActiveRing;
 
@@ -515,7 +680,10 @@ export default function CDTmap() {
       const halfH = 150; // constant viewBox units — visually stable at any zoom
       connectingTriangle
         .attr("display", null)
-        .attr("points", `${tipX},${tipY} ${width / 2},${tipY - halfH} ${width / 2},${tipY + halfH}`);
+        .attr(
+          "points",
+          `${tipX},${tipY} ${width / 2},${tipY - halfH} ${width / 2},${tipY + halfH}`,
+        );
     }
     updateConnectingTriangleRef.current = updateConnectingTriangle;
 
@@ -849,28 +1017,33 @@ export default function CDTmap() {
 
         const { solos, groups } = computeClusters(validPhotoPoints, transform);
 
-        // Build one SVG pattern per solo photo so circles can use image fills.
-        // objectBoundingBox units mean the pattern auto-scales as r changes on zoom.
+        // Thumbnails only above k=8 — below that, large circles cause too much
+        // overlap with camp/message points so fall back to a small solid dot.
+        const showThumbnails = k >= 8;
         svg.select("defs.photo-defs").remove();
-        const photoDefs = svg.append("defs").attr("class", "photo-defs");
-        solos.forEach((d, i) => {
-          const imgPath = d.properties?.path;
-          if (!imgPath) return;
-          photoDefs
-            .append("pattern")
-            .attr("id", `photo-pat-${i}`)
-            .attr("patternUnits", "objectBoundingBox")
-            .attr("patternContentUnits", "objectBoundingBox")
-            .attr("width", 1)
-            .attr("height", 1)
-            .append("image")
-            .attr("href", imgPath)
-            .attr("x", 0).attr("y", 0)
-            .attr("width", 1).attr("height", 1)
-            .attr("preserveAspectRatio", "xMidYMid slice");
-        });
+        if (showThumbnails) {
+          const photoDefs = svg.append("defs").attr("class", "photo-defs");
+          solos.forEach((d, i) => {
+            const imgPath = d.properties?.path;
+            if (!imgPath) return;
+            photoDefs
+              .append("pattern")
+              .attr("id", `photo-pat-${i}`)
+              .attr("patternUnits", "objectBoundingBox")
+              .attr("patternContentUnits", "objectBoundingBox")
+              .attr("width", 1)
+              .attr("height", 1)
+              .append("image")
+              .attr("href", imgPath)
+              .attr("x", 0)
+              .attr("y", 0)
+              .attr("width", 1)
+              .attr("height", 1)
+              .attr("preserveAspectRatio", "xMidYMid slice");
+          });
+        }
 
-        // Individual dots — filled with photo thumbnail when available
+        // Individual dots — thumbnail fill at high zoom, solid dot below
         g.selectAll(".photoPoints")
           .data(solos)
           .enter()
@@ -878,9 +1051,11 @@ export default function CDTmap() {
           .attr("class", "photoPoints")
           .attr("cx", (d) => projection(d.geometry.coordinates)[0])
           .attr("cy", (d) => projection(d.geometry.coordinates)[1])
-          .attr("r", 36 / k)
+          .attr("r", showThumbnails ? 36 / k : 9 / k)
           .attr("fill", (d, i) =>
-            d.properties?.path ? `url(#photo-pat-${i})` : colors.photos,
+            showThumbnails && d.properties?.path
+              ? `url(#photo-pat-${i})`
+              : colors.photos,
           )
           .attr("stroke", colors.photosDark)
           .attr("stroke-width", 1.5)
@@ -894,7 +1069,7 @@ export default function CDTmap() {
           .attr("class", "photoHitAreas")
           .attr("cx", (d) => projection(d.geometry.coordinates)[0])
           .attr("cy", (d) => projection(d.geometry.coordinates)[1])
-          .attr("r", 40 / k)
+          .attr("r", showThumbnails ? 40 / k : 20 / k)
           .attr("fill", "transparent")
           .attr("stroke", "none")
           .attr("role", "button")
@@ -1459,7 +1634,6 @@ export default function CDTmap() {
         </div>
       )}
 
-
       {/* Disambiguation menu — shown when a photo dot overlaps another point type */}
       {disambigMenu && (
         <div
@@ -1502,7 +1676,10 @@ export default function CDTmap() {
               ? " — " +
                 new Date(
                   dt.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3"),
-                ).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                ).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })
               : "";
             return (
               <div
