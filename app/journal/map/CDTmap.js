@@ -1188,6 +1188,9 @@ export default function CDTmap() {
         )
         .attr("display", "none");
 
+      // Raise leader lines and origin dots above the trail layer
+      leaderLinesGroup.raise();
+
       /* -----------------------------------------------------
       *  City labels (rendered last so they float above state lines)
       ----------------------------------------------------- */
