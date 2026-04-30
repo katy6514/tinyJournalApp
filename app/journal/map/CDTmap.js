@@ -282,7 +282,7 @@ export default function CDTmap() {
 
       // Collision radius ≈ 10 screen px in projection space; anchoring strength
       // keeps each node tethered to its true geographic position.
-      const colR = 14 / k;
+      const colR = 40 / k;
       d3.forceSimulation(nodes)
         .force("collide", d3.forceCollide(colR).strength(1).iterations(4))
         .force("x", d3.forceX((d) => d.ox).strength(0.15))
@@ -397,8 +397,8 @@ export default function CDTmap() {
         g.selectAll(".state-label").attr("font-size", 20 / k);
 
         // Photos
-        g.selectAll(".photoPoints").attr("r", 9 / k);
-        g.selectAll(".photoHitAreas").attr("r", 20 / k);
+        g.selectAll(".photoPoints").attr("r", 36 / k);
+        g.selectAll(".photoHitAreas").attr("r", 40 / k);
         g.selectAll(".photoCluster").attr(
           "r",
           (d) => (9 + Math.log(d.count + 1) * 5) / k,
@@ -426,7 +426,7 @@ export default function CDTmap() {
         g.selectAll(".campClusterLabel").attr("font-size", 11 / k);
 
         // Keep active ring scaled to constant visual size
-        g.selectAll(".activeRing").attr("r", 13 / k);
+        g.selectAll(".activeRing").attr("r", 40 / k);
 
         updateConnectingTriangleRef.current();
       })
@@ -849,7 +849,28 @@ export default function CDTmap() {
 
         const { solos, groups } = computeClusters(validPhotoPoints, transform);
 
-        // Individual dots (pointer events on hit areas)
+        // Build one SVG pattern per solo photo so circles can use image fills.
+        // objectBoundingBox units mean the pattern auto-scales as r changes on zoom.
+        svg.select("defs.photo-defs").remove();
+        const photoDefs = svg.append("defs").attr("class", "photo-defs");
+        solos.forEach((d, i) => {
+          const imgPath = d.properties?.path;
+          if (!imgPath) return;
+          photoDefs
+            .append("pattern")
+            .attr("id", `photo-pat-${i}`)
+            .attr("patternUnits", "objectBoundingBox")
+            .attr("patternContentUnits", "objectBoundingBox")
+            .attr("width", 1)
+            .attr("height", 1)
+            .append("image")
+            .attr("href", imgPath)
+            .attr("x", 0).attr("y", 0)
+            .attr("width", 1).attr("height", 1)
+            .attr("preserveAspectRatio", "xMidYMid slice");
+        });
+
+        // Individual dots — filled with photo thumbnail when available
         g.selectAll(".photoPoints")
           .data(solos)
           .enter()
@@ -857,8 +878,10 @@ export default function CDTmap() {
           .attr("class", "photoPoints")
           .attr("cx", (d) => projection(d.geometry.coordinates)[0])
           .attr("cy", (d) => projection(d.geometry.coordinates)[1])
-          .attr("r", 9 / k)
-          .attr("fill", colors.photos)
+          .attr("r", 36 / k)
+          .attr("fill", (d, i) =>
+            d.properties?.path ? `url(#photo-pat-${i})` : colors.photos,
+          )
           .attr("stroke", colors.photosDark)
           .attr("stroke-width", 1.5)
           .attr("vector-effect", "non-scaling-stroke")
@@ -871,7 +894,7 @@ export default function CDTmap() {
           .attr("class", "photoHitAreas")
           .attr("cx", (d) => projection(d.geometry.coordinates)[0])
           .attr("cy", (d) => projection(d.geometry.coordinates)[1])
-          .attr("r", 20 / k)
+          .attr("r", 40 / k)
           .attr("fill", "transparent")
           .attr("stroke", "none")
           .attr("role", "button")
