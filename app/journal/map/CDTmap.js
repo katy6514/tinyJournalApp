@@ -563,6 +563,18 @@ export default function CDTmap() {
         g.selectAll(".cityPoints").attr("d", cross.size(symbolSize));
         g.selectAll(".state-label").attr("font-size", 20 / k);
 
+        // Drop thumbnail fills immediately when zoom crosses below k=8 so the
+        // zoom-out animation doesn't paint <image> elements every frame.
+        if (k < 8) {
+          const defs = svg.select("defs.photo-defs");
+          if (!defs.empty()) {
+            defs.remove();
+            g.selectAll(".photoPoints")
+              .attr("fill", colors.photos)
+              .attr("r", 9 / k);
+          }
+        }
+
         // Photos — thumbnail size above k=8, small dot below
         g.selectAll(".photoPoints").attr("r", k >= 8 ? 36 / k : 9 / k);
         g.selectAll(".photoHitAreas").attr("r", k >= 8 ? 40 / k : 20 / k);
