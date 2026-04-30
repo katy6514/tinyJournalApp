@@ -48,20 +48,16 @@ export default function CDTmap() {
   // Floating photo popout: shown when a photo point or cluster is clicked
   const [photoPopout, setPhotoPopout] = useState(null);
 
-  // Stable setter ref so D3 closures can call it without stale-closure issues
-  const setPhotoPopoutRef = useRef(setPhotoPopout);
   // Read ref so D3 closures can read the current photoPopout value
   const photoPopoutRef = useRef(photoPopout);
   photoPopoutRef.current = photoPopout;
 
   // Pending popout: set immediately on click; photoPopout is set after pan completes
   const [pendingPhotoPopout, setPendingPhotoPopout] = useState(null);
-  const setPendingPhotoPopoutRef = useRef(setPendingPhotoPopout);
   const panTimerRef = useRef(null);
 
   // Disambiguation menu: shown when a photo dot overlaps a camp/message point
   const [disambigMenu, setDisambigMenu] = useState(null);
-  const setDisambigMenuRef = useRef(setDisambigMenu);
 
   // displayedPopout lags behind photoPopout by ~320ms so the panel can fade
   // out before unmounting.
@@ -261,6 +257,10 @@ export default function CDTmap() {
     let renderPhotoClusters = () => {};
     let renderCampClusters = () => {};
 
+    // Tracks force-displaced positions so the photo click handler can test
+    // against visual positions rather than original projection coordinates.
+    const displacedPositions = new Map();
+
     // Separate overlapping solo points using per-hotspot force simulations.
     // Points are first grouped into geographic hotspots via BFS; each hotspot
     // with >1 node gets its own simulation anchored to the hotspot centroid
@@ -269,6 +269,7 @@ export default function CDTmap() {
     function separateOverlappingPoints(transform) {
       const k = transform.k;
       leaderLinesGroup.selectAll("*").remove();
+      displacedPositions.clear();
       if (k < 2) return;
 
       // Match the visual radii used in renderPhotoClusters / zoom handler
@@ -411,6 +412,7 @@ export default function CDTmap() {
 
       nodes.forEach(({ type, data, x, y, ox, oy }) => {
         if (Math.abs(x - ox) < 0.01 && Math.abs(y - oy) < 0.01) return;
+        displacedPositions.set(data, { x, y });
 
         const lineColor =
           type === "photo" || type === "photo-cluster"
@@ -695,11 +697,72 @@ export default function CDTmap() {
           svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
         }
         clearTimeout(panTimerRef.current);
-        setPendingPhotoPopoutRef.current(null);
-        setPhotoPopoutRef.current(null);
-        setDisambigMenuRef.current(null);
+        setPendingPhotoPopout(null);
+        setPhotoPopout(null);
+        setDisambigMenu(null);
       }
     });
+
+    function makeSymbolClusterRenderer({
+      sites, symbol, soloClass, clusterClass, hitClass, labelClass,
+      fillColor, strokeColor, tooltipLabel, visKey,
+    }) {
+      return function (transform) {
+        const k = transform.k;
+        const allClasses = `.${soloClass}, .${clusterClass}, .${hitClass}, .${labelClass}`;
+        g.selectAll(allClasses).remove();
+
+        const { solos, groups } = computeClusters(sites, transform);
+        const newSize = 256 / (k * k);
+
+        g.selectAll(`.${soloClass}`)
+          .data(solos).enter().append("path")
+          .attr("class", soloClass)
+          .attr("d", symbol.size(newSize))
+          .attr("transform", (d) => { const [x, y] = projection(d.geometry.coordinates); return `translate(${x}, ${y})`; })
+          .attr("fill", fillColor).attr("stroke", strokeColor)
+          .attr("stroke-width", 1.5).attr("vector-effect", "non-scaling-stroke")
+          .attr("aria-describedby", "tooltip").style("cursor", "default")
+          .on("mouseover", function (event, d) { handleMouseOver(currentUserRef.current)(event, d); })
+          .on("mousemove", handleMouseMove).on("mouseout", handleMouseOut);
+
+        g.selectAll(`.${clusterClass}`)
+          .data(groups).enter().append("path")
+          .attr("class", clusterClass)
+          .attr("d", (d) => { const r = (9 + Math.log(d.count + 1) * 5) / k; return symbol.size(r * r * 2)(); })
+          .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
+          .attr("fill", fillColor).attr("stroke", strokeColor)
+          .attr("stroke-width", 1.5).attr("vector-effect", "non-scaling-stroke")
+          .attr("pointer-events", "none");
+
+        g.selectAll(`.${hitClass}`)
+          .data(groups).enter().append("path")
+          .attr("class", hitClass)
+          .attr("d", (d) => { const r = (9 + Math.log(d.count + 1) * 5) / k; return symbol.size(r * r * 2)(); })
+          .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
+          .attr("fill", "transparent").attr("stroke", "none")
+          .attr("pointer-events", "all").attr("aria-describedby", "tooltip")
+          .style("cursor", "pointer")
+          .on("mouseover", function (_event, d) {
+            const tooltip = document.getElementById("tooltip");
+            tooltip.classList.remove("invisible", "opacity-0");
+            tooltip.classList.add("visible", "opacity-100");
+            tooltip.innerHTML = `<p style="font-weight:600">${d.count} ${tooltipLabel}</p>`;
+          })
+          .on("mousemove", handleMouseMove).on("mouseout", handleMouseOut);
+
+        g.selectAll(`.${labelClass}`)
+          .data(groups).enter().append("text")
+          .attr("class", labelClass)
+          .attr("x", (d) => d.cx).attr("y", (d) => d.cy)
+          .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
+          .attr("font-size", 11 / k).attr("fill", "white")
+          .attr("stroke", "none").attr("pointer-events", "none")
+          .text((d) => d.count);
+
+        if (!visibilityRef.current[visKey]) g.selectAll(allClasses).attr("display", "none");
+      };
+    }
 
     Promise.all([
       d3.json("/api/legs"),
@@ -804,193 +867,21 @@ export default function CDTmap() {
         }
       });
 
-      renderMessageClusters = function (transform) {
-        const k = transform.k;
+      renderMessageClusters = makeSymbolClusterRenderer({
+        sites: messageSites, symbol: square,
+        soloClass: "messagePoints", clusterClass: "msgCluster",
+        hitClass: "msgClusterHit", labelClass: "msgClusterLabel",
+        fillColor: colors.messages, strokeColor: colors.messagesDark,
+        tooltipLabel: "messages", visKey: "messages",
+      });
 
-        g.selectAll(
-          ".messagePoints, .msgCluster, .msgClusterHit, .msgClusterLabel",
-        ).remove();
-
-        const { solos, groups } = computeClusters(messageSites, transform);
-        const newSize = 256 / (k * k);
-
-        g.selectAll(".messagePoints")
-          .data(solos)
-          .enter()
-          .append("path")
-          .attr("class", "messagePoints")
-          .attr("d", square.size(newSize))
-          .attr("transform", (d) => {
-            const [x, y] = projection(d.geometry.coordinates);
-            return `translate(${x}, ${y})`;
-          })
-          .attr("fill", colors.messages)
-          .attr("stroke", colors.messagesDark)
-          .attr("stroke-width", 1.5)
-          .attr("vector-effect", "non-scaling-stroke")
-          .attr("aria-describedby", "tooltip")
-          .style("cursor", "default")
-          .on("mouseover", function (event, d) {
-            handleMouseOver(currentUserRef.current)(event, d);
-          })
-          .on("mousemove", handleMouseMove)
-          .on("mouseout", handleMouseOut);
-
-        g.selectAll(".msgCluster")
-          .data(groups)
-          .enter()
-          .append("path")
-          .attr("class", "msgCluster")
-          .attr("d", (d) => {
-            const r = (9 + Math.log(d.count + 1) * 5) / k;
-            return square.size(r * r * 2)();
-          })
-          .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
-          .attr("fill", colors.messages)
-          .attr("stroke", colors.messagesDark)
-          .attr("stroke-width", 1.5)
-          .attr("vector-effect", "non-scaling-stroke")
-          .attr("pointer-events", "none");
-
-        g.selectAll(".msgClusterHit")
-          .data(groups)
-          .enter()
-          .append("path")
-          .attr("class", "msgClusterHit")
-          .attr("d", (d) => {
-            const r = (9 + Math.log(d.count + 1) * 5) / k;
-            return square.size(r * r * 2)();
-          })
-          .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
-          .attr("fill", "transparent")
-          .attr("stroke", "none")
-          .attr("pointer-events", "all")
-          .attr("aria-describedby", "tooltip")
-          .style("cursor", "pointer")
-          .on("mouseover", function (_event, d) {
-            const tooltip = document.getElementById("tooltip");
-            tooltip.classList.remove("invisible", "opacity-0");
-            tooltip.classList.add("visible", "opacity-100");
-            tooltip.innerHTML = `<p style="font-weight:600">${d.count} messages</p>`;
-          })
-          .on("mousemove", handleMouseMove)
-          .on("mouseout", handleMouseOut);
-
-        g.selectAll(".msgClusterLabel")
-          .data(groups)
-          .enter()
-          .append("text")
-          .attr("class", "msgClusterLabel")
-          .attr("x", (d) => d.cx)
-          .attr("y", (d) => d.cy)
-          .attr("text-anchor", "middle")
-          .attr("dominant-baseline", "middle")
-          .attr("font-size", 11 / k)
-          .attr("fill", "white")
-          .attr("stroke", "none")
-          .attr("pointer-events", "none")
-          .text((d) => d.count);
-
-        if (!visibilityRef.current.messages) {
-          g.selectAll(
-            ".messagePoints, .msgCluster, .msgClusterHit, .msgClusterLabel",
-          ).attr("display", "none");
-        }
-      };
-
-      renderCampClusters = function (transform) {
-        const k = transform.k;
-
-        g.selectAll(
-          ".campPoints, .campCluster, .campClusterHit, .campClusterLabel",
-        ).remove();
-
-        const { solos, groups } = computeClusters(campSites, transform);
-        const newSize = 256 / (k * k);
-
-        g.selectAll(".campPoints")
-          .data(solos)
-          .enter()
-          .append("path")
-          .attr("class", "campPoints")
-          .attr("d", triangle.size(newSize))
-          .attr("transform", (d) => {
-            const [x, y] = projection(d.geometry.coordinates);
-            return `translate(${x}, ${y})`;
-          })
-          .attr("fill", colors.campSitesLight)
-          .attr("stroke", colors.campSites)
-          .attr("stroke-width", 1.5)
-          .attr("vector-effect", "non-scaling-stroke")
-          .attr("aria-describedby", "tooltip")
-          .style("cursor", "default")
-          .on("mouseover", function (event, d) {
-            handleMouseOver(currentUserRef.current)(event, d);
-          })
-          .on("mousemove", handleMouseMove)
-          .on("mouseout", handleMouseOut);
-
-        g.selectAll(".campCluster")
-          .data(groups)
-          .enter()
-          .append("path")
-          .attr("class", "campCluster")
-          .attr("d", (d) => {
-            const r = (9 + Math.log(d.count + 1) * 5) / k;
-            return triangle.size(r * r * 2)();
-          })
-          .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
-          .attr("fill", colors.campSitesLight)
-          .attr("stroke", colors.campSites)
-          .attr("stroke-width", 1.5)
-          .attr("vector-effect", "non-scaling-stroke")
-          .attr("pointer-events", "none");
-
-        g.selectAll(".campClusterHit")
-          .data(groups)
-          .enter()
-          .append("path")
-          .attr("class", "campClusterHit")
-          .attr("d", (d) => {
-            const r = (9 + Math.log(d.count + 1) * 5) / k;
-            return triangle.size(r * r * 2)();
-          })
-          .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
-          .attr("fill", "transparent")
-          .attr("stroke", "none")
-          .attr("pointer-events", "all")
-          .attr("aria-describedby", "tooltip")
-          .style("cursor", "pointer")
-          .on("mouseover", function (_event, d) {
-            const tooltip = document.getElementById("tooltip");
-            tooltip.classList.remove("invisible", "opacity-0");
-            tooltip.classList.add("visible", "opacity-100");
-            tooltip.innerHTML = `<p style="font-weight:600">${d.count} campsites</p>`;
-          })
-          .on("mousemove", handleMouseMove)
-          .on("mouseout", handleMouseOut);
-
-        g.selectAll(".campClusterLabel")
-          .data(groups)
-          .enter()
-          .append("text")
-          .attr("class", "campClusterLabel")
-          .attr("x", (d) => d.cx)
-          .attr("y", (d) => d.cy)
-          .attr("text-anchor", "middle")
-          .attr("dominant-baseline", "middle")
-          .attr("font-size", 11 / k)
-          .attr("fill", "white")
-          .attr("stroke", "none")
-          .attr("pointer-events", "none")
-          .text((d) => d.count);
-
-        if (!visibilityRef.current.campsites) {
-          g.selectAll(
-            ".campPoints, .campCluster, .campClusterHit, .campClusterLabel",
-          ).attr("display", "none");
-        }
-      };
+      renderCampClusters = makeSymbolClusterRenderer({
+        sites: campSites, symbol: triangle,
+        soloClass: "campPoints", clusterClass: "campCluster",
+        hitClass: "campClusterHit", labelClass: "campClusterLabel",
+        fillColor: colors.campSitesLight, strokeColor: colors.campSites,
+        tooltipLabel: "campsites", visKey: "campsites",
+      });
 
       /* -----------------------------------------------------
       *  Take the cleaned photo geojson data and plot it
@@ -1094,36 +985,39 @@ export default function CDTmap() {
           .on("keydown", function (event, d) {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
-              setPhotoPopoutRef.current(null);
-              setPendingPhotoPopoutRef.current({ item: d });
+              setPhotoPopout(null);
+              setPendingPhotoPopout({ item: d });
             }
           })
           .on("click", function (event, d) {
             event.stopPropagation();
             const t = currentTransformRef.current ?? d3.zoomIdentity;
             const hitR = 20 / t.k;
-            const [dpx, dpy] = projection(d.geometry.coordinates);
+            const dp = displacedPositions.get(d);
+            const [dpx, dpy] = dp ? [dp.x, dp.y] : projection(d.geometry.coordinates);
             const others = [];
             for (const site of campSites) {
-              const pos = projection(site.geometry.coordinates);
+              const sp = displacedPositions.get(site);
+              const pos = sp ? [sp.x, sp.y] : projection(site.geometry.coordinates);
               if (pos && Math.hypot(pos[0] - dpx, pos[1] - dpy) <= hitR)
                 others.push({ kind: "campsite", data: site });
             }
             for (const site of messageSites) {
-              const pos = projection(site.geometry.coordinates);
+              const sp = displacedPositions.get(site);
+              const pos = sp ? [sp.x, sp.y] : projection(site.geometry.coordinates);
               if (pos && Math.hypot(pos[0] - dpx, pos[1] - dpy) <= hitR)
                 others.push({ kind: "message", data: site });
             }
             if (others.length > 0) {
-              setDisambigMenuRef.current({
+              setDisambigMenu({
                 x: event.clientX,
                 y: event.clientY,
                 photo: d,
                 others,
               });
             } else {
-              setPhotoPopoutRef.current(null);
-              setPendingPhotoPopoutRef.current({ item: d });
+              setPhotoPopout(null);
+              setPendingPhotoPopout({ item: d });
             }
           });
 
@@ -1166,8 +1060,8 @@ export default function CDTmap() {
               event.preventDefault();
               handleMouseOut();
               clearTimeout(panTimerRef.current);
-              setPendingPhotoPopoutRef.current(null);
-              setPhotoPopoutRef.current(null);
+              setPendingPhotoPopout(null);
+              setPhotoPopout(null);
               setClusterPanel({
                 type: "photo",
                 items: d.points,
@@ -1181,8 +1075,8 @@ export default function CDTmap() {
             event.stopPropagation();
             handleMouseOut();
             clearTimeout(panTimerRef.current);
-            setPendingPhotoPopoutRef.current(null);
-            setPhotoPopoutRef.current(null);
+            setPendingPhotoPopout(null);
+            setPhotoPopout(null);
             setClusterPanel({
               type: "photo",
               items: d.points,
