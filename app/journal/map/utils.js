@@ -76,15 +76,36 @@ export function handleMouseOver(currentUser = null) {
           currentUser && currentUser.email === "katy6514@gmail.com"
             ? MessageText
             : "Message hidden";
-        tooltip.innerHTML = `<p>${displayText}</p><p>Date: ${messageDateString}</p>`;
+
+        const isCampsite = checkForCampsite(d);
+        const borderColor = isCampsite ? colors.campSitesLight : colors.messages;
+        const headerLabel = isCampsite ? "Campsite Message" : "InReach Message";
+
+        tooltip.style.border = `2px solid ${borderColor}`;
+        tooltip.style.maxWidth = "300px";
+        tooltip.style.padding = "0";
+        tooltip.style.overflow = "hidden";
+        tooltip.innerHTML = `
+          <div style="background:${borderColor};padding:4px 10px;font-weight:600;font-size:11px;letter-spacing:0.05em;text-transform:uppercase;">${headerLabel}</div>
+          <div style="padding:8px 10px;">
+            <p>${displayText}</p>
+            <p style="margin-top:4px;opacity:0.75;font-size:12px;">Date: ${messageDateString}</p>
+          </div>`;
         tooltip.style.display = "block";
       } else if (type === "LineString") {
-        // trail route, display it's leg name
+        tooltip.style.border = "";
+        tooltip.style.maxWidth = "";
+        tooltip.style.padding = "";
+        tooltip.style.overflow = "";
         const legNum = d.properties.title;
         const legName = d.properties.description;
         tooltip.innerHTML = ` <p>Leg #${legNum}: ${legName}<p>`;
         tooltip.style.display = "block";
       } else if (type === "Photo") {
+        tooltip.style.border = "";
+        tooltip.style.maxWidth = "";
+        tooltip.style.padding = "";
+        tooltip.style.overflow = "";
         const { path, dateTime } = d.properties;
         const normalized = dateTime.replace(
           /^(\d{4}):(\d{2}):(\d{2})/,
@@ -117,7 +138,10 @@ export function handleMouseMove(event) {
 export function handleMouseOut() {
   const tooltip = document.getElementById("tooltip");
   if (!tooltip) return;
-  // Add hiding classes and remove visible classes
   tooltip.classList.add("invisible", "opacity-0");
   tooltip.classList.remove("visible", "opacity-100");
+  tooltip.style.border = "";
+  tooltip.style.maxWidth = "";
+  tooltip.style.padding = "";
+  tooltip.style.overflow = "";
 }
