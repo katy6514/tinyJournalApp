@@ -12,6 +12,7 @@ import { notoSans } from "@/app/ui/fonts";
 import {
   getAlternatingColor,
   checkForCampsite,
+  parseGPSTime,
   handleMouseMove,
   handleMouseOut,
   handleMouseOver,
@@ -41,6 +42,8 @@ export default function CDTmap() {
   const clusterPanelRef = useRef(clusterPanel);
   clusterPanelRef.current = clusterPanel;
   const zoomRef = useRef(null);
+
+  const [messagePanel, setMessagePanel] = useState(null);
 
   const updateActiveRingRef = useRef(() => {});
   const updateConnectingTriangleRef = useRef(() => {});
@@ -712,12 +715,13 @@ export default function CDTmap() {
         setPendingPhotoPopout(null);
         setPhotoPopout(null);
         setDisambigMenu(null);
+        setMessagePanel(null);
       }
     });
 
     function makeSymbolClusterRenderer({
       sites, symbol, soloClass, clusterClass, hitClass, labelClass,
-      fillColor, strokeColor, tooltipLabel, visKey,
+      fillColor, strokeColor, tooltipLabel, visKey, onClusterClick = null,
     }) {
       return function (transform) {
         const k = transform.k;
@@ -754,14 +758,19 @@ export default function CDTmap() {
           .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
           .attr("fill", "transparent").attr("stroke", "none")
           .attr("pointer-events", "all").attr("aria-describedby", "tooltip")
-          .style("cursor", "pointer")
           .on("mouseover", function (_event, d) {
             const tooltip = document.getElementById("tooltip");
             tooltip.classList.remove("invisible", "opacity-0");
             tooltip.classList.add("visible", "opacity-100");
             tooltip.innerHTML = `<p style="font-weight:600">${d.count} ${tooltipLabel}</p>`;
           })
-          .on("mousemove", handleMouseMove).on("mouseout", handleMouseOut);
+          .on("mousemove", handleMouseMove).on("mouseout", handleMouseOut)
+          .on("click", onClusterClick ? function (event, d) {
+            event.stopPropagation();
+            handleMouseOut();
+            onClusterClick(d);
+          } : null)
+          .style("cursor", onClusterClick ? "pointer" : "default");
 
         g.selectAll(`.${labelClass}`)
           .data(groups).enter().append("text")
@@ -885,6 +894,18 @@ export default function CDTmap() {
         hitClass: "msgClusterHit", labelClass: "msgClusterLabel",
         fillColor: colors.messages, strokeColor: colors.messagesDark,
         tooltipLabel: "messages", visKey: "messages",
+        onClusterClick: (d) => {
+          setClusterPanel({
+            type: "message",
+            items: d.points,
+            projPoints: d.points.map((p) => projection(p.geometry.coordinates)),
+          });
+          setMessagePanel({
+            items: [...d.points].sort(
+              (a, b) => parseGPSTime(a.properties.GPSTime) - parseGPSTime(b.properties.GPSTime),
+            ),
+          });
+        },
       });
 
       renderCampClusters = makeSymbolClusterRenderer({
@@ -1539,6 +1560,73 @@ export default function CDTmap() {
                 {popoutDate.timeStr}
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Message panel — lists InReach messages in a cluster */}
+      {messagePanel && (
+        <div
+          className={`absolute inset-y-0 left-0 w-1/2 z-10 flex flex-col shadow-2xl ${notoSans.className}`}
+          style={{
+            background: "rgba(255,255,255,0.97)",
+            animation: "photo-fade-in 0.3s ease-in-out forwards",
+          }}
+        >
+          <div
+            className="flex items-center justify-between px-5 py-3 flex-shrink-0"
+            style={{ background: colors.messages }}
+          >
+            <div>
+              <p className="font-semibold text-white text-sm uppercase tracking-wide">
+                InReach Messages
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.8)" }}>
+                {messagePanel.items.length} message{messagePanel.items.length !== 1 ? "s" : ""}
+              </p>
+            </div>
+            <button
+              onClick={() => { setMessagePanel(null); setClusterPanel(null); }}
+              aria-label="Close"
+              style={{
+                color: "#fff",
+                background: "rgba(0,0,0,0.2)",
+                borderRadius: "50%",
+                width: 28,
+                height: 28,
+                border: "none",
+                cursor: "pointer",
+                fontSize: 18,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              ×
+            </button>
+          </div>
+          <div className="overflow-y-auto flex-1 divide-y divide-gray-100">
+            {messagePanel.items.map((item, i) => {
+              const date = parseGPSTime(item.properties.GPSTime);
+              const dateStr = date.toLocaleDateString("en-US", {
+                month: "long", day: "numeric", year: "numeric",
+              });
+              const timeStr = date.toLocaleTimeString("en-US", {
+                hour: "numeric", minute: "2-digit", hour12: true,
+              });
+              const text =
+                session?.user?.email === "katy6514@gmail.com"
+                  ? item.properties.MessageText
+                  : "Message hidden";
+              return (
+                <div key={i} className="px-5 py-3">
+                  <p className="text-xs font-medium" style={{ color: colors.messagesDark }}>
+                    {dateStr} · {timeStr}
+                  </p>
+                  <p className="text-sm text-gray-800 mt-1">{text}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
