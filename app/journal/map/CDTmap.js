@@ -1054,14 +1054,30 @@ export default function CDTmap() {
         // overlap with camp/message points so fall back to a small solid dot.
         const showThumbnails = k >= 8;
         svg.select("defs.photo-defs").remove();
+
+        // Only create image patterns for solos whose dot is currently in the
+        // viewport — avoids loading/painting off-screen thumbnails on every render.
+        const VP_MARGIN = 60; // px buffer so images pop in just before edge
+        const patternIdMap = new Map(); // solo feature → pattern id
         if (showThumbnails) {
           const photoDefs = svg.append("defs").attr("class", "photo-defs");
-          solos.forEach((d, i) => {
+          let patIdx = 0;
+          solos.forEach((d) => {
             const imgPath = d.properties?.path;
             if (!imgPath) return;
+            const [px, py] = projection(d.geometry.coordinates);
+            const [sx, sy] = transform.apply([px, py]);
+            const inView =
+              sx >= -VP_MARGIN &&
+              sx <= width + VP_MARGIN &&
+              sy >= -VP_MARGIN &&
+              sy <= height + VP_MARGIN;
+            if (!inView) return;
+            const id = `photo-pat-${patIdx++}`;
+            patternIdMap.set(d, id);
             photoDefs
               .append("pattern")
-              .attr("id", `photo-pat-${i}`)
+              .attr("id", id)
               .attr("patternUnits", "objectBoundingBox")
               .attr("patternContentUnits", "objectBoundingBox")
               .attr("width", 1)
@@ -1085,11 +1101,10 @@ export default function CDTmap() {
           .attr("cx", (d) => projection(d.geometry.coordinates)[0])
           .attr("cy", (d) => projection(d.geometry.coordinates)[1])
           .attr("r", showThumbnails ? 36 / k : 9 / k)
-          .attr("fill", (d, i) =>
-            showThumbnails && d.properties?.path
-              ? `url(#photo-pat-${i})`
-              : colors.photos,
-          )
+          .attr("fill", (d) => {
+            const id = patternIdMap.get(d);
+            return id ? `url(#${id})` : colors.photos;
+          })
           .attr("stroke", colors.photosDark)
           .attr("stroke-width", 1.5)
           .attr("vector-effect", "non-scaling-stroke")
