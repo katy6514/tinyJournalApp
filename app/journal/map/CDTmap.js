@@ -666,6 +666,9 @@ export default function CDTmap() {
           g.selectAll(
             ".photoHitAreas, .photoClusterHit, .msgClusterHit, .campClusterHit",
           ).raise();
+          // Solo points on top of cluster hit areas so individual points take
+          // priority when they overlap a cluster's transparent hit region.
+          g.selectAll(".messagePoints, .campPoints").raise();
           separateOverlappingPoints(event.transform);
           g.selectAll(allPoints)
             .attr("opacity", 0)
@@ -1284,7 +1287,10 @@ export default function CDTmap() {
       renderPhotoClusters(currentTransformRef.current ?? d3.zoomIdentity);
       renderMessageClusters(currentTransformRef.current ?? d3.zoomIdentity);
       renderCampClusters(currentTransformRef.current ?? d3.zoomIdentity);
-      g.selectAll(".photoHitAreas, .photoClusterHit").raise();
+      g.selectAll(
+        ".photoHitAreas, .photoClusterHit, .msgClusterHit, .campClusterHit",
+      ).raise();
+      g.selectAll(".messagePoints, .campPoints").raise();
       separateOverlappingPoints(currentTransformRef.current ?? d3.zoomIdentity);
 
       /* -----------------------------------------------------
