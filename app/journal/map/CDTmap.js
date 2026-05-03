@@ -23,7 +23,7 @@ import {
 const clusterRadius = (count, k) => (9 + Math.log(count + 1) * 5) / k;
 
 // Pre-set zoom levels for cluster clicks. Adjust these values to tune zoom depth.
-const CLUSTER_ZOOM_PRESETS = [50, 200];
+const CLUSTER_ZOOM_PRESETS = [50, 300];
 
 function panTarget(svgRect, panelRight) {
   const targetScreenX = (panelRight + svgRect.right) / 2;
@@ -192,12 +192,10 @@ export default function CDTmap() {
   const [pendingPhotoPopout, setPendingPhotoPopout] = useState(null);
   const panTimerRef = useRef(null);
 
-  // Pending message panel: set on third-level cluster click; panel opens after pan
-  const [pendingMessagePanel, setPendingMessagePanel] = useState(null);
-  const panMessageTimerRef = useRef(null);
-
   // Counts how many garmin cluster zooms have fired; resets when clusterPanel closes
   const msgZoomCountRef = useRef(0);
+  // Scale at the last cluster re-render; used to skip re-renders on pure pans
+  const lastRenderedScaleRef = useRef(null);
 
   // Disambiguation menu: shown when a photo dot overlaps a camp/message point
   const [disambigMenu, setDisambigMenu] = useState(null);
@@ -251,6 +249,7 @@ export default function CDTmap() {
     if (!zoomRef.current || !ref.current) return;
 
     const scale = clusterPanel.scale ?? CLUSTER_ZOOM_PRESETS[0];
+    console.log({ scale });
 
     const xs = clusterPanel.projPoints.map((p) => p[0]);
     const ys = clusterPanel.projPoints.map((p) => p[1]);
@@ -282,21 +281,6 @@ export default function CDTmap() {
   }, [pendingPhotoPopout]); // projection omitted: memoized with [] so never changes
 
   // When a third-level message cluster is clicked, pan its centroid to the
-  // right-half center, then open the message panel.
-  useEffect(() => {
-    clearTimeout(panMessageTimerRef.current);
-    if (!pendingMessagePanel) return;
-    panThenReveal(
-      ref.current,
-      zoomRef.current,
-      pendingMessagePanel.cx,
-      pendingMessagePanel.cy,
-      panMessageTimerRef,
-      () => setMessagePanel({ items: pendingMessagePanel.items }),
-    );
-    return () => clearTimeout(panMessageTimerRef.current);
-  }, [pendingMessagePanel]);
-
   // Once the photo is revealed, update the ring and triangle.
   useEffect(() => {
     updateActiveRingRef.current();
@@ -409,7 +393,7 @@ export default function CDTmap() {
       if (k < 2) return;
 
       // Match the visual radii used in renderPhotoClusters / zoom handler
-      const photoR = k >= 8 ? 36 / k : 9 / k;
+      const photoR = 9 / k;
       const symbolR = Math.sqrt(256 / Math.PI) / k; // ≈ 9/k
       const clusterR = (d) => (9 + Math.log(d.count + 1) * 5) / k;
 
@@ -682,24 +666,9 @@ export default function CDTmap() {
         g.selectAll(".cityPoints").attr("d", cross.size(symbolSize));
         g.selectAll(".state-label").attr("font-size", 20 / k);
 
-        // Drop thumbnail fills immediately when zoom crosses below k=8 so the
-        // zoom-out animation doesn't paint <image> elements every frame.
-        if (k < 8) {
-          const defs = svg.select("defs.photo-defs");
-          if (!defs.empty()) {
-            defs.remove();
-            g.selectAll(".photoPoints")
-              .attr("fill", colors.photos)
-              .attr("r", 9 / k);
-          }
-        }
-
-        // Photos — thumbnail size above k=8, small dot below
-        g.selectAll(".photoPoints").attr("r", k >= 8 ? 36 / k : 9 / k);
-        g.selectAll(".photoHitAreas").attr(
-          "r",
-          k >= 8 ? (36 + 5 / rs) / k : (9 + 5 / rs) / k,
-        );
+        // Photos
+        g.selectAll(".photoPoints").attr("r", 9 / k);
+        g.selectAll(".photoHitAreas").attr("r", (9 + 5 / rs) / k);
         g.selectAll(".photoCluster").attr("r", (d) =>
           clusterRadius(d.count, k),
         );
@@ -734,39 +703,28 @@ export default function CDTmap() {
         g.selectAll(".campClusterLabel").attr("font-size", 11 / k);
 
         // Keep active ring scaled to constant visual size
-        g.selectAll(".activeRing").attr("r", k >= 8 ? 44 / k : 13 / k);
+        g.selectAll(".activeRing").attr("r", 13 / k);
 
         updateConnectingTriangleRef.current();
       })
 
       .on("end", (event) => {
-        const FADE = 120;
-        const allPoints =
-          ".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel," +
-          ".messagePoints, .msgHitArea, .msgCluster, .msgClusterHit, .msgClusterLabel," +
-          ".campPoints, .campHitArea, .campCluster, .campClusterHit, .campClusterLabel";
+        const t = event.transform;
+        const prevK = lastRenderedScaleRef.current;
+        lastRenderedScaleRef.current = t.k;
 
-        // Fade out, recompute while invisible, fade back in
-        g.selectAll(allPoints).transition().duration(FADE).attr("opacity", 0);
+        // Skip re-clustering after a pure pan — cluster groupings only change
+        // when the scale changes, so there is nothing to re-render.
+        if (t.k === prevK) return;
 
-        setTimeout(() => {
-          renderPhotoClusters(event.transform);
-          renderMessageClusters(event.transform);
-          renderCampClusters(event.transform);
-          g.selectAll(
-            ".photoHitAreas, .photoClusterHit, .msgClusterHit, .campClusterHit",
-          ).raise();
-          // Solo message/camp visuals on top so they take priority over cluster
-          // hit areas when a solo point overlaps a cluster center.
-          g.selectAll(".messagePoints, .campPoints").raise();
-          separateOverlappingPoints(event.transform);
-          // renderDebugHitAreas(); // DEBUG: uncomment to overlay hit area outlines
-          g.selectAll(allPoints)
-            .attr("opacity", 0)
-            .transition()
-            .duration(FADE)
-            .attr("opacity", 1);
-        }, FADE);
+        renderPhotoClusters(t);
+        renderMessageClusters(t);
+        renderCampClusters(t);
+        g.selectAll(
+          ".photoHitAreas, .photoClusterHit, .msgClusterHit, .campClusterHit",
+        ).raise();
+        g.selectAll(".messagePoints, .campPoints").raise();
+        separateOverlappingPoints(t);
       });
 
     zoomRef.current = zoom;
@@ -798,7 +756,7 @@ export default function CDTmap() {
         .attr("display", null)
         .attr("cx", px)
         .attr("cy", py)
-        .attr("r", t.k >= 8 ? 44 / t.k : 13 / t.k);
+        .attr("r", 13 / t.k);
     }
     updateActiveRingRef.current = updateActiveRing;
 
@@ -1153,15 +1111,33 @@ export default function CDTmap() {
         visKey: "messages",
         onClusterClick: (d) => {
           if (msgZoomCountRef.current >= 2) {
-            setPendingMessagePanel({
-              items: [...d.points].sort(
-                (a, b) =>
-                  parseGPSTime(a.properties.GPSTime) -
-                  parseGPSTime(b.properties.GPSTime),
-              ),
-              cx: d.cx,
-              cy: d.cy,
-            });
+            const sorted = [...d.points].sort(
+              (a, b) =>
+                parseGPSTime(a.properties.GPSTime) -
+                parseGPSTime(b.properties.GPSTime),
+            );
+            setMessagePanel({ items: sorted });
+            // Stop any running zoom transition (fires "interrupt", not "end")
+            d3.select(ref.current).interrupt();
+            // Pan the cluster into the right-half visible area by writing the
+            // new transform directly onto the SVG — bypassing zoom.translateTo
+            // entirely so no zoom "end" event is dispatched and no blink fires.
+            if (ref.current && gRef.current) {
+              const svgRect = ref.current.getBoundingClientRect();
+              const cRect =
+                ref.current.parentElement?.getBoundingClientRect() ?? svgRect;
+              const panelRight = cRect.left + cRect.width / 2;
+              if (panelRight < svgRect.right) {
+                const [targetX, targetY] = panTarget(svgRect, panelRight);
+                const k = (currentTransformRef.current ?? d3.zoomIdentity).k;
+                const newT = d3.zoomIdentity
+                  .translate(targetX - k * d.cx, targetY - k * d.cy)
+                  .scale(k);
+                ref.current.__zoom = newT;
+                gRef.current.attr("transform", newT);
+                currentTransformRef.current = newT;
+              }
+            }
           } else {
             msgZoomCountRef.current += 1;
             const currentK = currentTransformRef.current?.k ?? 1;
@@ -1219,49 +1195,6 @@ export default function CDTmap() {
 
         const { solos, groups } = computeClusters(validPhotoPoints, transform);
 
-        // Thumbnails only above k=8 — below that, large circles cause too much
-        // overlap with camp/message points so fall back to a small solid dot.
-        const showThumbnails = k >= 8;
-        svg.select("defs.photo-defs").remove();
-
-        // Only create image patterns for solos whose dot is currently in the
-        // viewport — avoids loading/painting off-screen thumbnails on every render.
-        const VP_MARGIN = 60; // px buffer so images pop in just before edge
-        const patternIdMap = new Map(); // solo feature → pattern id
-        if (showThumbnails) {
-          const photoDefs = svg.append("defs").attr("class", "photo-defs");
-          let patIdx = 0;
-          solos.forEach((d) => {
-            const imgPath = d.properties?.path;
-            if (!imgPath) return;
-            const [px, py] = projection(d.geometry.coordinates);
-            const [sx, sy] = transform.apply([px, py]);
-            const inView =
-              sx >= -VP_MARGIN &&
-              sx <= width + VP_MARGIN &&
-              sy >= -VP_MARGIN &&
-              sy <= height + VP_MARGIN;
-            if (!inView) return;
-            const id = `photo-pat-${patIdx++}`;
-            patternIdMap.set(d, id);
-            photoDefs
-              .append("pattern")
-              .attr("id", id)
-              .attr("patternUnits", "objectBoundingBox")
-              .attr("patternContentUnits", "objectBoundingBox")
-              .attr("width", 1)
-              .attr("height", 1)
-              .append("image")
-              .attr("href", imgPath)
-              .attr("x", 0)
-              .attr("y", 0)
-              .attr("width", 1)
-              .attr("height", 1)
-              .attr("preserveAspectRatio", "xMidYMid slice");
-          });
-        }
-
-        // Individual dots — thumbnail fill at high zoom, solid dot below
         g.selectAll(".photoPoints")
           .data(solos)
           .enter()
@@ -1269,11 +1202,8 @@ export default function CDTmap() {
           .attr("class", "photoPoints")
           .attr("cx", (d) => projection(d.geometry.coordinates)[0])
           .attr("cy", (d) => projection(d.geometry.coordinates)[1])
-          .attr("r", showThumbnails ? 36 / k : 9 / k)
-          .attr("fill", (d) => {
-            const id = patternIdMap.get(d);
-            return id ? `url(#${id})` : colors.photos;
-          })
+          .attr("r", 9 / k)
+          .attr("fill", colors.photos)
           .attr("stroke", colors.photosDark)
           .attr("stroke-width", 1.5)
           .attr("vector-effect", "non-scaling-stroke")
@@ -1286,7 +1216,7 @@ export default function CDTmap() {
           .attr("class", "photoHitAreas")
           .attr("cx", (d) => projection(d.geometry.coordinates)[0])
           .attr("cy", (d) => projection(d.geometry.coordinates)[1])
-          .attr("r", showThumbnails ? (36 + 5 / rs) / k : (9 + 5 / rs) / k)
+          .attr("r", (9 + 5 / rs) / k)
           .attr("fill", "rgba(0,0,0,0.02)")
           .attr("stroke", "none")
           .attr("role", "button")
@@ -1814,7 +1744,8 @@ export default function CDTmap() {
               onBlur={async () => {
                 const photoId = displayedPopout?.item?.properties?.photo_id;
                 if (photoId == null) return;
-                const current = displayedPopout?.item?.properties?.caption ?? "";
+                const current =
+                  displayedPopout?.item?.properties?.caption ?? "";
                 if (captionDraft === current && !captionSaved) return;
                 await updatePhotoCaption(String(photoId), captionDraft);
                 setCaptionSaved(true);
@@ -1835,7 +1766,13 @@ export default function CDTmap() {
               }}
             />
             {captionSaved && (
-              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", margin: "4px 0 0" }}>
+              <p
+                style={{
+                  fontSize: 11,
+                  color: "rgba(255,255,255,0.8)",
+                  margin: "4px 0 0",
+                }}
+              >
                 Saved
               </p>
             )}
@@ -1844,96 +1781,110 @@ export default function CDTmap() {
       )}
 
       {/* Message panel — lists InReach messages in a cluster */}
-      {messagePanel && (() => {
-        const firstDate = parseGPSTime(messagePanel.items[0].properties.GPSTime);
-        const lastDate = parseGPSTime(
-          messagePanel.items[messagePanel.items.length - 1].properties.GPSTime,
-        );
-        const formatDate = (d) =>
-          d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-        const dateRangeStr =
-          firstDate.toDateString() === lastDate.toDateString()
-            ? formatDate(firstDate)
-            : `${formatDate(firstDate)} – ${formatDate(lastDate)}`;
+      {messagePanel &&
+        (() => {
+          const firstDate = parseGPSTime(
+            messagePanel.items[0].properties.GPSTime,
+          );
+          const lastDate = parseGPSTime(
+            messagePanel.items[messagePanel.items.length - 1].properties
+              .GPSTime,
+          );
+          const formatDate = (d) =>
+            d.toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            });
+          const dateRangeStr =
+            firstDate.toDateString() === lastDate.toDateString()
+              ? formatDate(firstDate)
+              : `${formatDate(firstDate)} – ${formatDate(lastDate)}`;
 
-        return (
-          <div
-            className={`absolute inset-y-0 left-0 w-1/2 z-10 p-6 ${notoSans.className}`}
-            style={{ animation: "photo-fade-in 0.3s ease-in-out forwards" }}
-          >
+          return (
             <div
-              className="flex flex-col h-full rounded-xl shadow-2xl overflow-hidden"
-              style={{ background: "rgba(255,255,255,0.97)" }}
+              className={`absolute inset-y-0 left-0 w-1/2 z-10 p-6 pr-0 ${notoSans.className}`}
+              style={{ animation: "photo-fade-in 0.3s ease-in-out forwards" }}
             >
               <div
-                className="flex items-center justify-between px-5 py-3 flex-shrink-0"
-                style={{ background: colors.messages }}
+                className="flex flex-col h-full rounded-xl shadow-2xl overflow-hidden"
+                style={{ background: "rgba(255,255,255,0.97)" }}
               >
-                <div>
-                  <p className="font-semibold text-white text-sm uppercase tracking-wide">
-                    InReach Messages
-                  </p>
-                  <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.8)" }}>
-                    {messagePanel.items.length} message
-                    {messagePanel.items.length !== 1 ? "s" : ""}
-                    {" · "}
-                    {dateRangeStr}
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    setMessagePanel(null);
-                    setClusterPanel(null);
-                  }}
-                  aria-label="Close"
-                  style={{
-                    color: "#fff",
-                    background: "rgba(0,0,0,0.2)",
-                    borderRadius: "50%",
-                    width: 28,
-                    height: 28,
-                    border: "none",
-                    cursor: "pointer",
-                    fontSize: 18,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
+                <div
+                  className="flex items-center justify-between px-5 py-3 flex-shrink-0"
+                  style={{ background: colors.messages }}
                 >
-                  ×
-                </button>
-              </div>
-              <div className="overflow-y-auto flex-1 divide-y divide-gray-100">
-                {messagePanel.items.map((item, i) => {
-                  const date = parseGPSTime(item.properties.GPSTime);
-                  const dateStr = date.toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  });
-                  const timeStr = date.toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                    hour12: true,
-                  });
-                  const text =
-                    session?.user?.email === "katy6514@gmail.com"
-                      ? item.properties.MessageText
-                      : "Message hidden";
-                  return (
-                    <div key={i} className="px-5 py-3">
-                      <p className="text-xs font-medium" style={{ color: colors.messagesDark }}>
-                        {dateStr} · {timeStr}
-                      </p>
-                      <p className="text-sm text-gray-800 mt-1">{text}</p>
-                    </div>
-                  );
-                })}
+                  <div>
+                    <p className="font-semibold text-white text-sm uppercase tracking-wide">
+                      InReach Messages
+                    </p>
+                    <p
+                      className="text-xs mt-0.5"
+                      style={{ color: "rgba(255,255,255,0.8)" }}
+                    >
+                      {messagePanel.items.length} message
+                      {messagePanel.items.length !== 1 ? "s" : ""}
+                      {" · "}
+                      {dateRangeStr}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setMessagePanel(null);
+                      setClusterPanel(null);
+                    }}
+                    aria-label="Close"
+                    style={{
+                      color: "#fff",
+                      background: "rgba(0,0,0,0.2)",
+                      borderRadius: "50%",
+                      width: 28,
+                      height: 28,
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: 18,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="overflow-y-auto flex-1 divide-y divide-gray-100">
+                  {messagePanel.items.map((item, i) => {
+                    const date = parseGPSTime(item.properties.GPSTime);
+                    const dateStr = date.toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    });
+                    const timeStr = date.toLocaleTimeString("en-US", {
+                      hour: "numeric",
+                      minute: "2-digit",
+                      hour12: true,
+                    });
+                    const text =
+                      session?.user?.email === "katy6514@gmail.com"
+                        ? item.properties.MessageText
+                        : "Message hidden";
+                    return (
+                      <div key={i} className="px-5 py-3">
+                        <p
+                          className="text-xs font-medium"
+                          style={{ color: colors.messagesDark }}
+                        >
+                          {dateStr} · {timeStr}
+                        </p>
+                        <p className="text-sm text-gray-800 mt-1">{text}</p>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
 
       {/* Disambiguation menu — shown when a photo dot overlaps another point type */}
       {disambigMenu && (
