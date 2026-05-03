@@ -318,6 +318,7 @@ export default function CDTmap() {
     let renderMessageClusters = () => {};
     let renderPhotoClusters = () => {};
     let renderCampClusters = () => {};
+    let renderDebugHitAreas = () => {};
 
     // Tracks force-displaced positions so the photo click handler can test
     // against visual positions rather than original projection coordinates.
@@ -537,7 +538,9 @@ export default function CDTmap() {
             .attr("x", x)
             .attr("y", y);
         } else {
-          g.selectAll(type === "camp" ? ".campPoints" : ".messagePoints")
+          const ptClass = type === "camp" ? ".campPoints" : ".messagePoints";
+          const hitClass = type === "camp" ? ".campHitArea" : ".msgHitArea";
+          g.selectAll(`${ptClass}, ${hitClass}`)
             .filter((d) => d === data)
             .attr("transform", `translate(${x}, ${y})`);
         }
@@ -597,6 +600,10 @@ export default function CDTmap() {
 
         const k = t.k;
         const symbolSize = 256 / (k * k);
+        // Normalize hit-area padding to ~5 screen pixels regardless of how large
+        // the SVG is rendered (renderScale = CSS pixels per SVG viewport unit).
+        const rs = ref.current?.getBoundingClientRect().width / width || 1;
+        const hitPad = 10 / (k * rs); // g-space units → 5 screen px per side
 
         // City crosses
         g.selectAll(".cityPoints").attr("d", cross.size(symbolSize));
@@ -616,35 +623,46 @@ export default function CDTmap() {
 
         // Photos — thumbnail size above k=8, small dot below
         g.selectAll(".photoPoints").attr("r", k >= 8 ? 36 / k : 9 / k);
-        g.selectAll(".photoHitAreas").attr("r", k >= 8 ? 40 / k : 20 / k);
+        g.selectAll(".photoHitAreas").attr("r", k >= 8 ? (36 + 5 / rs) / k : (9 + 5 / rs) / k);
         g.selectAll(".photoCluster").attr(
           "r",
           (d) => (9 + Math.log(d.count + 1) * 5) / k,
         );
         g.selectAll(".photoClusterHit").attr(
           "r",
-          (d) => (9 + Math.log(d.count + 1) * 5 + 11) / k,
+          (d) => (9 + Math.log(d.count + 1) * 5 + 5 / rs) / k,
         );
         g.selectAll(".photoClusterLabel").attr("font-size", 11 / k);
 
         // Messages
         g.selectAll(".messagePoints").attr("d", square.size(symbolSize));
-        g.selectAll(".msgCluster, .msgClusterHit").attr("d", (d) => {
+        g.selectAll(".msgHitArea").attr("d", square.size((Math.sqrt(symbolSize) + hitPad) ** 2));
+        g.selectAll(".msgCluster").attr("d", (d) => {
           const r = (9 + Math.log(d.count + 1) * 5) / k;
           return square.size(r * r * 2)();
+        });
+        g.selectAll(".msgClusterHit").attr("d", (d) => {
+          const r = (9 + Math.log(d.count + 1) * 5) / k;
+          return square.size((r * Math.SQRT2 + hitPad) ** 2)();
         });
         g.selectAll(".msgClusterLabel").attr("font-size", 11 / k);
 
         // Campsites
         g.selectAll(".campPoints").attr("d", triangle.size(symbolSize));
-        g.selectAll(".campCluster, .campClusterHit").attr("d", (d) => {
+        g.selectAll(".campHitArea").attr("d", triangle.size((Math.sqrt(symbolSize) + hitPad) ** 2));
+        g.selectAll(".campCluster").attr("d", (d) => {
           const r = (9 + Math.log(d.count + 1) * 5) / k;
           return triangle.size(r * r * 2)();
+        });
+        g.selectAll(".campClusterHit").attr("d", (d) => {
+          const r = (9 + Math.log(d.count + 1) * 5) / k;
+          return triangle.size((r * Math.SQRT2 + hitPad) ** 2)();
         });
         g.selectAll(".campClusterLabel").attr("font-size", 11 / k);
 
         // Keep active ring scaled to constant visual size
         g.selectAll(".activeRing").attr("r", k >= 8 ? 44 / k : 13 / k);
+
 
         updateConnectingTriangleRef.current();
       })
@@ -653,8 +671,8 @@ export default function CDTmap() {
         const FADE = 120;
         const allPoints =
           ".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel," +
-          ".messagePoints, .msgCluster, .msgClusterHit, .msgClusterLabel," +
-          ".campPoints, .campCluster, .campClusterHit, .campClusterLabel";
+          ".messagePoints, .msgHitArea, .msgCluster, .msgClusterHit, .msgClusterLabel," +
+          ".campPoints, .campHitArea, .campCluster, .campClusterHit, .campClusterLabel";
 
         // Fade out, recompute while invisible, fade back in
         g.selectAll(allPoints).transition().duration(FADE).attr("opacity", 0);
@@ -666,10 +684,11 @@ export default function CDTmap() {
           g.selectAll(
             ".photoHitAreas, .photoClusterHit, .msgClusterHit, .campClusterHit",
           ).raise();
-          // Solo points on top of cluster hit areas so individual points take
-          // priority when they overlap a cluster's transparent hit region.
+          // Solo message/camp visuals on top so they take priority over cluster
+          // hit areas when a solo point overlaps a cluster center.
           g.selectAll(".messagePoints, .campPoints").raise();
           separateOverlappingPoints(event.transform);
+          // renderDebugHitAreas(); // DEBUG: uncomment to overlay hit area outlines
           g.selectAll(allPoints)
             .attr("opacity", 0)
             .transition()
@@ -745,6 +764,32 @@ export default function CDTmap() {
     }
     updateConnectingTriangleRef.current = updateConnectingTriangle;
 
+    // DEBUG: logs which element fires mouseover and cursor distance from data point center
+    // svg.on("mouseover.debug", function (event) {
+    //   const t = event.target;
+    //   const cls = t.className?.baseVal ?? t.className ?? "";
+    //   const relevant = ["messagePoints", "campPoints", "msgHitArea", "campHitArea", "msgClusterHit", "campClusterHit", "photoHitAreas", "photoClusterHit"];
+    //   if (!relevant.some((c) => cls.includes(c))) return;
+    //   const svgEl = ref.current;
+    //   const svgRect = svgEl.getBoundingClientRect();
+    //   const rsX = svgRect.width / width, rsY = svgRect.height / height;
+    //   const transform = d3.select(t).attr("transform") || "";
+    //   const m = transform.match(/translate\(([^,]+),([^)]+)\)/);
+    //   if (m) {
+    //     const tx = parseFloat(m[1]), ty = parseFloat(m[2]);
+    //     const tr = currentTransformRef.current ?? d3.zoomIdentity;
+    //     const [vpx, vpy] = tr.apply([tx, ty]);
+    //     const centerScreenX = svgRect.left + vpx * rsX;
+    //     const centerScreenY = svgRect.top + vpy * rsY;
+    //     const dx = event.clientX - centerScreenX;
+    //     const dy = event.clientY - centerScreenY;
+    //     const dist = Math.hypot(dx, dy);
+    //     console.log(`[mouseover] el="${cls}" | dist from center: ${dist.toFixed(1)}px | cursor:(${event.clientX},${event.clientY}) center:(${centerScreenX.toFixed(0)},${centerScreenY.toFixed(0)}) | pe-attr:${t.getAttribute("pointer-events")} pe-style:${t.style?.pointerEvents||"(none)"}`);
+    //   } else {
+    //     console.log(`[mouseover] el="${cls}" | no transform | pe-attr:${t.getAttribute("pointer-events")}`);
+    //   }
+    // });
+
     svg.on("click", (event) => {
       if (!event.target.classList.contains("state-clickable")) {
         if (clusterPanelRef.current) {
@@ -764,6 +809,7 @@ export default function CDTmap() {
       sites,
       symbol,
       soloClass,
+      soloHitClass,
       clusterClass,
       hitClass,
       labelClass,
@@ -775,11 +821,20 @@ export default function CDTmap() {
     }) {
       return function (transform) {
         const k = transform.k;
-        const allClasses = `.${soloClass}, .${clusterClass}, .${hitClass}, .${labelClass}`;
+        const allClasses = [
+          `.${soloClass}`, soloHitClass ? `.${soloHitClass}` : null,
+          `.${clusterClass}`, `.${hitClass}`, `.${labelClass}`,
+        ].filter(Boolean).join(", ");
         g.selectAll(allClasses).remove();
 
         const { solos, groups } = computeClusters(sites, transform);
         const newSize = 256 / (k * k);
+        const rs = ref.current?.getBoundingClientRect().width / width || 1;
+        // Hit area: same shape, 5 screen-px padding on every side.
+        // Divide by rs so the padding stays ~5px regardless of how wide the SVG
+        // is rendered (large monitors have renderScale > 1).
+        const hitPad = 10 / (k * rs);
+        const hitSize = ((Math.sqrt(newSize) + hitPad) ** 2);
 
         g.selectAll(`.${soloClass}`)
           .data(solos)
@@ -795,13 +850,38 @@ export default function CDTmap() {
           .attr("stroke", strokeColor)
           .attr("stroke-width", 1.5)
           .attr("vector-effect", "non-scaling-stroke")
-          .attr("aria-describedby", "tooltip")
-          .style("cursor", "default")
-          .on("mouseover", function (event, d) {
+          .attr("pointer-events", soloHitClass ? "none" : null)
+          .style("pointer-events", soloHitClass ? "none" : null)
+          .attr("aria-describedby", soloHitClass ? null : "tooltip")
+          .style("cursor", soloHitClass ? null : "default")
+          .on("mouseover", soloHitClass ? null : function (event, d) {
             handleMouseOver(currentUserRef.current)(event, d);
           })
-          .on("mousemove", handleMouseMove)
-          .on("mouseout", handleMouseOut);
+          .on("mousemove", soloHitClass ? null : handleMouseMove)
+          .on("mouseout", soloHitClass ? null : handleMouseOut);
+
+        if (soloHitClass) {
+          g.selectAll(`.${soloHitClass}`)
+            .data(solos)
+            .enter()
+            .append("path")
+            .attr("class", soloHitClass)
+            .attr("d", symbol.size(hitSize))
+            .attr("transform", (d) => {
+              const [x, y] = projection(d.geometry.coordinates);
+              return `translate(${x}, ${y})`;
+            })
+            .attr("fill", "rgba(0,0,0,0.02)")
+            .attr("stroke", "none")
+            .attr("pointer-events", "all")
+            .attr("aria-describedby", "tooltip")
+            .style("cursor", "default")
+            .on("mouseover", function (event, d) {
+              handleMouseOver(currentUserRef.current)(event, d);
+            })
+            .on("mousemove", handleMouseMove)
+            .on("mouseout", handleMouseOut);
+        }
 
         g.selectAll(`.${clusterClass}`)
           .data(groups)
@@ -826,11 +906,13 @@ export default function CDTmap() {
           .attr("class", hitClass)
           .attr("d", (d) => {
             const r = (9 + Math.log(d.count + 1) * 5) / k;
-            return symbol.size(r * r * 2)();
+            const vSide = r * Math.SQRT2;
+            return symbol.size((vSide + hitPad) ** 2)();
           })
           .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
-          .attr("fill", "transparent")
+          .attr("fill", "rgba(0,0,0,0.02)")
           .attr("stroke", "none")
+          .attr("vector-effect", "non-scaling-stroke")
           .attr("pointer-events", "all")
           .attr("aria-describedby", "tooltip")
           .on("mouseover", function (_event, d) {
@@ -1046,6 +1128,7 @@ export default function CDTmap() {
 
       renderPhotoClusters = function (transform) {
         const k = transform.k;
+        const rs = ref.current?.getBoundingClientRect().width / width || 1;
 
         g.selectAll(
           ".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel",
@@ -1120,8 +1203,8 @@ export default function CDTmap() {
           .attr("class", "photoHitAreas")
           .attr("cx", (d) => projection(d.geometry.coordinates)[0])
           .attr("cy", (d) => projection(d.geometry.coordinates)[1])
-          .attr("r", showThumbnails ? 40 / k : 20 / k)
-          .attr("fill", "transparent")
+          .attr("r", showThumbnails ? (36 + 5 / rs) / k : (9 + 5 / rs) / k)
+          .attr("fill", "rgba(0,0,0,0.02)")
           .attr("stroke", "none")
           .attr("role", "button")
           .attr("tabindex", "0")
@@ -1210,8 +1293,8 @@ export default function CDTmap() {
           .attr("class", "photoClusterHit")
           .attr("cx", (d) => d.cx)
           .attr("cy", (d) => d.cy)
-          .attr("r", (d) => (9 + Math.log(d.count + 1) * 5 + 11) / k)
-          .attr("fill", "transparent")
+          .attr("r", (d) => (9 + Math.log(d.count + 1) * 5 + 5 / rs) / k)
+          .attr("fill", "rgba(0,0,0,0.02)")
           .attr("stroke", "none")
           .attr("role", "button")
           .attr("tabindex", "0")
@@ -1283,6 +1366,41 @@ export default function CDTmap() {
         }
       };
 
+      // Draws debug outlines by copying the exact path/circle of each hit element.
+      renderDebugHitAreas = function () {
+        g.selectAll(".debugHit").remove();
+
+        const addPathCopy = (el, stroke) => {
+          const s = d3.select(el);
+          g.append("path").attr("class", "debugHit")
+            .attr("d", s.attr("d"))
+            .attr("transform", s.attr("transform"))
+            .attr("fill", "none").attr("stroke", stroke).attr("stroke-width", 2)
+            .attr("pointer-events", "none").attr("vector-effect", "non-scaling-stroke");
+        };
+
+        const addCircleCopy = (el, stroke) => {
+          const s = d3.select(el);
+          g.append("circle").attr("class", "debugHit")
+            .attr("cx", s.attr("cx")).attr("cy", s.attr("cy")).attr("r", s.attr("r"))
+            .attr("fill", "none").attr("stroke", stroke).attr("stroke-width", 2)
+            .attr("pointer-events", "none").attr("vector-effect", "non-scaling-stroke");
+        };
+
+        g.selectAll(".photoHitAreas").each(function ()   { addCircleCopy(this, "blue"); });
+        g.selectAll(".photoClusterHit").each(function () { addCircleCopy(this, "cyan"); });
+        // White outlines over colored fills so the boundary is clearly visible
+        g.selectAll(".msgHitArea").each(function ()      { addPathCopy(this, "white"); });
+        g.selectAll(".msgClusterHit").each(function ()   { addPathCopy(this, "orange"); });
+        g.selectAll(".campHitArea").each(function ()     { addPathCopy(this, "white"); });
+        g.selectAll(".campClusterHit").each(function ()  { addPathCopy(this, "limegreen"); });
+        // Purple = visual element boundary (should be inside the red/green filled hit area)
+        g.selectAll(".messagePoints").each(function ()   { addPathCopy(this, "purple"); });
+        g.selectAll(".campPoints").each(function ()      { addPathCopy(this, "purple"); });
+
+        g.selectAll(".debugHit").raise();
+      };
+
       // Initial render order matches zoom-end order: photos → messages → campsites
       renderPhotoClusters(currentTransformRef.current ?? d3.zoomIdentity);
       renderMessageClusters(currentTransformRef.current ?? d3.zoomIdentity);
@@ -1292,6 +1410,7 @@ export default function CDTmap() {
       ).raise();
       g.selectAll(".messagePoints, .campPoints").raise();
       separateOverlappingPoints(currentTransformRef.current ?? d3.zoomIdentity);
+      // renderDebugHitAreas(); // DEBUG: uncomment to overlay hit area outlines
 
       /* -----------------------------------------------------
       *  Track mapping functionality (rendered last = on top)
@@ -1367,6 +1486,7 @@ export default function CDTmap() {
 
       // Raise leader lines and origin dots above the trail layer
       leaderLinesGroup.raise();
+      // g.selectAll(".debugHit").raise(); // DEBUG: uncomment with renderDebugHitAreas
 
       /* -----------------------------------------------------
       *  City labels (rendered last so they float above state lines)
