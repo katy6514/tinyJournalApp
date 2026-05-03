@@ -1609,7 +1609,7 @@ export default function CDTmap() {
       {/* Photo panel — overlays the left half, photo at natural proportions */}
       {displayedPopout && (
         <div
-          className={`absolute inset-y-0 left-0 w-1/2 z-10 flex flex-col items-center justify-center gap-3 pl-6 pr-2 pt-6 pb-6 ${notoSans.className}`}
+          className={`absolute inset-y-0 left-0 w-1/2 z-10 flex flex-col items-center justify-center pl-6 pr-2 pt-6 pb-6 ${notoSans.className}`}
           style={{
             animation: photoPopout
               ? "photo-fade-in 0.3s ease-in-out forwards"
@@ -1627,10 +1627,10 @@ export default function CDTmap() {
             style={{
               position: "relative",
               maxWidth: "100%",
-              maxHeight: "calc(100% - 80px)",
+              maxHeight: "100%",
               borderRadius: 8,
               overflow: "hidden",
-              flexShrink: 0,
+              flexShrink: 1,
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1698,9 +1698,14 @@ export default function CDTmap() {
             </div>
           </div>
 
-          {/* Caption editor */}
+          {/* Caption editor — absolutely positioned so it doesn't affect photo sizing */}
           <div
-            style={{ width: "100%", maxWidth: "100%" }}
+            style={{
+              position: "absolute",
+              bottom: 24,
+              left: 24,
+              right: 8,
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <textarea
