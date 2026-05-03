@@ -33,6 +33,10 @@ export function getAlternatingColor(properties) {
   }
 }
 
+export function normalizeExifDate(dt) {
+  return dt.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3");
+}
+
 export function checkForCampsite(data) {
   // Function to check if the data contains a campsite
   if (!data || !data.properties) {
@@ -107,11 +111,7 @@ export function handleMouseOver(currentUser = null) {
         tooltip.style.padding = "";
         tooltip.style.overflow = "";
         const { path, dateTime } = d.properties;
-        const normalized = dateTime.replace(
-          /^(\d{4}):(\d{2}):(\d{2})/,
-          "$1-$2-$3",
-        );
-        const photoDate = new Date(normalized);
+        const photoDate = new Date(normalizeExifDate(dateTime));
         const dateStr = photoDate.toLocaleDateString("en-US", {
           year: "numeric",
           month: "long",

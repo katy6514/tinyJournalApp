@@ -12,11 +12,107 @@ import { notoSans } from "@/app/ui/fonts";
 import {
   getAlternatingColor,
   checkForCampsite,
+  normalizeExifDate,
   parseGPSTime,
   handleMouseMove,
   handleMouseOut,
   handleMouseOver,
 } from "./utils";
+
+const clusterRadius = (count, k) => (9 + Math.log(count + 1) * 5) / k;
+
+// Pre-set zoom levels for cluster clicks. Adjust these values to tune zoom depth.
+const CLUSTER_ZOOM_PRESETS = [50, 200];
+
+function panTarget(svgRect, panelRight) {
+  const targetScreenX = (panelRight + svgRect.right) / 2;
+  const targetScreenY = (svgRect.top + svgRect.bottom) / 2;
+  const rs = Math.min(svgRect.width / width, svgRect.height / height);
+  const ox = (svgRect.width - width * rs) / 2;
+  const oy = (svgRect.height - height * rs) / 2;
+  return [
+    (targetScreenX - svgRect.left - ox) / rs,
+    (targetScreenY - svgRect.top - oy) / rs,
+  ];
+}
+
+function panThenReveal(svgEl, zoom, cx, cy, timerRef, onReveal) {
+  if (!zoom || !svgEl) {
+    onReveal();
+    return;
+  }
+  const svgRect = svgEl.getBoundingClientRect();
+  const cRect = svgEl.parentElement?.getBoundingClientRect() ?? svgRect;
+  const panelRight = cRect.left + cRect.width / 2;
+  if (panelRight >= svgRect.right) {
+    onReveal();
+    return;
+  }
+  const [targetX, targetY] = panTarget(svgRect, panelRight);
+  d3.select(svgEl)
+    .transition()
+    .duration(400)
+    .ease(d3.easeCubicInOut)
+    .call(zoom.translateTo, cx, cy, [targetX, targetY]);
+  timerRef.current = setTimeout(onReveal, 420);
+}
+
+function LegendSymbol({ shape, fill, stroke, color }) {
+  const size = 14;
+  const mid = size / 2;
+  const f = fill ?? color;
+  const s = stroke ?? "none";
+  switch (shape) {
+    case "circle":
+      return (
+        <svg width={size} height={size} style={{ flexShrink: 0 }}>
+          <circle cx={mid} cy={mid} r={4.5} fill={f} stroke={s} strokeWidth={1.5} />
+        </svg>
+      );
+    case "square":
+      return (
+        <svg width={size} height={size} style={{ flexShrink: 0 }}>
+          <rect x={2} y={2} width={10} height={10} fill={f} stroke={s} strokeWidth={1.5} />
+        </svg>
+      );
+    case "triangle":
+      return (
+        <svg width={size} height={size} style={{ flexShrink: 0 }}>
+          <polygon
+            points={`${mid},2 ${size - 1},${size - 2} 1,${size - 2}`}
+            fill={f}
+            stroke={s}
+            strokeWidth={1.5}
+          />
+        </svg>
+      );
+    case "cross":
+      return (
+        <svg width={size} height={size} style={{ flexShrink: 0 }}>
+          <line x1={mid} y1={1} x2={mid} y2={size - 1} stroke={color} strokeWidth={2} />
+          <line x1={1} y1={mid} x2={size - 1} y2={mid} stroke={color} strokeWidth={2} />
+        </svg>
+      );
+    case "line":
+      return (
+        <svg width={size} height={size} style={{ flexShrink: 0 }}>
+          <line x1={0} y1={mid} x2={size} y2={mid} stroke={color} strokeWidth={2.5} />
+        </svg>
+      );
+    default:
+      return (
+        <span
+          style={{
+            display: "inline-block",
+            width: size,
+            height: size,
+            background: color,
+            flexShrink: 0,
+          }}
+        />
+      );
+  }
+}
 
 export default function CDTmap() {
   const ref = useRef();
@@ -98,9 +194,6 @@ export default function CDTmap() {
     ).attr("display", visibility.messages ? null : "none");
   }, [visibility]);
 
-  // Pre-set zoom levels for cluster clicks. Adjust these values to tune zoom depth.
-  const CLUSTER_ZOOM_PRESETS = [50, 200];
-
   // When a cluster is clicked, zoom to the next pre-set level centered on the
   // cluster centroid. When the panel closes, reset to the identity transform.
   useEffect(() => {
@@ -135,48 +228,15 @@ export default function CDTmap() {
         zoomRef.current.transform,
         d3.zoomIdentity.translate(tx, ty).scale(scale),
       );
-  }, [clusterPanel]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [clusterPanel]);
 
   // When a dot is clicked, pan the map first; reveal the photo panel after.
   useEffect(() => {
     clearTimeout(panTimerRef.current);
     if (!pendingPhotoPopout) return;
-    if (!zoomRef.current || !ref.current) {
-      setPhotoPopout(pendingPhotoPopout);
-      return;
-    }
-
-    const svgEl = ref.current;
-    const svgRect = svgEl.getBoundingClientRect();
-    const cRect = svgEl.parentElement?.getBoundingClientRect() ?? svgRect;
-    const panelRight = cRect.left + cRect.width / 2;
-    if (panelRight >= svgRect.right) {
-      setPhotoPopout(pendingPhotoPopout);
-      return;
-    }
-
-    const targetScreenX = (panelRight + svgRect.right) / 2;
-    const targetScreenY = (svgRect.top + svgRect.bottom) / 2;
-    const renderScale = Math.min(
-      svgRect.width / width,
-      svgRect.height / height,
-    );
-    const renderOffsetX = (svgRect.width - width * renderScale) / 2;
-    const renderOffsetY = (svgRect.height - height * renderScale) / 2;
-    const targetX =
-      (targetScreenX - svgRect.left - renderOffsetX) / renderScale;
-    const targetY = (targetScreenY - svgRect.top - renderOffsetY) / renderScale;
     const [px, py] = projection(pendingPhotoPopout.item.geometry.coordinates);
-
-    d3.select(ref.current)
-      .transition()
-      .duration(400)
-      .ease(d3.easeCubicInOut)
-      .call(zoomRef.current.translateTo, px, py, [targetX, targetY]);
-
-    panTimerRef.current = setTimeout(
-      () => setPhotoPopout(pendingPhotoPopout),
-      420,
+    panThenReveal(ref.current, zoomRef.current, px, py, panTimerRef, () =>
+      setPhotoPopout(pendingPhotoPopout),
     );
     return () => clearTimeout(panTimerRef.current);
   }, [pendingPhotoPopout]); // projection omitted: memoized with [] so never changes
@@ -186,46 +246,13 @@ export default function CDTmap() {
   useEffect(() => {
     clearTimeout(panMessageTimerRef.current);
     if (!pendingMessagePanel) return;
-    if (!zoomRef.current || !ref.current) {
-      setMessagePanel({ items: pendingMessagePanel.items });
-      return;
-    }
-
-    const svgEl = ref.current;
-    const svgRect = svgEl.getBoundingClientRect();
-    const cRect = svgEl.parentElement?.getBoundingClientRect() ?? svgRect;
-    const panelRight = cRect.left + cRect.width / 2;
-    if (panelRight >= svgRect.right) {
-      setMessagePanel({ items: pendingMessagePanel.items });
-      return;
-    }
-
-    const targetScreenX = (panelRight + svgRect.right) / 2;
-    const targetScreenY = (svgRect.top + svgRect.bottom) / 2;
-    const renderScale = Math.min(
-      svgRect.width / width,
-      svgRect.height / height,
-    );
-    const renderOffsetX = (svgRect.width - width * renderScale) / 2;
-    const renderOffsetY = (svgRect.height - height * renderScale) / 2;
-    const targetX =
-      (targetScreenX - svgRect.left - renderOffsetX) / renderScale;
-    const targetY = (targetScreenY - svgRect.top - renderOffsetY) / renderScale;
-
-    d3.select(ref.current)
-      .transition()
-      .duration(400)
-      .ease(d3.easeCubicInOut)
-      .call(
-        zoomRef.current.translateTo,
-        pendingMessagePanel.cx,
-        pendingMessagePanel.cy,
-        [targetX, targetY],
-      );
-
-    panMessageTimerRef.current = setTimeout(
+    panThenReveal(
+      ref.current,
+      zoomRef.current,
+      pendingMessagePanel.cx,
+      pendingMessagePanel.cy,
+      panMessageTimerRef,
       () => setMessagePanel({ items: pendingMessagePanel.items }),
-      420,
     );
     return () => clearTimeout(panMessageTimerRef.current);
   }, [pendingMessagePanel]);
@@ -626,36 +653,34 @@ export default function CDTmap() {
         g.selectAll(".photoHitAreas").attr("r", k >= 8 ? (36 + 5 / rs) / k : (9 + 5 / rs) / k);
         g.selectAll(".photoCluster").attr(
           "r",
-          (d) => (9 + Math.log(d.count + 1) * 5) / k,
+          (d) => clusterRadius(d.count, k),
         );
         g.selectAll(".photoClusterHit").attr(
           "r",
-          (d) => (9 + Math.log(d.count + 1) * 5 + 5 / rs) / k,
+          (d) => clusterRadius(d.count, k) + 5 / (rs * k),
         );
         g.selectAll(".photoClusterLabel").attr("font-size", 11 / k);
 
         // Messages
         g.selectAll(".messagePoints").attr("d", square.size(symbolSize));
-        g.selectAll(".msgHitArea").attr("d", square.size((Math.sqrt(symbolSize) + hitPad) ** 2));
         g.selectAll(".msgCluster").attr("d", (d) => {
-          const r = (9 + Math.log(d.count + 1) * 5) / k;
+          const r = clusterRadius(d.count, k);
           return square.size(r * r * 2)();
         });
         g.selectAll(".msgClusterHit").attr("d", (d) => {
-          const r = (9 + Math.log(d.count + 1) * 5) / k;
+          const r = clusterRadius(d.count, k);
           return square.size((r * Math.SQRT2 + hitPad) ** 2)();
         });
         g.selectAll(".msgClusterLabel").attr("font-size", 11 / k);
 
         // Campsites
         g.selectAll(".campPoints").attr("d", triangle.size(symbolSize));
-        g.selectAll(".campHitArea").attr("d", triangle.size((Math.sqrt(symbolSize) + hitPad) ** 2));
         g.selectAll(".campCluster").attr("d", (d) => {
-          const r = (9 + Math.log(d.count + 1) * 5) / k;
+          const r = clusterRadius(d.count, k);
           return triangle.size(r * r * 2)();
         });
         g.selectAll(".campClusterHit").attr("d", (d) => {
-          const r = (9 + Math.log(d.count + 1) * 5) / k;
+          const r = clusterRadius(d.count, k);
           return triangle.size((r * Math.SQRT2 + hitPad) ** 2)();
         });
         g.selectAll(".campClusterLabel").attr("font-size", 11 / k);
@@ -1211,11 +1236,7 @@ export default function CDTmap() {
           .attr("aria-label", (d) => {
             const dt = d.properties?.dateTime;
             if (!dt) return "View photo";
-            const normalized = dt.replace(
-              /^(\d{4}):(\d{2}):(\d{2})/,
-              "$1-$2-$3",
-            );
-            const dateStr = new Date(normalized).toLocaleDateString("en-US", {
+            const dateStr = new Date(normalizeExifDate(dt)).toLocaleDateString("en-US", {
               month: "long",
               day: "numeric",
               year: "numeric",
@@ -1270,6 +1291,23 @@ export default function CDTmap() {
             }
           });
 
+        function openPhotoClusterPanel(d) {
+          handleMouseOut();
+          clearTimeout(panTimerRef.current);
+          setPendingPhotoPopout(null);
+          setPhotoPopout(null);
+          const currentK = currentTransformRef.current?.k ?? 1;
+          const nextScale =
+            CLUSTER_ZOOM_PRESETS.find((p) => p > currentK) ??
+            CLUSTER_ZOOM_PRESETS[CLUSTER_ZOOM_PRESETS.length - 1];
+          setClusterPanel({
+            type: "photo",
+            scale: nextScale,
+            items: d.points,
+            projPoints: d.points.map((p) => projection(p.geometry.coordinates)),
+          });
+        }
+
         // Cluster circles — radius grows with log of count so large clusters
         // don't dwarf individual dots
         g.selectAll(".photoCluster")
@@ -1307,40 +1345,12 @@ export default function CDTmap() {
           .on("keydown", function (event, d) {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
-              handleMouseOut();
-              clearTimeout(panTimerRef.current);
-              setPendingPhotoPopout(null);
-              setPhotoPopout(null);
-              const currentK = currentTransformRef.current?.k ?? 1;
-              const nextScale = CLUSTER_ZOOM_PRESETS.find((p) => p > currentK)
-                ?? CLUSTER_ZOOM_PRESETS[CLUSTER_ZOOM_PRESETS.length - 1];
-              setClusterPanel({
-                type: "photo",
-                scale: nextScale,
-                items: d.points,
-                projPoints: d.points.map((p) =>
-                  projection(p.geometry.coordinates),
-                ),
-              });
+              openPhotoClusterPanel(d);
             }
           })
           .on("click", function (event, d) {
             event.stopPropagation();
-            handleMouseOut();
-            clearTimeout(panTimerRef.current);
-            setPendingPhotoPopout(null);
-            setPhotoPopout(null);
-            const currentK = currentTransformRef.current?.k ?? 1;
-            const nextScale = CLUSTER_ZOOM_PRESETS.find((p) => p > currentK)
-              ?? CLUSTER_ZOOM_PRESETS[CLUSTER_ZOOM_PRESETS.length - 1];
-            setClusterPanel({
-              type: "photo",
-              scale: nextScale,
-              items: d.points,
-              projPoints: d.points.map((p) =>
-                projection(p.geometry.coordinates),
-              ),
-            });
+            openPhotoClusterPanel(d);
           });
 
         g.selectAll(".photoClusterLabel")
@@ -1570,125 +1580,11 @@ export default function CDTmap() {
     { label: "Trail", color: colors.evenDays, shape: "line" },
   ];
 
-  const LegendSymbol = ({ shape, fill, stroke, color }) => {
-    const size = 14;
-    const mid = size / 2;
-    const f = fill ?? color;
-    const s = stroke ?? "none";
-    switch (shape) {
-      case "circle":
-        return (
-          <svg width={size} height={size} style={{ flexShrink: 0 }}>
-            <circle
-              cx={mid}
-              cy={mid}
-              r={4.5}
-              fill={f}
-              stroke={s}
-              strokeWidth={1.5}
-            />
-          </svg>
-        );
-      case "square":
-        return (
-          <svg width={size} height={size} style={{ flexShrink: 0 }}>
-            <rect
-              x={2}
-              y={2}
-              width={10}
-              height={10}
-              fill={f}
-              stroke={s}
-              strokeWidth={1.5}
-            />
-          </svg>
-        );
-      case "triangle":
-        return (
-          <svg width={size} height={size} style={{ flexShrink: 0 }}>
-            <polygon
-              points={`${mid},2 ${size - 1},${size - 2} 1,${size - 2}`}
-              fill={f}
-              stroke={s}
-              strokeWidth={1.5}
-            />
-          </svg>
-        );
-      case "cross":
-        return (
-          <svg width={size} height={size} style={{ flexShrink: 0 }}>
-            <line
-              x1={mid}
-              y1={1}
-              x2={mid}
-              y2={size - 1}
-              stroke={color}
-              strokeWidth={2}
-            />
-            <line
-              x1={1}
-              y1={mid}
-              x2={size - 1}
-              y2={mid}
-              stroke={color}
-              strokeWidth={2}
-            />
-          </svg>
-        );
-      case "line":
-        return (
-          <svg width={size} height={size} style={{ flexShrink: 0 }}>
-            <line
-              x1={0}
-              y1={mid}
-              x2={size}
-              y2={mid}
-              stroke={color}
-              strokeWidth={2.5}
-            />
-          </svg>
-        );
-      case "text":
-        return (
-          <svg width={size} height={size} style={{ flexShrink: 0 }}>
-            <text
-              x={mid}
-              y={mid + 1}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill={color}
-              fontSize={8}
-              fontWeight="600"
-              letterSpacing="1"
-            >
-              AB
-            </text>
-          </svg>
-        );
-      default:
-        return (
-          <span
-            style={{
-              display: "inline-block",
-              width: size,
-              height: size,
-              background: color,
-              flexShrink: 0,
-            }}
-          />
-        );
-    }
-  };
-
   // Use displayedPopout for rendering so content stays visible during fade-out
   const popoutProps = displayedPopout?.item?.properties ?? null;
-  const popoutDate = (() => {
+  const popoutDate = useMemo(() => {
     if (!popoutProps?.dateTime) return { dateStr: "", timeStr: "" };
-    const normalized = popoutProps.dateTime.replace(
-      /^(\d{4}):(\d{2}):(\d{2})/,
-      "$1-$2-$3",
-    );
-    const dt = new Date(normalized);
+    const dt = new Date(normalizeExifDate(popoutProps.dateTime));
     return {
       dateStr: dt.toLocaleDateString("en-US", {
         year: "numeric",
@@ -1701,7 +1597,7 @@ export default function CDTmap() {
         hour12: true,
       }),
     };
-  })();
+  }, [popoutProps]);
 
   return (
     <div className="relative w-full h-full overflow-hidden">
@@ -1913,10 +1809,7 @@ export default function CDTmap() {
               {disambigMenu.photo.properties?.dateTime
                 ? " — " +
                   new Date(
-                    disambigMenu.photo.properties.dateTime.replace(
-                      /^(\d{4}):(\d{2}):(\d{2})/,
-                      "$1-$2-$3",
-                    ),
+                    normalizeExifDate(disambigMenu.photo.properties.dateTime),
                   ).toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
@@ -1929,9 +1822,7 @@ export default function CDTmap() {
               item.data.properties?.dateTime ?? item.data.properties?.DateTime;
             const dateLabel = dt
               ? " — " +
-                new Date(
-                  dt.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3"),
-                ).toLocaleDateString("en-US", {
+                new Date(normalizeExifDate(dt)).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
                 })
