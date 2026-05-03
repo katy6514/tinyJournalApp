@@ -276,7 +276,6 @@ export default function CDTmap() {
     return () => clearTimeout(panTimerRef.current);
   }, [pendingPhotoPopout]); // projection omitted: memoized with [] so never changes
 
-  // When a third-level message cluster is clicked, pan its centroid to the
   // Once the photo is revealed, update the ring and triangle.
   useEffect(() => {
     updateActiveRingRef.current();
@@ -391,7 +390,7 @@ export default function CDTmap() {
       // Match the visual radii used in renderPhotoClusters / zoom handler
       const photoR = 9 / k;
       const symbolR = Math.sqrt(256 / Math.PI) / k; // ≈ 9/k
-      const clusterR = (d) => (9 + Math.log(d.count + 1) * 5) / k;
+      const clusterR = (d) => clusterRadius(d.count, k);
 
       const nodes = [];
 
@@ -790,32 +789,6 @@ export default function CDTmap() {
     }
     updateConnectingTriangleRef.current = updateConnectingTriangle;
 
-    // DEBUG: logs which element fires mouseover and cursor distance from data point center
-    // svg.on("mouseover.debug", function (event) {
-    //   const t = event.target;
-    //   const cls = t.className?.baseVal ?? t.className ?? "";
-    //   const relevant = ["messagePoints", "campPoints", "msgHitArea", "campHitArea", "msgClusterHit", "campClusterHit", "photoHitAreas", "photoClusterHit"];
-    //   if (!relevant.some((c) => cls.includes(c))) return;
-    //   const svgEl = ref.current;
-    //   const svgRect = svgEl.getBoundingClientRect();
-    //   const rsX = svgRect.width / width, rsY = svgRect.height / height;
-    //   const transform = d3.select(t).attr("transform") || "";
-    //   const m = transform.match(/translate\(([^,]+),([^)]+)\)/);
-    //   if (m) {
-    //     const tx = parseFloat(m[1]), ty = parseFloat(m[2]);
-    //     const tr = currentTransformRef.current ?? d3.zoomIdentity;
-    //     const [vpx, vpy] = tr.apply([tx, ty]);
-    //     const centerScreenX = svgRect.left + vpx * rsX;
-    //     const centerScreenY = svgRect.top + vpy * rsY;
-    //     const dx = event.clientX - centerScreenX;
-    //     const dy = event.clientY - centerScreenY;
-    //     const dist = Math.hypot(dx, dy);
-    //     console.log(`[mouseover] el="${cls}" | dist from center: ${dist.toFixed(1)}px | cursor:(${event.clientX},${event.clientY}) center:(${centerScreenX.toFixed(0)},${centerScreenY.toFixed(0)}) | pe-attr:${t.getAttribute("pointer-events")} pe-style:${t.style?.pointerEvents||"(none)"}`);
-    //   } else {
-    //     console.log(`[mouseover] el="${cls}" | no transform | pe-attr:${t.getAttribute("pointer-events")}`);
-    //   }
-    // });
-
     svg.on("click", (event) => {
       if (!event.target.classList.contains("state-clickable")) {
         if (clusterPanelRef.current) {
@@ -925,7 +898,7 @@ export default function CDTmap() {
           .append("path")
           .attr("class", clusterClass)
           .attr("d", (d) => {
-            const r = (9 + Math.log(d.count + 1) * 5) / k;
+            const r = clusterRadius(d.count, k);
             return symbol.size(r * r * 2)();
           })
           .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
@@ -941,7 +914,7 @@ export default function CDTmap() {
           .append("path")
           .attr("class", hitClass)
           .attr("d", (d) => {
-            const r = (9 + Math.log(d.count + 1) * 5) / k;
+            const r = clusterRadius(d.count, k);
             const vSide = r * Math.SQRT2;
             return symbol.size((vSide + hitPad) ** 2)();
           })
@@ -1305,7 +1278,7 @@ export default function CDTmap() {
           .attr("class", "photoCluster")
           .attr("cx", (d) => d.cx)
           .attr("cy", (d) => d.cy)
-          .attr("r", (d) => (9 + Math.log(d.count + 1) * 5) / k)
+          .attr("r", (d) => clusterRadius(d.count, k))
           .attr("fill", colors.photos)
           .attr("stroke", colors.photosDark)
           .attr("stroke-width", 1.5)
@@ -1319,7 +1292,7 @@ export default function CDTmap() {
           .attr("class", "photoClusterHit")
           .attr("cx", (d) => d.cx)
           .attr("cy", (d) => d.cy)
-          .attr("r", (d) => (9 + Math.log(d.count + 1) * 5 + 5 / rs) / k)
+          .attr("r", (d) => clusterRadius(d.count, k) + 5 / (rs * k))
           .attr("fill", "rgba(0,0,0,0.02)")
           .attr("stroke", "none")
           .attr("role", "button")
