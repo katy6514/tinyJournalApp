@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import * as d3 from "d3";
 
 import { width, height, cities, colors } from "./constants";
+import { updatePhotoCaption } from "@/app/lib/actions/photos";
 import { notoSans } from "@/app/ui/fonts";
 
 import {
@@ -201,6 +202,9 @@ export default function CDTmap() {
   // Disambiguation menu: shown when a photo dot overlaps a camp/message point
   const [disambigMenu, setDisambigMenu] = useState(null);
 
+  const [captionDraft, setCaptionDraft] = useState("");
+  const [captionSaved, setCaptionSaved] = useState(false);
+
   // displayedPopout lags behind photoPopout by ~320ms so the panel can fade
   // out before unmounting.
   const [displayedPopout, setDisplayedPopout] = useState(null);
@@ -297,6 +301,12 @@ export default function CDTmap() {
   useEffect(() => {
     updateActiveRingRef.current();
     updateConnectingTriangleRef.current();
+  }, [photoPopout]);
+
+  // Reset caption draft whenever a new photo is selected.
+  useEffect(() => {
+    setCaptionDraft(photoPopout?.item?.properties?.caption ?? "");
+    setCaptionSaved(false);
   }, [photoPopout]);
 
   const projection = useMemo(() => {
@@ -1699,7 +1709,7 @@ export default function CDTmap() {
       {/* Photo panel — overlays the left half, photo at natural proportions */}
       {displayedPopout && (
         <div
-          className={`absolute inset-y-0 left-0 w-1/2 z-10 flex items-center justify-center pl-6 pt-6 pb-6 ${notoSans.className}`}
+          className={`absolute inset-y-0 left-0 w-1/2 z-10 flex flex-col items-center justify-center gap-3 pl-6 pr-2 pt-6 pb-6 ${notoSans.className}`}
           style={{
             animation: photoPopout
               ? "photo-fade-in 0.3s ease-in-out forwards"
@@ -1707,13 +1717,15 @@ export default function CDTmap() {
             pointerEvents: photoPopout ? "auto" : "none",
           }}
         >
+          {/* Photo card */}
           <div
             style={{
               position: "relative",
               maxWidth: "100%",
-              maxHeight: "100%",
+              maxHeight: "calc(100% - 80px)",
               borderRadius: 8,
               overflow: "hidden",
+              flexShrink: 0,
             }}
           >
             <button
@@ -1768,6 +1780,7 @@ export default function CDTmap() {
                 background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
                 padding: "40px 16px 16px",
                 color: "#fff",
+                pointerEvents: "none",
               }}
             >
               <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
@@ -1777,6 +1790,47 @@ export default function CDTmap() {
                 {popoutDate.timeStr}
               </p>
             </div>
+          </div>
+
+          {/* Caption editor */}
+          <div
+            style={{ width: "100%", maxWidth: "100%" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <textarea
+              value={captionDraft}
+              onChange={(e) => {
+                setCaptionDraft(e.target.value);
+                setCaptionSaved(false);
+              }}
+              onBlur={async () => {
+                const photoId = displayedPopout?.item?.properties?.photo_id;
+                if (photoId == null) return;
+                const current = displayedPopout?.item?.properties?.caption ?? "";
+                if (captionDraft === current && !captionSaved) return;
+                await updatePhotoCaption(String(photoId), captionDraft);
+                setCaptionSaved(true);
+              }}
+              placeholder="Add a caption…"
+              rows={2}
+              style={{
+                width: "100%",
+                background: "rgba(255,255,255,0.92)",
+                border: "1px solid rgba(0,0,0,0.15)",
+                borderRadius: 6,
+                fontSize: 13,
+                padding: "8px 10px",
+                resize: "none",
+                outline: "none",
+                color: "#222",
+                boxSizing: "border-box",
+              }}
+            />
+            {captionSaved && (
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.8)", margin: "4px 0 0" }}>
+                Saved
+              </p>
+            )}
           </div>
         </div>
       )}

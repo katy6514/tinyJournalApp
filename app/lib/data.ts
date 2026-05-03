@@ -63,7 +63,7 @@ export async function fetchEntryByID(id: string): Promise<JournalEntry | null> {
               'title', p.title,
               'width', p.width,
               'height', p.height
-            ) ORDER BY p.description
+            ) ORDER BY p.date_time NULLS LAST
           ) FILTER (WHERE p.id IS NOT NULL),
           '[]'
         ) AS photos
@@ -114,7 +114,7 @@ export async function fetchFilteredEntries(
             'title', p.title,
             'width', p.width,
             'height', p.height
-          ) ORDER BY p.description
+          ) ORDER BY p.date_time NULLS LAST
         ) FILTER (WHERE p.id IS NOT NULL),
         '[]'
       ) AS photos,
@@ -152,7 +152,7 @@ export async function fetchPhotosForDateID(date_id: string) {
       FROM photos p
       JOIN dates d ON d.id = p.date_id
       WHERE p.date_id = ${date_id}
-      ORDER BY p.description;
+      ORDER BY p.date_time NULLS LAST;
     `;
   } catch (error) {
     console.error("Database Error (fetchPhotosForDateID):", error);
@@ -189,7 +189,7 @@ export async function fetchPhotos() {
       SELECT 
         p.*
       FROM photos p
-      ORDER BY p.description;
+      ORDER BY p.date_time NULLS LAST;
     `;
 
     return result;

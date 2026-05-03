@@ -151,3 +151,19 @@ export async function uploadPhotos(
 
   return { results };
 }
+
+export async function updatePhotoCaption(
+  photoId: string,
+  caption: string,
+): Promise<void> {
+  const session = await auth();
+  if (!session) throw new Error("Not authenticated");
+
+  await sql`
+    UPDATE photos SET description = ${caption} WHERE id = ${photoId}
+  `;
+
+  revalidateTag("photos");
+  revalidatePath("/journal/photoAlbum");
+  revalidatePath("/journal", "layout");
+}
