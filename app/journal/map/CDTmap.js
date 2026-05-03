@@ -192,8 +192,6 @@ export default function CDTmap() {
   const [pendingPhotoPopout, setPendingPhotoPopout] = useState(null);
   const panTimerRef = useRef(null);
 
-  // Counts how many garmin cluster zooms have fired; resets when clusterPanel closes
-  const msgZoomCountRef = useRef(0);
   // Scale at the last cluster re-render; used to skip re-renders on pure pans
   const lastRenderedScaleRef = useRef(null);
 
@@ -236,7 +234,6 @@ export default function CDTmap() {
   // cluster centroid. When the panel closes, reset to the identity transform.
   useEffect(() => {
     if (!clusterPanel) {
-      msgZoomCountRef.current = 0;
       if (zoomRef.current && ref.current) {
         d3.select(ref.current)
           .transition()
@@ -249,7 +246,6 @@ export default function CDTmap() {
     if (!zoomRef.current || !ref.current) return;
 
     const scale = clusterPanel.scale ?? CLUSTER_ZOOM_PRESETS[0];
-    console.log({ scale });
 
     const xs = clusterPanel.projPoints.map((p) => p[0]);
     const ys = clusterPanel.projPoints.map((p) => p[1]);
@@ -1110,7 +1106,10 @@ export default function CDTmap() {
         tooltipLabel: "messages",
         visKey: "messages",
         onClusterClick: (d) => {
-          if (msgZoomCountRef.current >= 2) {
+          const currentK = currentTransformRef.current?.k ?? 1;
+          const maxPreset =
+            CLUSTER_ZOOM_PRESETS[CLUSTER_ZOOM_PRESETS.length - 1];
+          if (currentK >= maxPreset) {
             const sorted = [...d.points].sort(
               (a, b) =>
                 parseGPSTime(a.properties.GPSTime) -
@@ -1121,7 +1120,7 @@ export default function CDTmap() {
             d3.select(ref.current).interrupt();
             // Pan the cluster into the right-half visible area by writing the
             // new transform directly onto the SVG — bypassing zoom.translateTo
-            // entirely so no zoom "end" event is dispatched and no blink fires.
+            // so no zoom "end" event is dispatched and no blink fires.
             if (ref.current && gRef.current) {
               const svgRect = ref.current.getBoundingClientRect();
               const cRect =
@@ -1129,21 +1128,17 @@ export default function CDTmap() {
               const panelRight = cRect.left + cRect.width / 2;
               if (panelRight < svgRect.right) {
                 const [targetX, targetY] = panTarget(svgRect, panelRight);
-                const k = (currentTransformRef.current ?? d3.zoomIdentity).k;
                 const newT = d3.zoomIdentity
-                  .translate(targetX - k * d.cx, targetY - k * d.cy)
-                  .scale(k);
+                  .translate(targetX - currentK * d.cx, targetY - currentK * d.cy)
+                  .scale(currentK);
                 ref.current.__zoom = newT;
                 gRef.current.attr("transform", newT);
                 currentTransformRef.current = newT;
               }
             }
           } else {
-            msgZoomCountRef.current += 1;
-            const currentK = currentTransformRef.current?.k ?? 1;
             const nextScale =
-              CLUSTER_ZOOM_PRESETS.find((p) => p > currentK) ??
-              CLUSTER_ZOOM_PRESETS[CLUSTER_ZOOM_PRESETS.length - 1];
+              CLUSTER_ZOOM_PRESETS.find((p) => p > currentK) ?? maxPreset;
             setClusterPanel({
               type: "message",
               scale: nextScale,
