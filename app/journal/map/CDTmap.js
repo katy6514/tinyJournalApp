@@ -66,13 +66,28 @@ function LegendSymbol({ shape, fill, stroke, color }) {
     case "circle":
       return (
         <svg width={size} height={size} style={{ flexShrink: 0 }}>
-          <circle cx={mid} cy={mid} r={4.5} fill={f} stroke={s} strokeWidth={1.5} />
+          <circle
+            cx={mid}
+            cy={mid}
+            r={4.5}
+            fill={f}
+            stroke={s}
+            strokeWidth={1.5}
+          />
         </svg>
       );
     case "square":
       return (
         <svg width={size} height={size} style={{ flexShrink: 0 }}>
-          <rect x={2} y={2} width={10} height={10} fill={f} stroke={s} strokeWidth={1.5} />
+          <rect
+            x={2}
+            y={2}
+            width={10}
+            height={10}
+            fill={f}
+            stroke={s}
+            strokeWidth={1.5}
+          />
         </svg>
       );
     case "triangle":
@@ -89,14 +104,35 @@ function LegendSymbol({ shape, fill, stroke, color }) {
     case "cross":
       return (
         <svg width={size} height={size} style={{ flexShrink: 0 }}>
-          <line x1={mid} y1={1} x2={mid} y2={size - 1} stroke={color} strokeWidth={2} />
-          <line x1={1} y1={mid} x2={size - 1} y2={mid} stroke={color} strokeWidth={2} />
+          <line
+            x1={mid}
+            y1={1}
+            x2={mid}
+            y2={size - 1}
+            stroke={color}
+            strokeWidth={2}
+          />
+          <line
+            x1={1}
+            y1={mid}
+            x2={size - 1}
+            y2={mid}
+            stroke={color}
+            strokeWidth={2}
+          />
         </svg>
       );
     case "line":
       return (
         <svg width={size} height={size} style={{ flexShrink: 0 }}>
-          <line x1={0} y1={mid} x2={size} y2={mid} stroke={color} strokeWidth={2.5} />
+          <line
+            x1={0}
+            y1={mid}
+            x2={size}
+            y2={mid}
+            stroke={color}
+            strokeWidth={2.5}
+          />
         </svg>
       );
     default:
@@ -294,7 +330,7 @@ export default function CDTmap() {
     // Shared greedy clustering: groups sites whose screen-space positions are
     // within CLUSTER_RADIUS pixels of each other at the current transform.
     // Returns { solos, groups } where groups carry projection-space centroids.
-    function computeClusters(sites, transform, CLUSTER_RADIUS = 15) {
+    function computeClusters(sites, transform, CLUSTER_RADIUS = 10) {
       const positions = sites.map((p) => {
         const [px, py] = projection(p.geometry.coordinates);
         const [sx, sy] = transform.apply([px, py]);
@@ -650,10 +686,12 @@ export default function CDTmap() {
 
         // Photos — thumbnail size above k=8, small dot below
         g.selectAll(".photoPoints").attr("r", k >= 8 ? 36 / k : 9 / k);
-        g.selectAll(".photoHitAreas").attr("r", k >= 8 ? (36 + 5 / rs) / k : (9 + 5 / rs) / k);
-        g.selectAll(".photoCluster").attr(
+        g.selectAll(".photoHitAreas").attr(
           "r",
-          (d) => clusterRadius(d.count, k),
+          k >= 8 ? (36 + 5 / rs) / k : (9 + 5 / rs) / k,
+        );
+        g.selectAll(".photoCluster").attr("r", (d) =>
+          clusterRadius(d.count, k),
         );
         g.selectAll(".photoClusterHit").attr(
           "r",
@@ -687,7 +725,6 @@ export default function CDTmap() {
 
         // Keep active ring scaled to constant visual size
         g.selectAll(".activeRing").attr("r", k >= 8 ? 44 / k : 13 / k);
-
 
         updateConnectingTriangleRef.current();
       })
@@ -847,9 +884,14 @@ export default function CDTmap() {
       return function (transform) {
         const k = transform.k;
         const allClasses = [
-          `.${soloClass}`, soloHitClass ? `.${soloHitClass}` : null,
-          `.${clusterClass}`, `.${hitClass}`, `.${labelClass}`,
-        ].filter(Boolean).join(", ");
+          `.${soloClass}`,
+          soloHitClass ? `.${soloHitClass}` : null,
+          `.${clusterClass}`,
+          `.${hitClass}`,
+          `.${labelClass}`,
+        ]
+          .filter(Boolean)
+          .join(", ");
         g.selectAll(allClasses).remove();
 
         const { solos, groups } = computeClusters(sites, transform);
@@ -859,7 +901,7 @@ export default function CDTmap() {
         // Divide by rs so the padding stays ~5px regardless of how wide the SVG
         // is rendered (large monitors have renderScale > 1).
         const hitPad = 10 / (k * rs);
-        const hitSize = ((Math.sqrt(newSize) + hitPad) ** 2);
+        const hitSize = (Math.sqrt(newSize) + hitPad) ** 2;
 
         g.selectAll(`.${soloClass}`)
           .data(solos)
@@ -879,9 +921,14 @@ export default function CDTmap() {
           .style("pointer-events", soloHitClass ? "none" : null)
           .attr("aria-describedby", soloHitClass ? null : "tooltip")
           .style("cursor", soloHitClass ? null : "default")
-          .on("mouseover", soloHitClass ? null : function (event, d) {
-            handleMouseOver(currentUserRef.current)(event, d);
-          })
+          .on(
+            "mouseover",
+            soloHitClass
+              ? null
+              : function (event, d) {
+                  handleMouseOver(currentUserRef.current)(event, d);
+                },
+          )
           .on("mousemove", soloHitClass ? null : handleMouseMove)
           .on("mouseout", soloHitClass ? null : handleMouseOut);
 
@@ -1108,8 +1155,9 @@ export default function CDTmap() {
           } else {
             msgZoomCountRef.current += 1;
             const currentK = currentTransformRef.current?.k ?? 1;
-            const nextScale = CLUSTER_ZOOM_PRESETS.find((p) => p > currentK)
-              ?? CLUSTER_ZOOM_PRESETS[CLUSTER_ZOOM_PRESETS.length - 1];
+            const nextScale =
+              CLUSTER_ZOOM_PRESETS.find((p) => p > currentK) ??
+              CLUSTER_ZOOM_PRESETS[CLUSTER_ZOOM_PRESETS.length - 1];
             setClusterPanel({
               type: "message",
               scale: nextScale,
@@ -1236,11 +1284,14 @@ export default function CDTmap() {
           .attr("aria-label", (d) => {
             const dt = d.properties?.dateTime;
             if (!dt) return "View photo";
-            const dateStr = new Date(normalizeExifDate(dt)).toLocaleDateString("en-US", {
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            });
+            const dateStr = new Date(normalizeExifDate(dt)).toLocaleDateString(
+              "en-US",
+              {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              },
+            );
             return `View photo from ${dateStr}`;
           })
           .attr("aria-describedby", "tooltip")
@@ -1382,31 +1433,57 @@ export default function CDTmap() {
 
         const addPathCopy = (el, stroke) => {
           const s = d3.select(el);
-          g.append("path").attr("class", "debugHit")
+          g.append("path")
+            .attr("class", "debugHit")
             .attr("d", s.attr("d"))
             .attr("transform", s.attr("transform"))
-            .attr("fill", "none").attr("stroke", stroke).attr("stroke-width", 2)
-            .attr("pointer-events", "none").attr("vector-effect", "non-scaling-stroke");
+            .attr("fill", "none")
+            .attr("stroke", stroke)
+            .attr("stroke-width", 2)
+            .attr("pointer-events", "none")
+            .attr("vector-effect", "non-scaling-stroke");
         };
 
         const addCircleCopy = (el, stroke) => {
           const s = d3.select(el);
-          g.append("circle").attr("class", "debugHit")
-            .attr("cx", s.attr("cx")).attr("cy", s.attr("cy")).attr("r", s.attr("r"))
-            .attr("fill", "none").attr("stroke", stroke).attr("stroke-width", 2)
-            .attr("pointer-events", "none").attr("vector-effect", "non-scaling-stroke");
+          g.append("circle")
+            .attr("class", "debugHit")
+            .attr("cx", s.attr("cx"))
+            .attr("cy", s.attr("cy"))
+            .attr("r", s.attr("r"))
+            .attr("fill", "none")
+            .attr("stroke", stroke)
+            .attr("stroke-width", 2)
+            .attr("pointer-events", "none")
+            .attr("vector-effect", "non-scaling-stroke");
         };
 
-        g.selectAll(".photoHitAreas").each(function ()   { addCircleCopy(this, "blue"); });
-        g.selectAll(".photoClusterHit").each(function () { addCircleCopy(this, "cyan"); });
+        g.selectAll(".photoHitAreas").each(function () {
+          addCircleCopy(this, "blue");
+        });
+        g.selectAll(".photoClusterHit").each(function () {
+          addCircleCopy(this, "cyan");
+        });
         // White outlines over colored fills so the boundary is clearly visible
-        g.selectAll(".msgHitArea").each(function ()      { addPathCopy(this, "white"); });
-        g.selectAll(".msgClusterHit").each(function ()   { addPathCopy(this, "orange"); });
-        g.selectAll(".campHitArea").each(function ()     { addPathCopy(this, "white"); });
-        g.selectAll(".campClusterHit").each(function ()  { addPathCopy(this, "limegreen"); });
+        g.selectAll(".msgHitArea").each(function () {
+          addPathCopy(this, "white");
+        });
+        g.selectAll(".msgClusterHit").each(function () {
+          addPathCopy(this, "orange");
+        });
+        g.selectAll(".campHitArea").each(function () {
+          addPathCopy(this, "white");
+        });
+        g.selectAll(".campClusterHit").each(function () {
+          addPathCopy(this, "limegreen");
+        });
         // Purple = visual element boundary (should be inside the red/green filled hit area)
-        g.selectAll(".messagePoints").each(function ()   { addPathCopy(this, "purple"); });
-        g.selectAll(".campPoints").each(function ()      { addPathCopy(this, "purple"); });
+        g.selectAll(".messagePoints").each(function () {
+          addPathCopy(this, "purple");
+        });
+        g.selectAll(".campPoints").each(function () {
+          addPathCopy(this, "purple");
+        });
 
         g.selectAll(".debugHit").raise();
       };
