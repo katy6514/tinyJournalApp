@@ -1310,6 +1310,7 @@ export default function CDTmap() {
           .on("keydown", function (event, d) {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
+              setMessagePanel(null);
               setPhotoPopout(null);
               setPendingPhotoPopout({ item: d });
             }
@@ -1347,6 +1348,7 @@ export default function CDTmap() {
                 others,
               });
             } else {
+              setMessagePanel(null);
               setPhotoPopout(null);
               setPendingPhotoPopout({ item: d });
             }
@@ -1716,8 +1718,13 @@ export default function CDTmap() {
               : "photo-fade-out 0.3s ease-in-out forwards",
             pointerEvents: photoPopout ? "auto" : "none",
           }}
+          onClick={() => {
+            clearTimeout(panTimerRef.current);
+            setPendingPhotoPopout(null);
+            setPhotoPopout(null);
+          }}
         >
-          {/* Photo card */}
+          {/* Photo card — stopPropagation so clicks on the photo don't close the panel */}
           <div
             style={{
               position: "relative",
@@ -1727,6 +1734,7 @@ export default function CDTmap() {
               overflow: "hidden",
               flexShrink: 0,
             }}
+            onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={(e) => {
@@ -1940,6 +1948,7 @@ export default function CDTmap() {
           <button
             className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
             onClick={() => {
+              setMessagePanel(null);
               setPhotoPopout(null);
               setPendingPhotoPopout({ item: disambigMenu.photo });
               setDisambigMenu(null);
