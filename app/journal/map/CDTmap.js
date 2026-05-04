@@ -254,12 +254,25 @@ export default function CDTmap() {
     }
     if (!zoomRef.current || !ref.current) return;
 
-    const scale = clusterPanel.scale ?? CLUSTER_ZOOM_PRESETS[0];
+    const presetScale = clusterPanel.scale ?? CLUSTER_ZOOM_PRESETS[0];
 
     const xs = clusterPanel.projPoints.map((p) => p[0]);
     const ys = clusterPanel.projPoints.map((p) => p[1]);
-    const cx = xs.reduce((s, x) => s + x, 0) / xs.length;
-    const cy = ys.reduce((s, y) => s + y, 0) / ys.length;
+    const x0 = Math.min(...xs), x1 = Math.max(...xs);
+    const y0 = Math.min(...ys), y1 = Math.max(...ys);
+
+    // Center on bounding box midpoint (better than mean for asymmetric clusters)
+    const cx = (x0 + x1) / 2;
+    const cy = (y0 + y1) / 2;
+
+    // Zoom to fit all members with padding, capped at the preset so tight
+    // clusters don't over-zoom and spread ones don't leave empty space.
+    const pad = 80;
+    const fitScale = Math.min(
+      (width - pad * 2) / Math.max(x1 - x0, 1),
+      (height - pad * 2) / Math.max(y1 - y0, 1),
+    );
+    const scale = Math.min(presetScale, Math.max(fitScale, 8));
 
     const tx = width / 2 - scale * cx;
     const ty = height / 2 - scale * cy;
