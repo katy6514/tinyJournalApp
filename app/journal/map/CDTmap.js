@@ -228,7 +228,7 @@ export default function CDTmap() {
     const g = gRef.current;
     if (!g) return;
     g.selectAll(
-      ".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel",
+      ".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel, .photoThumbGroup",
     ).attr("display", visibility.photos ? null : "none");
     g.selectAll(
       ".campPoints, .campCluster, .campClusterHit, .campClusterLabel",
@@ -424,14 +424,14 @@ export default function CDTmap() {
       if (k < 4) return;
 
       // Match the visual radii used in renderPhotoClusters / zoom handler
-      const photoR = 9 / k;
+      const photoR = 18 / k;
       const symbolR = Math.sqrt(256 / Math.PI) / k; // ≈ 9/k
       const clusterR = (d) => clusterRadius(d.count, k);
 
       const nodes = [];
 
-      // Movable solo points
-      g.selectAll(".photoPoints").each(function (d) {
+      // Movable solo points (plain circles + thumbnail groups)
+      g.selectAll(".photoPoints, .photoThumbGroup").each(function (d) {
         const [px, py] = projection(d.geometry.coordinates);
         nodes.push({
           type: "photo",
@@ -600,6 +600,9 @@ export default function CDTmap() {
             .filter((d) => d === data)
             .attr("cx", x)
             .attr("cy", y);
+          g.selectAll(".photoThumbGroup")
+            .filter((d) => d === data)
+            .attr("transform", `translate(${x}, ${y})`);
         } else if (type === "photo-cluster") {
           g.selectAll(".photoCluster, .photoClusterHit")
             .filter((d) => d === data)
@@ -755,8 +758,19 @@ export default function CDTmap() {
           .attr("stroke-width", 1.5 / k);
 
         // Photos
-        g.selectAll(".photoPoints").attr("r", 9 / k);
-        g.selectAll(".photoHitAreas").attr("r", (9 + 5 / rs) / k);
+        const photoR = 18 / k;
+        g.selectAll(".photoPoints").attr("r", photoR);
+        g.selectAll(".photoHitAreas").attr("r", (18 + 5 / rs) / k);
+        g.selectAll(".photoThumbGroup").each(function () {
+          const el = d3.select(this);
+          el.select("clipPath circle").attr("r", photoR);
+          el.select("image")
+            .attr("x", -photoR)
+            .attr("y", -photoR)
+            .attr("width", photoR * 2)
+            .attr("height", photoR * 2);
+          el.select(".photoThumbBorder").attr("r", photoR);
+        });
         g.selectAll(".photoCluster").attr("r", (d) =>
           clusterRadius(d.count, k),
         );
@@ -808,6 +822,7 @@ export default function CDTmap() {
         renderPhotoClusters(t);
         renderMessageClusters(t);
         renderCampClusters(t);
+        g.selectAll(".photoThumbGroup").raise();
         g.selectAll(
           ".photoHitAreas, .photoClusterHit, .msgClusterHit, .campClusterHit",
         ).raise();
@@ -1264,24 +1279,75 @@ export default function CDTmap() {
         const rs = ref.current?.getBoundingClientRect().width / width || 1;
 
         g.selectAll(
-          ".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel",
+          ".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel, .photoThumbGroup",
         ).remove();
 
         const { solos, groups } = computeClusters(validPhotoPoints, transform);
+        const photoR = 18 / k;
 
+        // Split solos: visible ones get thumbnail images; off-screen ones get plain circles.
+        const visibleSolos = [];
+        const hiddenSolos = [];
+        for (const d of solos) {
+          const [px, py] = projection(d.geometry.coordinates);
+          const [sx, sy] = transform.apply([px, py]);
+          if (sx >= 0 && sx <= width && sy >= 0 && sy <= height) {
+            visibleSolos.push(d);
+          } else {
+            hiddenSolos.push(d);
+          }
+        }
+
+        // Hidden solos — plain colored circles, no image load
         g.selectAll(".photoPoints")
-          .data(solos)
+          .data(hiddenSolos)
           .enter()
           .append("circle")
           .attr("class", "photoPoints")
           .attr("cx", (d) => projection(d.geometry.coordinates)[0])
           .attr("cy", (d) => projection(d.geometry.coordinates)[1])
-          .attr("r", 9 / k)
+          .attr("r", photoR)
           .attr("fill", colors.photos)
           .attr("stroke", colors.photosDark)
           .attr("stroke-width", 1.5)
           .attr("vector-effect", "non-scaling-stroke")
           .attr("pointer-events", "none");
+
+        // Visible solos — thumbnail image clipped to a circle
+        visibleSolos.forEach((d) => {
+          const [px, py] = projection(d.geometry.coordinates);
+          const clipId = `photo-clip-${d.properties.photo_id}`;
+          const thumbUrl = `/_next/image?url=${encodeURIComponent(d.properties.path)}&w=96&q=60`;
+
+          const grp = g.append("g")
+            .attr("class", "photoThumbGroup")
+            .datum(d)
+            .attr("transform", `translate(${px}, ${py})`);
+
+          grp.append("clipPath")
+            .attr("id", clipId)
+            .append("circle")
+            .attr("r", photoR);
+
+          grp.append("image")
+            .attr("href", thumbUrl)
+            .attr("x", -photoR)
+            .attr("y", -photoR)
+            .attr("width", photoR * 2)
+            .attr("height", photoR * 2)
+            .attr("clip-path", `url(#${clipId})`)
+            .attr("preserveAspectRatio", "xMidYMid slice")
+            .attr("pointer-events", "none");
+
+          grp.append("circle")
+            .attr("class", "photoThumbBorder")
+            .attr("r", photoR)
+            .attr("fill", "none")
+            .attr("stroke", colors.photosDark)
+            .attr("stroke-width", 1.5)
+            .attr("vector-effect", "non-scaling-stroke")
+            .attr("pointer-events", "none");
+        });
 
         g.selectAll(".photoHitAreas")
           .data(solos)
@@ -1290,7 +1356,7 @@ export default function CDTmap() {
           .attr("class", "photoHitAreas")
           .attr("cx", (d) => projection(d.geometry.coordinates)[0])
           .attr("cy", (d) => projection(d.geometry.coordinates)[1])
-          .attr("r", (9 + 5 / rs) / k)
+          .attr("r", (18 + 5 / rs) / k)
           .attr("fill", "rgba(0,0,0,0.02)")
           .attr("stroke", "none")
           .attr("role", "button")
@@ -1438,7 +1504,7 @@ export default function CDTmap() {
         // Honour current visibility toggle
         if (!visibilityRef.current.photos) {
           g.selectAll(
-            ".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel",
+            ".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel, .photoThumbGroup",
           ).attr("display", "none");
         }
       };
@@ -1447,6 +1513,7 @@ export default function CDTmap() {
       renderPhotoClusters(currentTransformRef.current ?? d3.zoomIdentity);
       renderMessageClusters(currentTransformRef.current ?? d3.zoomIdentity);
       renderCampClusters(currentTransformRef.current ?? d3.zoomIdentity);
+      g.selectAll(".photoThumbGroup").raise();
       g.selectAll(
         ".photoHitAreas, .photoClusterHit, .msgClusterHit, .campClusterHit",
       ).raise();
