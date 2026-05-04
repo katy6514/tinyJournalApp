@@ -256,8 +256,10 @@ export default function CDTmap() {
 
     const xs = clusterPanel.projPoints.map((p) => p[0]);
     const ys = clusterPanel.projPoints.map((p) => p[1]);
-    const x0 = Math.min(...xs), x1 = Math.max(...xs);
-    const y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const x0 = Math.min(...xs),
+      x1 = Math.max(...xs);
+    const y0 = Math.min(...ys),
+      y1 = Math.max(...ys);
 
     // Center on bounding box midpoint (better than mean for asymmetric clusters)
     const cx = (x0 + x1) / 2;
@@ -302,10 +304,13 @@ export default function CDTmap() {
     updateConnectingTriangleRef.current();
   }, [photoPopout]);
 
-  // Reset caption draft whenever a new photo is selected.
+  const [captionModalOpen, setCaptionModalOpen] = useState(false);
+
+  // Reset caption draft and close modal whenever a new photo is selected.
   useEffect(() => {
     setCaptionDraft(photoPopout?.item?.properties?.caption ?? "");
     setCaptionSaved(false);
+    setCaptionModalOpen(false);
   }, [photoPopout]);
 
   const projection = useMemo(() => {
@@ -337,8 +342,10 @@ export default function CDTmap() {
     const thinCrossType = {
       draw(context, size) {
         const r = Math.sqrt(size) / 2;
-        context.moveTo(0, -r); context.lineTo(0, r);
-        context.moveTo(-r, 0); context.lineTo(r, 0);
+        context.moveTo(0, -r);
+        context.lineTo(0, r);
+        context.moveTo(-r, 0);
+        context.lineTo(r, 0);
       },
     };
     const cross = d3.symbol().type(thinCrossType).size(169);
@@ -693,8 +700,14 @@ export default function CDTmap() {
           const angle = +el.attr("data-angle");
 
           // State bounding box in screen space
-          const [sbx0, sby0] = t.apply([+el.attr("data-bx0"), +el.attr("data-by0")]);
-          const [sbx1, sby1] = t.apply([+el.attr("data-bx1"), +el.attr("data-by1")]);
+          const [sbx0, sby0] = t.apply([
+            +el.attr("data-bx0"),
+            +el.attr("data-by0"),
+          ]);
+          const [sbx1, sby1] = t.apply([
+            +el.attr("data-bx1"),
+            +el.attr("data-by1"),
+          ]);
 
           // Intersect state bounds with viewport
           const visL = Math.max(0, sbx0);
@@ -715,7 +728,10 @@ export default function CDTmap() {
           const geoPt = projection.invert(t.invert([sx, sy]));
           if (!geoPt || !d3.geoContains(feature, geoPt)) {
             // Clamp geographic centroid to the visible slice instead
-            let [gcsx, gcsy] = t.apply([+el.attr("data-gcx"), +el.attr("data-gcy")]);
+            let [gcsx, gcsy] = t.apply([
+              +el.attr("data-gcx"),
+              +el.attr("data-gcy"),
+            ]);
             sx = Math.max(visL, Math.min(visR, gcsx));
             sy = Math.max(visT, Math.min(visB, gcsy));
           }
@@ -1186,7 +1202,10 @@ export default function CDTmap() {
               if (panelRight < svgRect.right) {
                 const [targetX, targetY] = panTarget(svgRect, panelRight);
                 const newT = d3.zoomIdentity
-                  .translate(targetX - currentK * d.cx, targetY - currentK * d.cy)
+                  .translate(
+                    targetX - currentK * d.cx,
+                    targetY - currentK * d.cy,
+                  )
                   .scale(currentK);
                 ref.current.__zoom = newT;
                 gRef.current.attr("transform", newT);
@@ -1595,7 +1614,11 @@ export default function CDTmap() {
   ];
 
   const STATIC_LAYERS = [
-    { label: "Resupply Stops", color: isDark ? "#ffffff" : colors.black, shape: "cross" },
+    {
+      label: "Resupply Stops",
+      color: isDark ? "#ffffff" : colors.black,
+      shape: "cross",
+    },
     { label: "Trail", color: colors.evenDays, shape: "line" },
   ];
 
@@ -1708,7 +1731,7 @@ export default function CDTmap() {
                 height: "auto",
               }}
             />
-            {/* Date / time gradient overlay at the bottom edge of the photo */}
+            {/* Date / time + caption preview overlay at the bottom edge of the photo */}
             <div
               style={{
                 position: "absolute",
@@ -1716,7 +1739,7 @@ export default function CDTmap() {
                 left: 0,
                 right: 0,
                 background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
-                padding: "40px 16px 16px",
+                padding: "40px 16px 12px",
                 color: "#fff",
                 pointerEvents: "none",
               }}
@@ -1727,20 +1750,89 @@ export default function CDTmap() {
               <p style={{ margin: "4px 0 0", fontSize: 12, opacity: 0.85 }}>
                 {popoutDate.timeStr}
               </p>
+              {/* Caption preview — clickable, opens edit modal */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCaptionModalOpen(true);
+                }}
+                style={{
+                  pointerEvents: "auto",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                  marginTop: 6,
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  width: "100%",
+                  textAlign: "left",
+                }}
+              >
+                <span
+                  style={{
+                    color: "#fff",
+                    fontSize: 11,
+                    opacity: 0.75,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    flex: 1,
+                    fontStyle: captionDraft ? "normal" : "italic",
+                  }}
+                >
+                  {captionDraft
+                    ? captionDraft.split("\n")[0]
+                    : "Add a caption…"}
+                </span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width={11}
+                  height={11}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.75)"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ flexShrink: 0 }}
+                >
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Caption editor — absolutely positioned so it doesn't affect photo sizing */}
+      {/* Caption edit modal */}
+      {captionModalOpen && displayedPopout && (
+        <dialog
+          className={`modal modal-open ${notoSans.className}`}
+          style={{
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+            background: "rgba(107,114,128,0.25)",
+          }}
+          onClick={() => setCaptionModalOpen(false)}
+        >
           <div
+            className="modal-box"
             style={{
-              position: "absolute",
-              bottom: 24,
-              left: 24,
-              right: 8,
+              marginBottom: "8vh",
+              width: "60vw",
+              maxWidth: "60vw",
+              padding: "20px 24px 16px",
             }}
             onClick={(e) => e.stopPropagation()}
           >
+            <p className="font-semibold text-sm">{popoutDate.dateStr}</p>
+            <p className="text-xs text-gray-400 mb-3">{popoutDate.timeStr}</p>
             <textarea
+              autoFocus
               value={captionDraft}
               onChange={(e) => {
                 setCaptionDraft(e.target.value);
@@ -1756,33 +1848,22 @@ export default function CDTmap() {
                 setCaptionSaved(true);
               }}
               placeholder="Add a caption…"
-              rows={2}
-              style={{
-                width: "100%",
-                background: "rgba(255,255,255,0.92)",
-                border: "1px solid rgba(0,0,0,0.15)",
-                borderRadius: 6,
-                fontSize: 13,
-                padding: "8px 10px",
-                resize: "none",
-                outline: "none",
-                color: "#222",
-                boxSizing: "border-box",
-              }}
+              rows={3}
+              className="textarea textarea-bordered w-full text-sm"
             />
-            {captionSaved && (
-              <p
-                style={{
-                  fontSize: 11,
-                  color: "rgba(255,255,255,0.8)",
-                  margin: "4px 0 0",
-                }}
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-xs text-success">
+                {captionSaved ? "Saved" : ""}
+              </span>
+              <button
+                className="btn btn-sm btn-ghost"
+                onClick={() => setCaptionModalOpen(false)}
               >
-                Saved
-              </p>
-            )}
+                Done
+              </button>
+            </div>
           </div>
-        </div>
+        </dialog>
       )}
 
       {/* Message panel — lists InReach messages in a cluster */}
