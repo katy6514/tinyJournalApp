@@ -198,6 +198,7 @@ export default function CDTmap() {
 
   const [captionDraft, setCaptionDraft] = useState("");
   const [captionSaved, setCaptionSaved] = useState(false);
+  const lastSavedCaptionRef = useRef("");
 
   const [isDark, setIsDark] = useState(false);
   useEffect(() => {
@@ -308,7 +309,9 @@ export default function CDTmap() {
 
   // Reset caption draft and close modal whenever a new photo is selected.
   useEffect(() => {
-    setCaptionDraft(photoPopout?.item?.properties?.caption ?? "");
+    const val = photoPopout?.item?.properties?.caption ?? "";
+    setCaptionDraft(val);
+    lastSavedCaptionRef.current = val;
     setCaptionSaved(false);
     setCaptionModalOpen(false);
   }, [photoPopout]);
@@ -374,7 +377,7 @@ export default function CDTmap() {
             if (assigned.has(j)) continue;
             const dx = positions[j].sx - positions[curr].sx;
             const dy = positions[j].sy - positions[curr].sy;
-            if (Math.sqrt(dx * dx + dy * dy) <= CLUSTER_RADIUS) {
+            if (Math.hypot(dx, dy) <= CLUSTER_RADIUS) {
               members.push(j);
               assigned.add(j);
             }
@@ -555,7 +558,7 @@ export default function CDTmap() {
           .force("x", d3.forceX(cx).strength(0.2))
           .force("y", d3.forceY(cy).strength(0.2))
           .stop()
-          .tick(150);
+          .tick(80);
       });
 
       nodes.forEach(({ type, data, x, y, ox, oy }) => {
@@ -765,25 +768,25 @@ export default function CDTmap() {
 
         // Messages
         g.selectAll(".messagePoints").attr("d", square.size(symbolSize));
-        g.selectAll(".msgCluster").attr("d", (d) => {
+        g.selectAll(".msgCluster, .msgClusterHit").each(function (d) {
           const r = clusterRadius(d.count, k);
-          return square.size(r * r * 2)();
-        });
-        g.selectAll(".msgClusterHit").attr("d", (d) => {
-          const r = clusterRadius(d.count, k);
-          return square.size((r * Math.SQRT2 + hitPad) ** 2)();
+          d3.select(this).attr("d",
+            this.classList.contains("msgCluster")
+              ? square.size(r * r * 2)()
+              : square.size((r * Math.SQRT2 + hitPad) ** 2)()
+          );
         });
         g.selectAll(".msgClusterLabel").attr("font-size", 11 / k);
 
         // Campsites
         g.selectAll(".campPoints").attr("d", triangle.size(symbolSize));
-        g.selectAll(".campCluster").attr("d", (d) => {
+        g.selectAll(".campCluster, .campClusterHit").each(function (d) {
           const r = clusterRadius(d.count, k);
-          return triangle.size(r * r * 2)();
-        });
-        g.selectAll(".campClusterHit").attr("d", (d) => {
-          const r = clusterRadius(d.count, k);
-          return triangle.size((r * Math.SQRT2 + hitPad) ** 2)();
+          d3.select(this).attr("d",
+            this.classList.contains("campCluster")
+              ? triangle.size(r * r * 2)()
+              : triangle.size((r * Math.SQRT2 + hitPad) ** 2)()
+          );
         });
         g.selectAll(".campClusterLabel").attr("font-size", 11 / k);
 
@@ -1535,16 +1538,16 @@ export default function CDTmap() {
 
       cityLabelsGroup
         .selectAll("text")
-        .data(cities)
+        .data(cities.map((d) => ({ ...d, pos: projection([d.lon, d.lat]) })))
         .enter()
         .append("text")
         .attr("class", "city_labels")
         .attr("display", "none")
-        .attr("data-dot-x", (d) => projection([d.lon, d.lat])[0])
-        .attr("data-dot-y", (d) => projection([d.lon, d.lat])[1])
+        .attr("data-dot-x", (d) => d.pos[0])
+        .attr("data-dot-y", (d) => d.pos[1])
         .attr("data-side", (d) => (d.dx > 0 ? 1 : -1))
-        .attr("x", (d) => projection([d.lon, d.lat])[0])
-        .attr("y", (d) => projection([d.lon, d.lat])[1])
+        .attr("x", (d) => d.pos[0])
+        .attr("y", (d) => d.pos[1])
         .text((d) => d.name)
         .attr("font-size", 12)
         .attr("font-weight", "600")
@@ -1841,10 +1844,9 @@ export default function CDTmap() {
               onBlur={async () => {
                 const photoId = displayedPopout?.item?.properties?.photo_id;
                 if (photoId == null) return;
-                const current =
-                  displayedPopout?.item?.properties?.caption ?? "";
-                if (captionDraft === current && !captionSaved) return;
+                if (captionDraft === lastSavedCaptionRef.current) return;
                 await updatePhotoCaption(String(photoId), captionDraft);
+                lastSavedCaptionRef.current = captionDraft;
                 setCaptionSaved(true);
               }}
               placeholder="Add a caption…"
