@@ -335,7 +335,7 @@ export default function CDTmap() {
     // Shared greedy clustering: groups sites whose screen-space positions are
     // within CLUSTER_RADIUS pixels of each other at the current transform.
     // Returns { solos, groups } where groups carry projection-space centroids.
-    function computeClusters(sites, transform, CLUSTER_RADIUS = 10) {
+    function computeClusters(sites, transform, CLUSTER_RADIUS = 20) {
       const positions = sites.map((p) => {
         const [px, py] = projection(p.geometry.coordinates);
         const [sx, sy] = transform.apply([px, py]);
@@ -401,7 +401,7 @@ export default function CDTmap() {
       const k = transform.k;
       leaderLinesGroup.selectAll("*").remove();
       displacedPositions.clear();
-      if (k < 2) return;
+      if (k < 4) return;
 
       // Match the visual radii used in renderPhotoClusters / zoom handler
       const photoR = 9 / k;
