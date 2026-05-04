@@ -673,12 +673,46 @@ export default function CDTmap() {
         const rs = ref.current?.getBoundingClientRect().width / width || 1;
         const hitPad = 10 / (k * rs); // g-space units → 5 screen px per side
 
+        // State lines — keep visually constant thickness
+        g.selectAll(".state").attr("stroke-width", 1 / k);
+
+        // State labels — center within visible portion of state (state bounds ∩ viewport)
+        g.selectAll(".state-label").each(function () {
+          const el = d3.select(this);
+          const angle = +el.attr("data-angle");
+
+          // State bounding box in screen space
+          const [sbx0, sby0] = t.apply([+el.attr("data-bx0"), +el.attr("data-by0")]);
+          const [sbx1, sby1] = t.apply([+el.attr("data-bx1"), +el.attr("data-by1")]);
+
+          // Intersect state bounds with viewport
+          const visL = Math.max(0, sbx0);
+          const visR = Math.min(width, sbx1);
+          const visT = Math.max(0, sby0);
+          const visB = Math.min(height, sby1);
+
+          // Hide label if state is entirely off-screen
+          if (visL >= visR || visT >= visB) {
+            el.attr("display", "none");
+            return;
+          }
+
+          // Center of the visible slice → convert back to user space
+          const [px, py] = t.invert([(visL + visR) / 2, (visT + visB) / 2]);
+
+          el.attr("display", null)
+            .attr("x", px)
+            .attr("y", py)
+            .attr("font-size", 20 / k)
+            .attr("letter-spacing", 3 / k)
+            .attr("transform", `rotate(${angle}, ${px}, ${py})`);
+        });
+
         // City crosses
         const citySymbolSize = 169 / (k * k);
         g.selectAll(".cityPoints")
           .attr("d", cross.size(citySymbolSize))
           .attr("stroke-width", 1.5 / k);
-        g.selectAll(".state-label").attr("font-size", 20 / k);
 
         // Photos
         g.selectAll(".photoPoints").attr("r", 9 / k);
@@ -1000,7 +1034,7 @@ export default function CDTmap() {
         .attr("class", "state state-clickable")
         .attr("fill", "transparent")
         .attr("stroke", "gray")
-        .attr("stroke-width", "1px")
+        .attr("stroke-width", 1)
         .attr("d", path)
         .on("click", function (event, d) {
           event.stopPropagation();
@@ -1047,10 +1081,19 @@ export default function CDTmap() {
           angle = (Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180) / Math.PI;
         }
 
+        const [[bx0, by0], [bx1, by1]] = path.bounds(d);
+
         g.append("text")
           .attr("class", "state-label")
           .attr("x", pos[0])
           .attr("y", pos[1])
+          .attr("data-cx", pos[0])
+          .attr("data-cy", pos[1])
+          .attr("data-angle", angle)
+          .attr("data-bx0", bx0)
+          .attr("data-by0", by0)
+          .attr("data-bx1", bx1)
+          .attr("data-by1", by1)
           .attr("text-anchor", "middle")
           .attr("dominant-baseline", "middle")
           .attr("transform", `rotate(${angle}, ${pos[0]}, ${pos[1]})`)
@@ -1058,7 +1101,7 @@ export default function CDTmap() {
           .attr("stroke", "none")
           .attr("font-size", 20)
           .attr("font-weight", "400")
-          .attr("letter-spacing", "3px")
+          .attr("letter-spacing", 3)
           .attr("pointer-events", "none")
           .text(d.properties.name.toUpperCase());
       });
