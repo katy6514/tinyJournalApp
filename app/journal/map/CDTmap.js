@@ -201,6 +201,15 @@ export default function CDTmap() {
   const [captionDraft, setCaptionDraft] = useState("");
   const [captionSaved, setCaptionSaved] = useState(false);
 
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    setIsDark(mq.matches);
+    const handler = (e) => setIsDark(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
   // displayedPopout lags behind photoPopout by ~320ms so the panel can fade
   // out before unmounting.
   const [displayedPopout, setDisplayedPopout] = useState(null);
@@ -314,7 +323,14 @@ export default function CDTmap() {
 
     const square = d3.symbol().type(d3.symbolSquare).size(256);
     const triangle = d3.symbol().type(d3.symbolTriangle).size(256);
-    const cross = d3.symbol().type(d3.symbolCross).size(256);
+    const thinCrossType = {
+      draw(context, size) {
+        const r = Math.sqrt(size) / 2;
+        context.moveTo(0, -r); context.lineTo(0, r);
+        context.moveTo(-r, 0); context.lineTo(r, 0);
+      },
+    };
+    const cross = d3.symbol().type(thinCrossType).size(169);
 
     // Shared greedy clustering: groups sites whose screen-space positions are
     // within CLUSTER_RADIUS pixels of each other at the current transform.
@@ -658,7 +674,10 @@ export default function CDTmap() {
         const hitPad = 10 / (k * rs); // g-space units → 5 screen px per side
 
         // City crosses
-        g.selectAll(".cityPoints").attr("d", cross.size(symbolSize));
+        const citySymbolSize = 169 / (k * k);
+        g.selectAll(".cityPoints")
+          .attr("d", cross.size(citySymbolSize))
+          .attr("stroke-width", 1.5 / k);
         g.selectAll(".state-label").attr("font-size", 20 / k);
 
         // Photos
@@ -1534,9 +1553,20 @@ export default function CDTmap() {
         const [x, y] = projection([d.lon, d.lat]);
         return `translate(${x}, ${y})`;
       })
-      .attr("fill", colors.black)
-      .attr("stroke", "none");
+      .attr("fill", "none")
+      .attr("stroke", colors.black)
+      .attr("stroke-width", 1.5)
+      .attr("stroke-linecap", "round");
   }, [path, projection]);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const svg = d3.select(ref.current);
+    const fg = isDark ? "#ffffff" : colors.black;
+    const halo = isDark ? "rgba(0,0,0,0.6)" : "white";
+    svg.selectAll(".city_labels").attr("fill", fg).attr("stroke", halo);
+    svg.selectAll(".cityPoints").attr("stroke", fg);
+  }, [isDark]);
 
   const LAYERS = [
     {
@@ -1563,7 +1593,7 @@ export default function CDTmap() {
   ];
 
   const STATIC_LAYERS = [
-    { label: "Resupply Stops", color: colors.black, shape: "cross" },
+    { label: "Resupply Stops", color: isDark ? "#ffffff" : colors.black, shape: "cross" },
     { label: "Trail", color: colors.evenDays, shape: "line" },
   ];
 
