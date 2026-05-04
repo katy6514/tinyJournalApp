@@ -689,6 +689,7 @@ export default function CDTmap() {
         // State labels — center within visible portion of state (state bounds ∩ viewport)
         g.selectAll(".state-label").each(function () {
           const el = d3.select(this);
+          const feature = el.datum();
           const angle = +el.attr("data-angle");
 
           // State bounding box in screen space
@@ -707,9 +708,19 @@ export default function CDTmap() {
             return;
           }
 
-          // Center of the visible slice → convert back to user space
-          const [px, py] = t.invert([(visL + visR) / 2, (visT + visB) / 2]);
+          // Prefer the bounding-box center; fall back to the geographic centroid
+          // if the bbox center lands outside the actual state polygon (e.g. Idaho).
+          let sx = (visL + visR) / 2;
+          let sy = (visT + visB) / 2;
+          const geoPt = projection.invert(t.invert([sx, sy]));
+          if (!geoPt || !d3.geoContains(feature, geoPt)) {
+            // Clamp geographic centroid to the visible slice instead
+            let [gcsx, gcsy] = t.apply([+el.attr("data-gcx"), +el.attr("data-gcy")]);
+            sx = Math.max(visL, Math.min(visR, gcsx));
+            sy = Math.max(visT, Math.min(visB, gcsy));
+          }
 
+          const [px, py] = t.invert([sx, sy]);
           el.attr("display", null)
             .attr("x", px)
             .attr("y", py)
@@ -1094,9 +1105,12 @@ export default function CDTmap() {
         const [[bx0, by0], [bx1, by1]] = path.bounds(d);
 
         g.append("text")
+          .datum(d)
           .attr("class", "state-label")
           .attr("x", pos[0])
           .attr("y", pos[1])
+          .attr("data-gcx", pos[0])
+          .attr("data-gcy", pos[1])
           .attr("data-angle", angle)
           .attr("data-bx0", bx0)
           .attr("data-by0", by0)
