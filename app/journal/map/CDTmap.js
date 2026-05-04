@@ -160,8 +160,6 @@ export default function CDTmap() {
   const currentUserRef = useRef(null);
   currentUserRef.current = session?.user ?? null;
   const router = useRouter();
-  const routerRef = useRef(router);
-  routerRef.current = router;
 
   const [visibility, setVisibility] = useState({
     photos: true,
@@ -399,7 +397,6 @@ export default function CDTmap() {
     let renderMessageClusters = () => {};
     let renderPhotoClusters = () => {};
     let renderCampClusters = () => {};
-    let renderDebugHitAreas = () => {};
 
     // Tracks force-displaced positions so the photo click handler can test
     // against visual positions rather than original projection coordinates.
@@ -1100,8 +1097,6 @@ export default function CDTmap() {
           .attr("class", "state-label")
           .attr("x", pos[0])
           .attr("y", pos[1])
-          .attr("data-cx", pos[0])
-          .attr("data-cy", pos[1])
           .attr("data-angle", angle)
           .attr("data-bx0", bx0)
           .attr("data-by0", by0)
@@ -1412,67 +1407,6 @@ export default function CDTmap() {
         }
       };
 
-      // Draws debug outlines by copying the exact path/circle of each hit element.
-      renderDebugHitAreas = function () {
-        g.selectAll(".debugHit").remove();
-
-        const addPathCopy = (el, stroke) => {
-          const s = d3.select(el);
-          g.append("path")
-            .attr("class", "debugHit")
-            .attr("d", s.attr("d"))
-            .attr("transform", s.attr("transform"))
-            .attr("fill", "none")
-            .attr("stroke", stroke)
-            .attr("stroke-width", 2)
-            .attr("pointer-events", "none")
-            .attr("vector-effect", "non-scaling-stroke");
-        };
-
-        const addCircleCopy = (el, stroke) => {
-          const s = d3.select(el);
-          g.append("circle")
-            .attr("class", "debugHit")
-            .attr("cx", s.attr("cx"))
-            .attr("cy", s.attr("cy"))
-            .attr("r", s.attr("r"))
-            .attr("fill", "none")
-            .attr("stroke", stroke)
-            .attr("stroke-width", 2)
-            .attr("pointer-events", "none")
-            .attr("vector-effect", "non-scaling-stroke");
-        };
-
-        g.selectAll(".photoHitAreas").each(function () {
-          addCircleCopy(this, "blue");
-        });
-        g.selectAll(".photoClusterHit").each(function () {
-          addCircleCopy(this, "cyan");
-        });
-        // White outlines over colored fills so the boundary is clearly visible
-        g.selectAll(".msgHitArea").each(function () {
-          addPathCopy(this, "white");
-        });
-        g.selectAll(".msgClusterHit").each(function () {
-          addPathCopy(this, "orange");
-        });
-        g.selectAll(".campHitArea").each(function () {
-          addPathCopy(this, "white");
-        });
-        g.selectAll(".campClusterHit").each(function () {
-          addPathCopy(this, "limegreen");
-        });
-        // Purple = visual element boundary (should be inside the red/green filled hit area)
-        g.selectAll(".messagePoints").each(function () {
-          addPathCopy(this, "purple");
-        });
-        g.selectAll(".campPoints").each(function () {
-          addPathCopy(this, "purple");
-        });
-
-        g.selectAll(".debugHit").raise();
-      };
-
       // Initial render order matches zoom-end order: photos → messages → campsites
       renderPhotoClusters(currentTransformRef.current ?? d3.zoomIdentity);
       renderMessageClusters(currentTransformRef.current ?? d3.zoomIdentity);
@@ -1482,7 +1416,6 @@ export default function CDTmap() {
       ).raise();
       g.selectAll(".messagePoints, .campPoints").raise();
       separateOverlappingPoints(currentTransformRef.current ?? d3.zoomIdentity);
-      // renderDebugHitAreas(); // DEBUG: uncomment to overlay hit area outlines
 
       /* -----------------------------------------------------
       *  Track mapping functionality (rendered last = on top)
@@ -1547,7 +1480,7 @@ export default function CDTmap() {
           const entryId = d.properties.entry_id;
           if (!entryId) return;
           handleMouseOut();
-          routerRef.current.push(`/journal/${entryId}`);
+          router.push(`/journal/${entryId}`);
         })
         .style("cursor", (d) =>
           d.properties.entry_id && currentUserRef.current
@@ -1558,7 +1491,6 @@ export default function CDTmap() {
 
       // Raise leader lines and origin dots above the trail layer
       leaderLinesGroup.raise();
-      // g.selectAll(".debugHit").raise(); // DEBUG: uncomment with renderDebugHitAreas
 
       /* -----------------------------------------------------
       *  City labels (rendered last so they float above state lines)
