@@ -40,6 +40,8 @@ export default async function Page() {
             very much a work in progress, and something I'm playing around with
             in my spare time.
           </p>
+
+          {/* <p>I was inspired to make this app after listening to a trail friend of mine talk about how she worked and worked on her journal after her AT hike and got it to a point that she printed it out and gave copes to her dear trail family members. I loved the idea, having a book of your hike? I started to think of things I could make to help me reconstruct my days on trail, because i knew I hadn't been consistent with my journal so I needed to gather all my data together. somewhere along the way it turned into somethign else, but I try to make time to do the actual journalling part</p> */}
           {/* <h3 className="text-lg font-semibold mb-2">GPS Device</h3>
           <p>
             I carried a Garmin Inreach Mini 2 on my trip in case of emergencies
