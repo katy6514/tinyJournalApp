@@ -175,9 +175,10 @@ export default function CDTmap() {
   const zoomRef = useRef(null);
 
   const [messagePanel, setMessagePanel] = useState(null);
+  const messagePanelRef = useRef(messagePanel);
+  messagePanelRef.current = messagePanel;
 
-  const updateActiveRingRef = useRef(() => {});
-  const updateConnectingTriangleRef = useRef(() => {});
+  const updateActiveHighlightRef = useRef(() => {});
 
   // Floating photo popout: shown when a photo point or cluster is clicked
   const [photoPopout, setPhotoPopout] = useState(null);
@@ -299,11 +300,14 @@ export default function CDTmap() {
     return () => clearTimeout(panTimerRef.current);
   }, [pendingPhotoPopout]); // projection omitted: memoized with [] so never changes
 
-  // Once the photo is revealed, update the ring and triangle.
+  // Re-apply active highlight whenever selection changes.
   useEffect(() => {
-    updateActiveRingRef.current();
-    updateConnectingTriangleRef.current();
+    updateActiveHighlightRef.current();
   }, [photoPopout]);
+
+  useEffect(() => {
+    updateActiveHighlightRef.current();
+  }, [messagePanel]);
 
   const [captionModalOpen, setCaptionModalOpen] = useState(false);
 
@@ -804,10 +808,6 @@ export default function CDTmap() {
         });
         g.selectAll(".campClusterLabel").attr("font-size", 11 / k);
 
-        // Keep active ring scaled to constant visual size
-        g.selectAll(".activeRing").attr("r", 13 / k);
-
-        updateConnectingTriangleRef.current();
       })
 
       .on("end", (event) => {
@@ -828,6 +828,7 @@ export default function CDTmap() {
         ).raise();
         g.selectAll(".messagePoints, .campPoints").raise();
         separateOverlappingPoints(t);
+        updateActiveHighlightRef.current();
       });
 
     zoomRef.current = zoom;
@@ -836,66 +837,31 @@ export default function CDTmap() {
     // Leader lines and origin dots — rendered behind all data points.
     const leaderLinesGroup = g.append("g").attr("class", "leaderLinesGroup");
 
-    // Pulsing ring drawn in g-space (zoom-aware) around the active photo dot.
-    const activeRing = g
-      .append("circle")
-      .attr("class", "activeRing")
-      .attr("fill", "none")
-      .attr("stroke", colors.photosDark)
-      .attr("stroke-width", 2)
-      .attr("vector-effect", "non-scaling-stroke")
-      .attr("pointer-events", "none")
-      .attr("display", "none");
+    // Adds/removes the active-pulse CSS class on the selected data point so the
+    // border strokes thick-and-thin in place (avoids the displacement mismatch
+    // that a separate ring element would have).
+    function updateActiveHighlight() {
+      g.selectAll(".photoPoints, .photoThumbBorder, .msgCluster").classed("active-pulse", false);
 
-    function updateActiveRing() {
       const photo = photoPopoutRef.current;
-      const t = currentTransformRef.current ?? d3.zoomIdentity;
-      if (!photo) {
-        activeRing.attr("display", "none");
-        return;
+      if (photo) {
+        g.selectAll(".photoPoints")
+          .filter((d) => d === photo.item)
+          .classed("active-pulse", true);
+        g.selectAll(".photoThumbGroup")
+          .filter((d) => d === photo.item)
+          .select(".photoThumbBorder")
+          .classed("active-pulse", true);
       }
-      const [px, py] = projection(photo.item.geometry.coordinates);
-      activeRing
-        .attr("display", null)
-        .attr("cx", px)
-        .attr("cy", py)
-        .attr("r", 13 / t.k);
-    }
-    updateActiveRingRef.current = updateActiveRing;
 
-    // Connecting triangle: appended to the SVG viewport (not the zoom-transformed
-    // g) so its coordinates stay in viewBox space.  The tip tracks the dot by
-    // computing viewBox coords from the current zoom transform each frame.
-    // Left vertices are fixed at viewBox x = -100 — always off-screen behind the
-    // photo panel — with a constant visual height of 60 viewBox units.
-    const connectingTriangle = svg
-      .append("polygon")
-      .attr("class", "connectingTriangle")
-      .attr("fill", "rgba(128,128,128,0.22)")
-      .attr("stroke", "none")
-      .attr("pointer-events", "none")
-      .attr("display", "none");
-
-    function updateConnectingTriangle() {
-      const photo = photoPopoutRef.current;
-      const t = currentTransformRef.current ?? d3.zoomIdentity;
-      if (!photo) {
-        connectingTriangle.attr("display", "none");
-        return;
+      const panel = messagePanelRef.current;
+      if (panel?.datum) {
+        g.selectAll(".msgCluster")
+          .filter((d) => d === panel.datum)
+          .classed("active-pulse", true);
       }
-      const [px, py] = projection(photo.item.geometry.coordinates);
-      // Tip in viewBox coords = zoom transform applied to the projection point
-      const tipX = t.x + t.k * px;
-      const tipY = t.y + t.k * py;
-      const halfH = 150; // constant viewBox units — visually stable at any zoom
-      connectingTriangle
-        .attr("display", null)
-        .attr(
-          "points",
-          `${tipX},${tipY} ${width / 2},${tipY - halfH} ${width / 2},${tipY + halfH}`,
-        );
     }
-    updateConnectingTriangleRef.current = updateConnectingTriangle;
+    updateActiveHighlightRef.current = updateActiveHighlight;
 
     svg.on("click", (event) => {
       if (!event.target.classList.contains("state-clickable")) {
@@ -1206,7 +1172,7 @@ export default function CDTmap() {
                 parseGPSTime(a.properties.GPSTime) -
                 parseGPSTime(b.properties.GPSTime),
             );
-            setMessagePanel({ items: sorted });
+            setMessagePanel({ items: sorted, datum: d });
             // Stop any running zoom transition (fires "interrupt", not "end")
             d3.select(ref.current).interrupt();
             // Pan the cluster into the right-half visible area by writing the
@@ -1714,8 +1680,8 @@ export default function CDTmap() {
   return (
     <div className="relative w-full h-full overflow-hidden">
       <style>{`
-        @keyframes ring-pulse { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.2; } }
-        .activeRing { animation: ring-pulse 1.5s ease-in-out infinite; }
+        @keyframes border-pulse { 0%, 100% { stroke-width: 1.5; } 50% { stroke-width: 5; } }
+        .active-pulse { animation: border-pulse 1.5s ease-in-out infinite; }
         @keyframes photo-fade-in  { from { opacity: 0; } to { opacity: 1; } }
         @keyframes photo-fade-out { from { opacity: 1; } to { opacity: 0; } }
       `}</style>
