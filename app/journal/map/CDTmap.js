@@ -807,8 +807,20 @@ export default function CDTmap() {
         g.selectAll(".photoClusterLabel").attr("font-size", 11 / k);
 
         for (const [solo, cluster, hit, label, sym] of [
-          ["messagePoints", "msgCluster",  "msgClusterHit",  "msgClusterLabel",  square],
-          ["campPoints",    "campCluster", "campClusterHit", "campClusterLabel", triangle],
+          [
+            "messagePoints",
+            "msgCluster",
+            "msgClusterHit",
+            "msgClusterLabel",
+            square,
+          ],
+          [
+            "campPoints",
+            "campCluster",
+            "campClusterHit",
+            "campClusterLabel",
+            triangle,
+          ],
         ]) {
           g.selectAll(`.${solo}`).attr("d", sym.size(symbolSize));
           g.selectAll(`.${cluster}, .${hit}`).each(function (d) {
@@ -1181,43 +1193,38 @@ export default function CDTmap() {
         visKey: "messages",
         onClusterClick: (d) => {
           const currentK = currentTransformRef.current?.k ?? 1;
+          const dissolveK = clusterDissolveScale(d.points, projection);
 
-          // Open the panel once we've reached the computed zoom target.
-          // scale floors at currentK, so currentK >= scale means nowhere left to zoom.
-          const scale = clusterZoomTarget(d.points, currentK, projection);
-
-          if (currentK >= scale) {
-            // Zoomed in enough — open the message panel.
+          if (dissolveK > MAX_CLUSTER_ZOOM || currentK >= MAX_CLUSTER_ZOOM) {
+            // Co-located (will never dissolve) or already at max zoom: open panel.
             const sorted = [...d.points].sort(
               (a, b) =>
                 parseGPSTime(a.properties.GPSTime) -
                 parseGPSTime(b.properties.GPSTime),
             );
             setMessagePanel({ items: sorted, datum: d });
-            // Stop any running zoom transition (fires "interrupt", not "end")
-            d3.select(ref.current).interrupt();
-            // Pan the cluster into the right-half visible area by writing the
-            // new transform directly onto the SVG — bypassing zoom.translateTo
-            // so no zoom "end" event is dispatched and no blink fires.
-            if (ref.current && gRef.current) {
+            // Zoom in 3× (or stay at max) and pan cluster into right-half visible area.
+            if (ref.current && zoomRef.current) {
+              const newK = Math.min(MAX_CLUSTER_ZOOM, Math.max(currentK * 3, 8));
               const svgRect = ref.current.getBoundingClientRect();
               const cRect =
                 ref.current.parentElement?.getBoundingClientRect() ?? svgRect;
               const panelRight = cRect.left + cRect.width / 2;
-              if (panelRight < svgRect.right) {
-                const [targetX, targetY] = panTarget(svgRect, panelRight);
-                const newT = d3.zoomIdentity
-                  .translate(
-                    targetX - currentK * d.cx,
-                    targetY - currentK * d.cy,
-                  )
-                  .scale(currentK);
-                ref.current.__zoom = newT;
-                gRef.current.attr("transform", newT);
-                currentTransformRef.current = newT;
-              }
+              const [targetX, targetY] = panelRight < svgRect.right
+                ? panTarget(svgRect, panelRight)
+                : [width / 2, height / 2];
+              const newT = d3.zoomIdentity
+                .translate(targetX - newK * d.cx, targetY - newK * d.cy)
+                .scale(newK);
+              d3.select(ref.current)
+                .transition()
+                .duration(600)
+                .ease(d3.easeCubicInOut)
+                .call(zoomRef.current.transform, newT);
             }
           } else {
+            // Spread cluster: step zoom 3× to progressively dissolve into sub-clusters.
+            const scale = Math.min(MAX_CLUSTER_ZOOM, Math.max(currentK * 3, 8));
             setClusterPanel({
               type: "message",
               scale,
@@ -1267,9 +1274,10 @@ export default function CDTmap() {
           ".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel, .photoThumbGroup",
         ).remove();
 
-        const { solos, groups } = k >= PHOTO_FORCE_DISSOLVE_ZOOM
-          ? { solos: validPhotoPoints, groups: [] }
-          : computeClusters(validPhotoPoints, transform);
+        const { solos, groups } =
+          k >= PHOTO_FORCE_DISSOLVE_ZOOM
+            ? { solos: validPhotoPoints, groups: [] }
+            : computeClusters(validPhotoPoints, transform);
         const photoR = 18 / k;
 
         // Split solos: visible ones get thumbnail images; off-screen ones get plain circles.
@@ -1947,7 +1955,7 @@ export default function CDTmap() {
 
           return (
             <div
-              className={`absolute inset-y-0 left-0 w-1/2 z-10 p-36 ${notoSans.className}`}
+              className={`absolute inset-y-0 left-0 w-1/2 z-10 p-16 ${notoSans.className}`}
               style={{ animation: "photo-fade-in 0.3s ease-in-out forwards" }}
             >
               <div
