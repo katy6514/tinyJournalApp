@@ -42,6 +42,12 @@ function clusterDissolveScale(points, projection) {
   return maxDist > 0 ? CLUSTER_RADIUS / maxDist : Infinity;
 }
 
+// Target zoom scale for a cluster click: past dissolve point, at least 8, capped at max.
+function clusterZoomTarget(points, currentK, projection) {
+  const dissolveK = clusterDissolveScale(points, projection);
+  return Math.min(MAX_CLUSTER_ZOOM, Math.max(dissolveK * 1.4, currentK, 8));
+}
+
 function panTarget(svgRect, panelRight) {
   const targetScreenX = (panelRight + svgRect.right) / 2;
   const targetScreenY = (svgRect.top + svgRect.bottom) / 2;
@@ -800,31 +806,22 @@ export default function CDTmap() {
         );
         g.selectAll(".photoClusterLabel").attr("font-size", 11 / k);
 
-        // Messages
-        g.selectAll(".messagePoints").attr("d", square.size(symbolSize));
-        g.selectAll(".msgCluster, .msgClusterHit").each(function (d) {
-          const r = clusterRadius(d.count, k);
-          d3.select(this).attr(
-            "d",
-            this.classList.contains("msgCluster")
-              ? square.size(r * r * 2)()
-              : square.size((r * Math.SQRT2 + hitPad) ** 2)(),
-          );
-        });
-        g.selectAll(".msgClusterLabel").attr("font-size", 11 / k);
-
-        // Campsites
-        g.selectAll(".campPoints").attr("d", triangle.size(symbolSize));
-        g.selectAll(".campCluster, .campClusterHit").each(function (d) {
-          const r = clusterRadius(d.count, k);
-          d3.select(this).attr(
-            "d",
-            this.classList.contains("campCluster")
-              ? triangle.size(r * r * 2)()
-              : triangle.size((r * Math.SQRT2 + hitPad) ** 2)(),
-          );
-        });
-        g.selectAll(".campClusterLabel").attr("font-size", 11 / k);
+        for (const [solo, cluster, hit, label, sym] of [
+          ["messagePoints", "msgCluster",  "msgClusterHit",  "msgClusterLabel",  square],
+          ["campPoints",    "campCluster", "campClusterHit", "campClusterLabel", triangle],
+        ]) {
+          g.selectAll(`.${solo}`).attr("d", sym.size(symbolSize));
+          g.selectAll(`.${cluster}, .${hit}`).each(function (d) {
+            const r = clusterRadius(d.count, k);
+            d3.select(this).attr(
+              "d",
+              this.classList.contains(cluster)
+                ? sym.size(r * r * 2)()
+                : sym.size((r * Math.SQRT2 + hitPad) ** 2)(),
+            );
+          });
+          g.selectAll(`.${label}`).attr("font-size", 11 / k);
+        }
       })
 
       .on("end", (event) => {
@@ -1184,15 +1181,10 @@ export default function CDTmap() {
         visKey: "messages",
         onClusterClick: (d) => {
           const currentK = currentTransformRef.current?.k ?? 1;
-          const dissolveK = clusterDissolveScale(d.points, projection);
 
-          // panelReadyK: the zoom level at which the panel should open.
           // Open the panel once we've reached the computed zoom target.
           // scale floors at currentK, so currentK >= scale means nowhere left to zoom.
-          const scale = Math.min(
-            MAX_CLUSTER_ZOOM,
-            Math.max(dissolveK * 1.4, currentK, 8),
-          );
+          const scale = clusterZoomTarget(d.points, currentK, projection);
 
           if (currentK >= scale) {
             // Zoomed in enough — open the message panel.
@@ -1429,12 +1421,7 @@ export default function CDTmap() {
           setPendingPhotoPopout(null);
           setPhotoPopout(null);
           const currentK = currentTransformRef.current?.k ?? 1;
-          const dissolveK = clusterDissolveScale(d.points, projection);
-          // Always zoom IN: floor at current zoom and 8; cap at MAX_CLUSTER_ZOOM.
-          const scale = Math.min(
-            MAX_CLUSTER_ZOOM,
-            Math.max(dissolveK * 1.4, currentK, 8),
-          );
+          const scale = clusterZoomTarget(d.points, currentK, projection);
           setClusterPanel({
             type: "photo",
             scale,
