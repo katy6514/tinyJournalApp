@@ -24,8 +24,8 @@ const clusterRadius = (count, k) => (9 + Math.log(count + 1) * 5) / k;
 
 const CLUSTER_RADIUS = 20;
 const MAX_CLUSTER_ZOOM = 500;
-// Minimum zoom before the message panel is shown; gives geographic context.
-const MIN_MSG_ZOOM = 80;
+// At this zoom and above, photo clusters are force-dissolved into individual points.
+const PHOTO_FORCE_DISSOLVE_ZOOM = 250;
 
 // Minimum zoom scale at which the two farthest points in a cluster would
 // exceed CLUSTER_RADIUS screen pixels apart (i.e. the cluster starts to break).
@@ -284,14 +284,13 @@ export default function CDTmap() {
     const cx = (x0 + x1) / 2;
     const cy = (y0 + y1) / 2;
 
-    // Zoom just far enough to dissolve the cluster; fit-scale provides a floor
-    // so spread clusters stay fully visible.
+    // Zoom to dissolve target, but at least enough to fit all points in view.
     const pad = 80;
     const fitScale = Math.min(
       (width - pad * 2) / Math.max(x1 - x0, 1),
       (height - pad * 2) / Math.max(y1 - y0, 1),
     );
-    const scale = Math.min(targetScale, Math.max(fitScale, 8));
+    const scale = Math.max(targetScale, fitScale, 8);
 
     const tx = width / 2 - scale * cx;
     const ty = height / 2 - scale * cy;
@@ -1188,13 +1187,14 @@ export default function CDTmap() {
           const dissolveK = clusterDissolveScale(d.points, projection);
 
           // panelReadyK: the zoom level at which the panel should open.
-          // Co-located clusters (dissolveK = Infinity) just need MIN_MSG_ZOOM.
-          // Spread clusters need to be past their dissolve point AND MIN_MSG_ZOOM.
-          const panelReadyK = dissolveK > MAX_CLUSTER_ZOOM
-            ? MIN_MSG_ZOOM
-            : Math.max(MIN_MSG_ZOOM, dissolveK * 1.4);
+          // Open the panel once we've reached the computed zoom target.
+          // scale floors at currentK, so currentK >= scale means nowhere left to zoom.
+          const scale = Math.min(
+            MAX_CLUSTER_ZOOM,
+            Math.max(dissolveK * 1.4, currentK, 8),
+          );
 
-          if (currentK >= panelReadyK) {
+          if (currentK >= scale) {
             // Zoomed in enough — open the message panel.
             const sorted = [...d.points].sort(
               (a, b) =>
@@ -1228,7 +1228,7 @@ export default function CDTmap() {
           } else {
             setClusterPanel({
               type: "message",
-              scale: panelReadyK,
+              scale,
               items: d.points,
               projPoints: d.points.map((p) =>
                 projection(p.geometry.coordinates),
@@ -1275,7 +1275,9 @@ export default function CDTmap() {
           ".photoPoints, .photoHitAreas, .photoCluster, .photoClusterHit, .photoClusterLabel, .photoThumbGroup",
         ).remove();
 
-        const { solos, groups } = computeClusters(validPhotoPoints, transform);
+        const { solos, groups } = k >= PHOTO_FORCE_DISSOLVE_ZOOM
+          ? { solos: validPhotoPoints, groups: [] }
+          : computeClusters(validPhotoPoints, transform);
         const photoR = 18 / k;
 
         // Split solos: visible ones get thumbnail images; off-screen ones get plain circles.
