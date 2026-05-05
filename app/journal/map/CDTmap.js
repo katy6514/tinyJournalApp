@@ -22,8 +22,25 @@ import {
 
 const clusterRadius = (count, k) => (9 + Math.log(count + 1) * 5) / k;
 
-// Pre-set zoom levels for cluster clicks. Adjust these values to tune zoom depth.
-const CLUSTER_ZOOM_PRESETS = [50, 300];
+const CLUSTER_RADIUS = 20;
+const MAX_CLUSTER_ZOOM = 500;
+// Minimum zoom before the message panel is shown; gives geographic context.
+const MIN_MSG_ZOOM = 80;
+
+// Minimum zoom scale at which the two farthest points in a cluster would
+// exceed CLUSTER_RADIUS screen pixels apart (i.e. the cluster starts to break).
+// Returns Infinity for perfectly co-located points.
+function clusterDissolveScale(points, projection) {
+  let maxDist = 0;
+  for (let i = 0; i < points.length; i++) {
+    const [ax, ay] = projection(points[i].geometry.coordinates);
+    for (let j = i + 1; j < points.length; j++) {
+      const [bx, by] = projection(points[j].geometry.coordinates);
+      maxDist = Math.max(maxDist, Math.hypot(ax - bx, ay - by));
+    }
+  }
+  return maxDist > 0 ? CLUSTER_RADIUS / maxDist : Infinity;
+}
 
 function panTarget(svgRect, panelRight) {
   const targetScreenX = (panelRight + svgRect.right) / 2;
@@ -254,7 +271,7 @@ export default function CDTmap() {
     }
     if (!zoomRef.current || !ref.current) return;
 
-    const presetScale = clusterPanel.scale ?? CLUSTER_ZOOM_PRESETS[0];
+    const targetScale = clusterPanel.scale ?? MAX_CLUSTER_ZOOM;
 
     const xs = clusterPanel.projPoints.map((p) => p[0]);
     const ys = clusterPanel.projPoints.map((p) => p[1]);
@@ -267,14 +284,14 @@ export default function CDTmap() {
     const cx = (x0 + x1) / 2;
     const cy = (y0 + y1) / 2;
 
-    // Zoom to fit all members with padding, capped at the preset so tight
-    // clusters don't over-zoom and spread ones don't leave empty space.
+    // Zoom just far enough to dissolve the cluster; fit-scale provides a floor
+    // so spread clusters stay fully visible.
     const pad = 80;
     const fitScale = Math.min(
       (width - pad * 2) / Math.max(x1 - x0, 1),
       (height - pad * 2) / Math.max(y1 - y0, 1),
     );
-    const scale = Math.min(presetScale, Math.max(fitScale, 8));
+    const scale = Math.min(targetScale, Math.max(fitScale, 8));
 
     const tx = width / 2 - scale * cx;
     const ty = height / 2 - scale * cy;
@@ -360,7 +377,7 @@ export default function CDTmap() {
     // Shared greedy clustering: groups sites whose screen-space positions are
     // within CLUSTER_RADIUS pixels of each other at the current transform.
     // Returns { solos, groups } where groups carry projection-space centroids.
-    function computeClusters(sites, transform, CLUSTER_RADIUS = 20) {
+    function computeClusters(sites, transform) {
       const positions = sites.map((p) => {
         const [px, py] = projection(p.geometry.coordinates);
         const [sx, sy] = transform.apply([px, py]);
@@ -788,10 +805,11 @@ export default function CDTmap() {
         g.selectAll(".messagePoints").attr("d", square.size(symbolSize));
         g.selectAll(".msgCluster, .msgClusterHit").each(function (d) {
           const r = clusterRadius(d.count, k);
-          d3.select(this).attr("d",
+          d3.select(this).attr(
+            "d",
             this.classList.contains("msgCluster")
               ? square.size(r * r * 2)()
-              : square.size((r * Math.SQRT2 + hitPad) ** 2)()
+              : square.size((r * Math.SQRT2 + hitPad) ** 2)(),
           );
         });
         g.selectAll(".msgClusterLabel").attr("font-size", 11 / k);
@@ -800,14 +818,14 @@ export default function CDTmap() {
         g.selectAll(".campPoints").attr("d", triangle.size(symbolSize));
         g.selectAll(".campCluster, .campClusterHit").each(function (d) {
           const r = clusterRadius(d.count, k);
-          d3.select(this).attr("d",
+          d3.select(this).attr(
+            "d",
             this.classList.contains("campCluster")
               ? triangle.size(r * r * 2)()
-              : triangle.size((r * Math.SQRT2 + hitPad) ** 2)()
+              : triangle.size((r * Math.SQRT2 + hitPad) ** 2)(),
           );
         });
         g.selectAll(".campClusterLabel").attr("font-size", 11 / k);
-
       })
 
       .on("end", (event) => {
@@ -841,7 +859,10 @@ export default function CDTmap() {
     // border strokes thick-and-thin in place (avoids the displacement mismatch
     // that a separate ring element would have).
     function updateActiveHighlight() {
-      g.selectAll(".photoPoints, .photoThumbBorder, .msgCluster").classed("active-pulse", false);
+      g.selectAll(".photoPoints, .photoThumbBorder, .msgCluster").classed(
+        "active-pulse",
+        false,
+      );
 
       const photo = photoPopoutRef.current;
       if (photo) {
@@ -1164,9 +1185,17 @@ export default function CDTmap() {
         visKey: "messages",
         onClusterClick: (d) => {
           const currentK = currentTransformRef.current?.k ?? 1;
-          const maxPreset =
-            CLUSTER_ZOOM_PRESETS[CLUSTER_ZOOM_PRESETS.length - 1];
-          if (currentK >= maxPreset) {
+          const dissolveK = clusterDissolveScale(d.points, projection);
+
+          // panelReadyK: the zoom level at which the panel should open.
+          // Co-located clusters (dissolveK = Infinity) just need MIN_MSG_ZOOM.
+          // Spread clusters need to be past their dissolve point AND MIN_MSG_ZOOM.
+          const panelReadyK = dissolveK > MAX_CLUSTER_ZOOM
+            ? MIN_MSG_ZOOM
+            : Math.max(MIN_MSG_ZOOM, dissolveK * 1.4);
+
+          if (currentK >= panelReadyK) {
+            // Zoomed in enough — open the message panel.
             const sorted = [...d.points].sort(
               (a, b) =>
                 parseGPSTime(a.properties.GPSTime) -
@@ -1197,11 +1226,9 @@ export default function CDTmap() {
               }
             }
           } else {
-            const nextScale =
-              CLUSTER_ZOOM_PRESETS.find((p) => p > currentK) ?? maxPreset;
             setClusterPanel({
               type: "message",
-              scale: nextScale,
+              scale: panelReadyK,
               items: d.points,
               projPoints: d.points.map((p) =>
                 projection(p.geometry.coordinates),
@@ -1285,17 +1312,20 @@ export default function CDTmap() {
           const clipId = `photo-clip-${d.properties.photo_id}`;
           const thumbUrl = `/_next/image?url=${encodeURIComponent(d.properties.path)}&w=96&q=60`;
 
-          const grp = g.append("g")
+          const grp = g
+            .append("g")
             .attr("class", "photoThumbGroup")
             .datum(d)
             .attr("transform", `translate(${px}, ${py})`);
 
-          grp.append("clipPath")
+          grp
+            .append("clipPath")
             .attr("id", clipId)
             .append("circle")
             .attr("r", photoR);
 
-          grp.append("image")
+          grp
+            .append("image")
             .attr("href", thumbUrl)
             .attr("x", -photoR)
             .attr("y", -photoR)
@@ -1305,7 +1335,8 @@ export default function CDTmap() {
             .attr("preserveAspectRatio", "xMidYMid slice")
             .attr("pointer-events", "none");
 
-          grp.append("circle")
+          grp
+            .append("circle")
             .attr("class", "photoThumbBorder")
             .attr("r", photoR)
             .attr("fill", "none")
@@ -1396,12 +1427,15 @@ export default function CDTmap() {
           setPendingPhotoPopout(null);
           setPhotoPopout(null);
           const currentK = currentTransformRef.current?.k ?? 1;
-          const nextScale =
-            CLUSTER_ZOOM_PRESETS.find((p) => p > currentK) ??
-            CLUSTER_ZOOM_PRESETS[CLUSTER_ZOOM_PRESETS.length - 1];
+          const dissolveK = clusterDissolveScale(d.points, projection);
+          // Always zoom IN: floor at current zoom and 8; cap at MAX_CLUSTER_ZOOM.
+          const scale = Math.min(
+            MAX_CLUSTER_ZOOM,
+            Math.max(dissolveK * 1.4, currentK, 8),
+          );
           setClusterPanel({
             type: "photo",
-            scale: nextScale,
+            scale,
             items: d.points,
             projPoints: d.points.map((p) => projection(p.geometry.coordinates)),
           });
@@ -1924,7 +1958,7 @@ export default function CDTmap() {
 
           return (
             <div
-              className={`absolute inset-y-0 left-0 w-1/2 z-10 p-6 pr-0 ${notoSans.className}`}
+              className={`absolute inset-y-0 left-0 w-1/2 z-10 p-36 ${notoSans.className}`}
               style={{ animation: "photo-fade-in 0.3s ease-in-out forwards" }}
             >
               <div
