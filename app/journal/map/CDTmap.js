@@ -886,8 +886,12 @@ export default function CDTmap() {
 
       const panel = messagePanelRef.current;
       if (panel?.datum) {
+        const activePoints = new Set(panel.datum.points);
         g.selectAll(".msgCluster")
-          .filter((d) => d === panel.datum)
+          .filter((d) =>
+            d.points.length === activePoints.size &&
+            d.points.every((p) => activePoints.has(p)),
+          )
           .classed("active-pulse", true);
       }
     }
@@ -1718,7 +1722,7 @@ export default function CDTmap() {
   return (
     <div className="relative w-full h-full overflow-hidden">
       <style>{`
-        @keyframes border-pulse { 0%, 100% { stroke-width: 1.5; } 50% { stroke-width: 5; } }
+        @keyframes border-pulse { 0%, 100% { stroke-width: 1.5; } 50% { stroke-width: 10; } }
         .active-pulse { animation: border-pulse 1.5s ease-in-out infinite; }
         @keyframes photo-fade-in  { from { opacity: 0; } to { opacity: 1; } }
         @keyframes photo-fade-out { from { opacity: 1; } to { opacity: 0; } }
