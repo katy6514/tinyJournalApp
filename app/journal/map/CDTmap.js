@@ -1995,11 +1995,11 @@ export default function CDTmap() {
 
           return (
             <div
-              className={`absolute inset-y-0 left-0 w-1/2 z-10 p-16 ${notoSans.className}`}
+              className={`absolute inset-y-0 left-0 w-1/2 z-10 p-16 flex items-center ${notoSans.className}`}
               style={{ animation: "photo-fade-in 0.3s ease-in-out forwards" }}
             >
               <div
-                className="flex flex-col h-full rounded-xl shadow-2xl overflow-hidden"
+                className="flex flex-col w-full max-h-full rounded-xl shadow-2xl overflow-hidden"
                 style={{ background: "rgba(255,255,255,0.97)" }}
               >
                 <div
