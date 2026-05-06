@@ -312,14 +312,43 @@ export default function CDTmap() {
   }, [clusterPanel]);
 
   // When a dot is clicked, pan the map first; reveal the photo panel after.
+  // If switching between photos (prevOpen), skip the pan unless the dot is
+  // within 30 screen-px of a visible-area edge (including the panel boundary).
   useEffect(() => {
     clearTimeout(panTimerRef.current);
     if (!pendingPhotoPopout) return;
-    const [px, py] = projection(pendingPhotoPopout.item.geometry.coordinates);
-    panThenReveal(ref.current, zoomRef.current, px, py, panTimerRef, () => {
+    const { item, prevOpen } = pendingPhotoPopout;
+    const [px, py] = projection(item.geometry.coordinates);
+    const onReveal = () => {
       setPhotoPopout(pendingPhotoPopout);
       setMessagePanel(null);
-    });
+    };
+    if (prevOpen) {
+      const svgEl = ref.current;
+      const svgRect = svgEl?.getBoundingClientRect();
+      if (svgEl && svgRect) {
+        const t = currentTransformRef.current ?? d3.zoomIdentity;
+        const rs = Math.min(svgRect.width / width, svgRect.height / height);
+        const ox = (svgRect.width - width * rs) / 2;
+        const oy = (svgRect.height - height * rs) / 2;
+        const [lx, ly] = t.apply([px, py]);
+        const sx_screen = svgRect.left + ox + lx * rs;
+        const sy_screen = svgRect.top + oy + ly * rs;
+        const cRect = svgEl.parentElement?.getBoundingClientRect() ?? svgRect;
+        const panelRight = cRect.left + cRect.width / 2;
+        const PAD = 30;
+        const nearEdge =
+          sx_screen < panelRight + PAD ||
+          sx_screen > svgRect.right - PAD ||
+          sy_screen < svgRect.top + PAD ||
+          sy_screen > svgRect.bottom - PAD;
+        if (!nearEdge) {
+          onReveal();
+          return () => {};
+        }
+      }
+    }
+    panThenReveal(ref.current, zoomRef.current, px, py, panTimerRef, onReveal);
     return () => clearTimeout(panTimerRef.current);
   }, [pendingPhotoPopout]); // projection omitted: memoized with [] so never changes
 
@@ -1391,8 +1420,8 @@ export default function CDTmap() {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
               setMessagePanel(null);
+              setPendingPhotoPopout({ item: d, prevOpen: photoPopoutRef.current !== null });
               setPhotoPopout(null);
-              setPendingPhotoPopout({ item: d });
             }
           })
           .on("click", function (event, d) {
@@ -1429,8 +1458,8 @@ export default function CDTmap() {
               });
             } else {
               setMessagePanel(null);
+              setPendingPhotoPopout({ item: d, prevOpen: photoPopoutRef.current !== null });
               setPhotoPopout(null);
-              setPendingPhotoPopout({ item: d });
             }
           });
 
@@ -2064,7 +2093,7 @@ export default function CDTmap() {
             onClick={() => {
               setMessagePanel(null);
               setPhotoPopout(null);
-              setPendingPhotoPopout({ item: disambigMenu.photo });
+              setPendingPhotoPopout({ item: disambigMenu.photo, prevOpen: photoPopout !== null });
               setDisambigMenu(null);
             }}
           >
