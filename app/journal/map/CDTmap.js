@@ -316,9 +316,10 @@ export default function CDTmap() {
     clearTimeout(panTimerRef.current);
     if (!pendingPhotoPopout) return;
     const [px, py] = projection(pendingPhotoPopout.item.geometry.coordinates);
-    panThenReveal(ref.current, zoomRef.current, px, py, panTimerRef, () =>
-      setPhotoPopout(pendingPhotoPopout),
-    );
+    panThenReveal(ref.current, zoomRef.current, px, py, panTimerRef, () => {
+      setPhotoPopout(pendingPhotoPopout);
+      setMessagePanel(null);
+    });
     return () => clearTimeout(panTimerRef.current);
   }, [pendingPhotoPopout]); // projection omitted: memoized with [] so never changes
 
@@ -1203,6 +1204,9 @@ export default function CDTmap() {
                 parseGPSTime(b.properties.GPSTime),
             );
             setMessagePanel({ items: sorted, datum: d });
+            clearTimeout(panTimerRef.current);
+            setPendingPhotoPopout(null);
+            setPhotoPopout(null);
             // Zoom in 3× (or stay at max) and pan cluster into right-half visible area.
             if (ref.current && zoomRef.current) {
               const newK = Math.min(MAX_CLUSTER_ZOOM, Math.max(currentK * 3, 8));
@@ -1224,6 +1228,9 @@ export default function CDTmap() {
             }
           } else {
             // Spread cluster: step zoom 3× to progressively dissolve into sub-clusters.
+            clearTimeout(panTimerRef.current);
+            setPendingPhotoPopout(null);
+            setPhotoPopout(null);
             const scale = Math.min(MAX_CLUSTER_ZOOM, Math.max(currentK * 3, 8));
             setClusterPanel({
               type: "message",
