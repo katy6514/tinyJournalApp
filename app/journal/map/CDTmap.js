@@ -336,7 +336,7 @@ export default function CDTmap() {
         const sy_screen = svgRect.top + oy + ly * rs;
         const cRect = svgEl.parentElement?.getBoundingClientRect() ?? svgRect;
         const panelRight = cRect.left + cRect.width / 2;
-        const PAD = 30;
+        const PAD = 60;
         const nearEdge =
           sx_screen < panelRight + PAD ||
           sx_screen > svgRect.right - PAD ||
@@ -619,7 +619,9 @@ export default function CDTmap() {
 
       nodes.forEach(({ type, data, x, y, ox, oy }) => {
         if (Math.abs(x - ox) < 0.01 && Math.abs(y - oy) < 0.01) return;
-        displacedPositions.set(data, { x, y });
+        if (type !== "msg-cluster" && type !== "camp-cluster") {
+          displacedPositions.set(data, { x, y });
+        }
 
         const lineColor =
           type === "photo" || type === "photo-cluster"
@@ -694,6 +696,13 @@ export default function CDTmap() {
       });
     }
 
+    function applyRaiseOrder() {
+      g.selectAll(".messagePoints, .campPoints").raise();
+      g.selectAll(".photoThumbGroup").raise();
+      g.selectAll(".photoHitAreas, .photoClusterHit").raise();
+      g.selectAll(".msgClusterHit, .campClusterHit").raise();
+    }
+
     // Add zoom behavior
     const zoom = d3
       .zoom()
@@ -705,7 +714,9 @@ export default function CDTmap() {
         const cls = event.target?.classList;
         if (
           cls?.contains("photoClusterHit") ||
-          cls?.contains("photoHitAreas")
+          cls?.contains("photoHitAreas") ||
+          cls?.contains("msgClusterHit") ||
+          cls?.contains("campClusterHit")
         ) {
           return false;
         }
@@ -871,19 +882,40 @@ export default function CDTmap() {
         const prevK = lastRenderedScaleRef.current;
         lastRenderedScaleRef.current = t.k;
 
-        // Skip re-clustering after a pure pan — cluster groupings only change
-        // when the scale changes, so there is nothing to re-render.
-        if (t.k === prevK) return;
-
+        // Photo clusters re-render on every pan (viewport-dependent thumbnail
+        // split). Message/camp clusters only re-render when scale changes.
         renderPhotoClusters(t);
-        renderMessageClusters(t);
-        renderCampClusters(t);
-        g.selectAll(".photoThumbGroup").raise();
-        g.selectAll(
-          ".photoHitAreas, .photoClusterHit, .msgClusterHit, .campClusterHit",
-        ).raise();
-        g.selectAll(".messagePoints, .campPoints").raise();
-        separateOverlappingPoints(t);
+
+        if (t.k !== prevK) {
+          // Scale changed: full re-render + force simulation.
+          renderMessageClusters(t);
+          renderCampClusters(t);
+          applyRaiseOrder();
+          separateOverlappingPoints(t);
+        } else {
+          // Pure pan: photo elements were recreated at geographic coords.
+          // Restore their displaced positions from the last force simulation
+          // without re-running it (leader lines are in g's local space and
+          // pan correctly with the SVG transform — no redraw needed).
+          displacedPositions.forEach(({ x, y }, data) => {
+            g.selectAll(".photoPoints, .photoHitAreas")
+              .filter((d) => d === data)
+              .attr("cx", x)
+              .attr("cy", y);
+            g.selectAll(".photoThumbGroup")
+              .filter((d) => d === data)
+              .attr("transform", `translate(${x}, ${y})`);
+            g.selectAll(".photoCluster, .photoClusterHit")
+              .filter((d) => d === data)
+              .attr("cx", x)
+              .attr("cy", y);
+            g.selectAll(".photoClusterLabel")
+              .filter((d) => d === data)
+              .attr("x", x)
+              .attr("y", y);
+          });
+          applyRaiseOrder();
+        }
         updateActiveHighlightRef.current();
       });
 
@@ -1240,24 +1272,39 @@ export default function CDTmap() {
             clearTimeout(panTimerRef.current);
             setPendingPhotoPopout(null);
             setPhotoPopout(null);
-            // Zoom in 3× (or stay at max) and pan cluster into right-half visible area.
+            // Pan+zoom only if the cluster is near an edge of the visible area.
             if (ref.current && zoomRef.current) {
-              const newK = Math.min(MAX_CLUSTER_ZOOM, Math.max(currentK * 3, 8));
               const svgRect = ref.current.getBoundingClientRect();
               const cRect =
                 ref.current.parentElement?.getBoundingClientRect() ?? svgRect;
               const panelRight = cRect.left + cRect.width / 2;
-              const [targetX, targetY] = panelRight < svgRect.right
-                ? panTarget(svgRect, panelRight)
-                : [width / 2, height / 2];
-              const newT = d3.zoomIdentity
-                .translate(targetX - newK * d.cx, targetY - newK * d.cy)
-                .scale(newK);
-              d3.select(ref.current)
-                .transition()
-                .duration(600)
-                .ease(d3.easeCubicInOut)
-                .call(zoomRef.current.transform, newT);
+              const t = currentTransformRef.current ?? d3.zoomIdentity;
+              const rs = Math.min(svgRect.width / width, svgRect.height / height);
+              const ox = (svgRect.width - width * rs) / 2;
+              const oy = (svgRect.height - height * rs) / 2;
+              const [lx, ly] = t.apply([d.cx, d.cy]);
+              const sx_screen = svgRect.left + ox + lx * rs;
+              const sy_screen = svgRect.top + oy + ly * rs;
+              const PAD = 60;
+              const nearEdge =
+                sx_screen < panelRight + PAD ||
+                sx_screen > svgRect.right - PAD ||
+                sy_screen < svgRect.top + PAD ||
+                sy_screen > svgRect.bottom - PAD;
+              if (nearEdge) {
+                const newK = Math.min(MAX_CLUSTER_ZOOM, Math.max(currentK * 3, 8));
+                const [targetX, targetY] = panelRight < svgRect.right
+                  ? panTarget(svgRect, panelRight)
+                  : [width / 2, height / 2];
+                const newT = d3.zoomIdentity
+                  .translate(targetX - newK * d.cx, targetY - newK * d.cy)
+                  .scale(newK);
+                d3.select(ref.current)
+                  .transition()
+                  .duration(600)
+                  .ease(d3.easeCubicInOut)
+                  .call(zoomRef.current.transform, newT);
+              }
             }
           } else {
             // Spread cluster: step zoom 3× to progressively dissolve into sub-clusters.
@@ -1550,11 +1597,7 @@ export default function CDTmap() {
       renderPhotoClusters(currentTransformRef.current ?? d3.zoomIdentity);
       renderMessageClusters(currentTransformRef.current ?? d3.zoomIdentity);
       renderCampClusters(currentTransformRef.current ?? d3.zoomIdentity);
-      g.selectAll(".photoThumbGroup").raise();
-      g.selectAll(
-        ".photoHitAreas, .photoClusterHit, .msgClusterHit, .campClusterHit",
-      ).raise();
-      g.selectAll(".messagePoints, .campPoints").raise();
+      applyRaiseOrder();
       separateOverlappingPoints(currentTransformRef.current ?? d3.zoomIdentity);
 
       /* -----------------------------------------------------
