@@ -978,7 +978,7 @@ export default function CDTmap() {
       if (!event.target.classList.contains("state-clickable")) {
         if (clusterPanelRef.current) {
           setClusterPanel(null);
-        } else if (!messagePanelRef.current) {
+        } else if (!messagePanelRef.current && !photoPopoutRef.current) {
           svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
         }
         clearTimeout(panTimerRef.current);
@@ -1170,6 +1170,7 @@ export default function CDTmap() {
         .attr("d", path)
         .on("click", function (event, d) {
           event.stopPropagation();
+          setMessagePanel(null);
 
           // Check if we’re already zoomed in on this state
           const [[x0, y0], [x1, y1]] = path.bounds(d); // Get bounding box of the selected state
@@ -1531,6 +1532,7 @@ export default function CDTmap() {
           clearTimeout(panTimerRef.current);
           setPendingPhotoPopout(null);
           setPhotoPopout(null);
+          setMessagePanel(null);
           const currentK = currentTransformRef.current?.k ?? 1;
           const scale = clusterZoomTarget(d.points, currentK, projection);
           setClusterPanel({
@@ -1835,15 +1837,11 @@ export default function CDTmap() {
             animation: photoPopout
               ? "photo-fade-in 0.3s ease-in-out forwards"
               : "photo-fade-out 0.3s ease-in-out forwards",
-            pointerEvents: photoPopout ? "auto" : "none",
-          }}
-          onClick={() => {
-            clearTimeout(panTimerRef.current);
-            setPendingPhotoPopout(null);
-            setPhotoPopout(null);
+            pointerEvents: "none",
           }}
         >
-          {/* Photo card — stopPropagation so clicks on the photo don't close the panel */}
+          {/* Photo card — pointer-events: auto so the card is interactive;
+              clicks outside the card pass through to the SVG */}
           <div
             style={{
               position: "relative",
@@ -1852,8 +1850,8 @@ export default function CDTmap() {
               borderRadius: 8,
               overflow: "hidden",
               flexShrink: 1,
+              pointerEvents: "auto",
             }}
-            onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={(e) => {
@@ -2055,11 +2053,11 @@ export default function CDTmap() {
           return (
             <div
               className={`absolute inset-y-0 left-0 w-1/2 z-10 p-16 flex items-center ${notoSans.className}`}
-              style={{ animation: "photo-fade-in 0.3s ease-in-out forwards" }}
+              style={{ animation: "photo-fade-in 0.3s ease-in-out forwards", pointerEvents: "none" }}
             >
               <div
                 className="flex flex-col w-full max-h-full rounded-xl shadow-2xl overflow-hidden"
-                style={{ background: "rgba(255,255,255,0.97)" }}
+                style={{ background: "rgba(255,255,255,0.97)", pointerEvents: "auto" }}
               >
                 <div
                   className="flex items-center justify-between px-5 py-3 flex-shrink-0"
