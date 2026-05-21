@@ -298,17 +298,33 @@ export default function CDTmap() {
     );
     const scale = Math.max(targetScale, fitScale, 8);
 
-    const tx = width / 2 - scale * cx;
-    const ty = height / 2 - scale * cy;
+    // Check whether the cluster centroid is near an edge of the visible area.
+    // If not, zoom in place (no pan) rather than re-centering the map.
+    const svgRect = ref.current.getBoundingClientRect();
+    const t = currentTransformRef.current ?? d3.zoomIdentity;
+    const rs = Math.min(svgRect.width / width, svgRect.height / height);
+    const ox = (svgRect.width - width * rs) / 2;
+    const oy = (svgRect.height - height * rs) / 2;
+    const [lx, ly] = t.apply([cx, cy]);
+    const sx_screen = svgRect.left + ox + lx * rs;
+    const sy_screen = svgRect.top + oy + ly * rs;
+    const PAD = 60;
+    const nearEdge =
+      sx_screen < svgRect.left + PAD ||
+      sx_screen > svgRect.right - PAD ||
+      sy_screen < svgRect.top + PAD ||
+      sy_screen > svgRect.bottom - PAD;
+
+    // Near edge: pan to center. Otherwise: zoom in place around the centroid.
+    const newT = nearEdge
+      ? d3.zoomIdentity.translate(width / 2 - scale * cx, height / 2 - scale * cy).scale(scale)
+      : d3.zoomIdentity.translate(lx - scale * cx, ly - scale * cy).scale(scale);
 
     d3.select(ref.current)
       .transition()
       .duration(1200)
       .ease(d3.easeCubicInOut)
-      .call(
-        zoomRef.current.transform,
-        d3.zoomIdentity.translate(tx, ty).scale(scale),
-      );
+      .call(zoomRef.current.transform, newT);
   }, [clusterPanel]);
 
   // When a dot is clicked, pan the map first; reveal the photo panel after.
@@ -962,7 +978,7 @@ export default function CDTmap() {
       if (!event.target.classList.contains("state-clickable")) {
         if (clusterPanelRef.current) {
           setClusterPanel(null);
-        } else {
+        } else if (!messagePanelRef.current) {
           svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
         }
         clearTimeout(panTimerRef.current);
