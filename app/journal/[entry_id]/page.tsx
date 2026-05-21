@@ -72,7 +72,7 @@ export default async function Page(props: {
           },
         ]}
       />
-      <div className="flex justify-between px-4 py-2 text-sm">
+      <div className="flex justify-between py-2 text-sm">
         {adjacent.prev ? (
           <Link
             href={`/journal/${adjacent.prev.entry_id}`}
@@ -95,7 +95,7 @@ export default async function Page(props: {
         )}
       </div>
 
-      <div className=" bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
+      <div>
         {/* Grid: col 1 = metadata then journal text, col 2 = minimap spanning both rows */}
         <div className={legGeoJSON ? "grid grid-cols-[1fr_50%] gap-4 items-start" : ""}>
           {/* Metadata */}

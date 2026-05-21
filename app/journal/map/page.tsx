@@ -6,7 +6,7 @@ export default async function Page() {
   const session = await auth();
 
   return (
-    <main className="h-full overflow-hidden relative bg-gray-50 dark:bg-gray-800">
+    <main className="absolute inset-0 overflow-hidden bg-gray-50 dark:bg-gray-800">
       <CDTmap />
       {session && (
         <div className="absolute bottom-3 right-3 z-20 flex gap-4 px-4 py-2">

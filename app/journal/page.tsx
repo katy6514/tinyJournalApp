@@ -8,7 +8,7 @@ import { sourceSans } from "@/app/ui/fonts";
 
 export default async function Page() {
   return (
-    <main className="bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
+    <main>
       <Breadcrumbs
         breadcrumbs={[
           { label: "About", href: "/journal", active: true },

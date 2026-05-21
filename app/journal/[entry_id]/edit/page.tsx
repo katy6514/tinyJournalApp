@@ -20,7 +20,7 @@ export default async function Page(props: {
   }
 
   return (
-    <main className="bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
+    <main>
       <Breadcrumbs
         breadcrumbs={[
           { label: "Journal", href: "/journal/listView" },
