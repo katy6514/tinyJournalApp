@@ -1352,6 +1352,54 @@ export default function CDTmap() {
         strokeColor: colors.campSites,
         tooltipLabel: "campsites",
         visKey: "campsites",
+        onClusterClick: (d) => {
+          const currentK = currentTransformRef.current?.k ?? 1;
+          const dissolveK = clusterDissolveScale(d.points, projection);
+          clearTimeout(panTimerRef.current);
+          setPendingPhotoPopout(null);
+          setPhotoPopout(null);
+          setMessagePanel(null);
+
+          if (dissolveK > MAX_CLUSTER_ZOOM || currentK >= MAX_CLUSTER_ZOOM) {
+            // Co-located or at max zoom: zoom+pan to full viewport center if near an edge.
+            if (ref.current && zoomRef.current) {
+              const svgRect = ref.current.getBoundingClientRect();
+              const t = currentTransformRef.current ?? d3.zoomIdentity;
+              const rs = Math.min(svgRect.width / width, svgRect.height / height);
+              const ox = (svgRect.width - width * rs) / 2;
+              const oy = (svgRect.height - height * rs) / 2;
+              const [lx, ly] = t.apply([d.cx, d.cy]);
+              const sx_screen = svgRect.left + ox + lx * rs;
+              const sy_screen = svgRect.top + oy + ly * rs;
+              const PAD = 60;
+              const nearEdge =
+                sx_screen < svgRect.left + PAD ||
+                sx_screen > svgRect.right - PAD ||
+                sy_screen < svgRect.top + PAD ||
+                sy_screen > svgRect.bottom - PAD;
+              if (nearEdge) {
+                const newK = Math.min(MAX_CLUSTER_ZOOM, Math.max(currentK * 3, 8));
+                const newT = d3.zoomIdentity
+                  .translate(width / 2 - newK * d.cx, height / 2 - newK * d.cy)
+                  .scale(newK);
+                d3.select(ref.current)
+                  .transition()
+                  .duration(600)
+                  .ease(d3.easeCubicInOut)
+                  .call(zoomRef.current.transform, newT);
+              }
+            }
+          } else {
+            // Spread cluster: step zoom 3× to progressively dissolve.
+            const scale = Math.min(MAX_CLUSTER_ZOOM, Math.max(currentK * 3, 8));
+            setClusterPanel({
+              type: "camp",
+              scale,
+              items: d.points,
+              projPoints: d.points.map((p) => projection(p.geometry.coordinates)),
+            });
+          }
+        },
       });
 
       /* -----------------------------------------------------
