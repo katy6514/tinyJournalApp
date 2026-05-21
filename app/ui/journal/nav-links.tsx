@@ -8,7 +8,7 @@ const links = [
   { name: "About", href: "/journal" },
   { name: "The Map", href: "/journal/map" },
   { name: "The Journal", href: "/journal/listView" },
-  { name: "Photo Album", href: "/journal/photoAlbum" },
+  // { name: "Photo Album", href: "/journal/photoAlbum" },
   { name: "Dev Journal", href: "/journal/devJournal" },
 ];
 
