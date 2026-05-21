@@ -5,9 +5,9 @@ import sql from "@/app/lib/db";
 const getLegsGeoJSON = unstable_cache(
   async () => {
     const legs = await sql<
-      { legnum: number; name: string; coordinates: unknown; date: string | null; entry_id: string | null }[]
+      { legnum: number; name: string; coordinates: unknown; date: string | null; entry_id: string | null; text: string | null }[]
     >`
-      SELECT l.legnum, l.name, l.coordinates, d.date::text, e.id::text AS entry_id
+      SELECT l.legnum, l.name, l.coordinates, d.date::text, e.id::text AS entry_id, e.text
       FROM legs l
       LEFT JOIN dates d ON d.leg_id = l.id
       LEFT JOIN entries e ON e.date_id = d.id
@@ -28,13 +28,14 @@ const getLegsGeoJSON = unstable_cache(
           description: leg.name,
           date: leg.date ?? null,
           entry_id: leg.entry_id ?? null,
+          text: leg.text ?? null,
         },
       };
     });
 
     return { type: "FeatureCollection", features };
   },
-  ["legs-geojson-v3"],
+  ["legs-geojson-v4"],
   { tags: ["legs"] }
 );
 

@@ -220,6 +220,9 @@ export default function CDTmap() {
   // Disambiguation menu: shown when a photo dot overlaps a camp/message point
   const [disambigMenu, setDisambigMenu] = useState(null);
 
+  const [legCard, setLegCard] = useState(null);
+  const legCardHideTimerRef = useRef(null);
+
   const [captionDraft, setCaptionDraft] = useState("");
   const [captionSaved, setCaptionSaved] = useState(false);
   const lastSavedCaptionRef = useRef("");
@@ -1701,9 +1704,9 @@ export default function CDTmap() {
         .attr("stroke", "transparent")
         .attr("stroke-width", 12)
         .attr("vector-effect", "non-scaling-stroke")
-        .attr("aria-describedby", "tooltip")
         .on("mouseover", function (event, d) {
           if ((currentTransformRef.current?.k ?? 0) <= 20) return;
+          clearTimeout(legCardHideTimerRef.current);
           const raw = d.properties.date;
           const dateStr = raw
             ? new Date(raw + "T00:00:00").toLocaleDateString("en-US", {
@@ -1712,23 +1715,30 @@ export default function CDTmap() {
                 year: "numeric",
               })
             : null;
-          const desc = d.properties.description || "";
-          const tooltip = document.getElementById("tooltip");
-          tooltip.innerHTML = dateStr
-            ? `<p style="font-weight:600">${dateStr}</p><p style="font-weight:400;opacity:0.85">${desc}</p>`
-            : `<p style="font-weight:600">${desc}</p>`;
-          tooltip.style.left = event.pageX + 15 + "px";
-          tooltip.style.top = event.pageY - 50 + "px";
-          tooltip.classList.remove("invisible", "opacity-0");
-          tooltip.classList.add("visible", "opacity-100");
+          setLegCard({
+            x: event.pageX,
+            y: event.pageY,
+            date: dateStr,
+            name: d.properties.description || "",
+            text: d.properties.text || null,
+            entryId: d.properties.entry_id || null,
+          });
+          g.selectAll(".trail")
+            .filter((td) => td === d)
+            .attr("stroke-width", 4);
         })
-        .on("mousemove", handleMouseMove)
-        .on("mouseout", handleMouseOut)
+        .on("mouseout", function (_event, d) {
+          legCardHideTimerRef.current = setTimeout(() => setLegCard(null), 300);
+          g.selectAll(".trail")
+            .filter((td) => td === d)
+            .attr("stroke-width", 2);
+        })
         .on("click", function (_event, d) {
           if (!currentUserRef.current) return;
           const entryId = d.properties.entry_id;
           if (!entryId) return;
-          handleMouseOut();
+          clearTimeout(legCardHideTimerRef.current);
+          setLegCard(null);
           router.push(`/journal/${entryId}`);
         })
         .style("cursor", (d) =>
@@ -2248,6 +2258,58 @@ export default function CDTmap() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Leg hover card — floats near cursor when hovering a trail segment */}
+      {legCard && (
+        <div
+          className={`fixed z-30 ${notoSans.className}`}
+          style={{
+            left: legCard.x + 15,
+            top: legCard.y - 80,
+            width: 240,
+            background: "rgba(255,255,255,0.97)",
+            borderRadius: 10,
+            boxShadow: "0 4px 24px rgba(0,0,0,0.18)",
+            padding: "14px 16px",
+            pointerEvents: "auto",
+          }}
+          onMouseEnter={() => clearTimeout(legCardHideTimerRef.current)}
+          onMouseLeave={() => {
+            legCardHideTimerRef.current = setTimeout(() => setLegCard(null), 300);
+          }}
+        >
+          {legCard.date && (
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+              {legCard.date}
+            </p>
+          )}
+          <p className="font-semibold text-sm text-gray-900 mb-2">{legCard.name}</p>
+          {legCard.text && (
+            <p
+              className="text-xs text-gray-600 leading-relaxed mb-3"
+              style={{
+                display: "-webkit-box",
+                WebkitLineClamp: 4,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
+              {legCard.text}
+            </p>
+          )}
+          {legCard.entryId && currentUserRef.current && (
+            <button
+              className="text-xs font-semibold text-blue-600 hover:text-blue-800"
+              onClick={() => {
+                setLegCard(null);
+                router.push(`/journal/${legCard.entryId}`);
+              }}
+            >
+              Read full entry →
+            </button>
+          )}
         </div>
       )}
 
