@@ -267,19 +267,9 @@ export default function CDTmap() {
     ).attr("display", visibility.messages ? null : "none");
   }, [visibility]);
 
-  // When a cluster is clicked, zoom to the next pre-set level centered on the
-  // cluster centroid. When the panel closes, reset to the identity transform.
+  // When a cluster is clicked, zoom to the next pre-set level centered on the cluster centroid.
   useEffect(() => {
-    if (!clusterPanel) {
-      if (zoomRef.current && ref.current) {
-        d3.select(ref.current)
-          .transition()
-          .duration(750)
-          .ease(d3.easeCubicInOut)
-          .call(zoomRef.current.transform, d3.zoomIdentity);
-      }
-      return;
-    }
+    if (!clusterPanel) return;
     if (!zoomRef.current || !ref.current) return;
 
     const targetScale = clusterPanel.scale ?? MAX_CLUSTER_ZOOM;
@@ -376,16 +366,7 @@ export default function CDTmap() {
   // When a trail leg panel opens, zoom to show the leg on the right half.
   // When it closes, reset to the identity transform.
   useEffect(() => {
-    if (!legPanel) {
-      if (zoomRef.current && ref.current) {
-        d3.select(ref.current)
-          .transition()
-          .duration(750)
-          .ease(d3.easeCubicInOut)
-          .call(zoomRef.current.transform, d3.zoomIdentity);
-      }
-      return;
-    }
+    if (!legPanel) return;
     if (!zoomRef.current || !ref.current) return;
 
     const svgRect = ref.current.getBoundingClientRect();
@@ -1061,12 +1042,15 @@ export default function CDTmap() {
 
     svg.on("click", (event) => {
       if (!event.target.classList.contains("state-clickable")) {
-        const anyOpen =
-          clusterPanelRef.current ||
-          legPanelRef.current ||
-          messagePanelRef.current ||
-          photoPopoutRef.current;
-        if (!anyOpen) {
+        // Zoom out if a zoom-altering panel was open, or if nothing was open.
+        // Non-zoom panels (message, photo) don't reset the zoom on close.
+        const hadZoomPanel = clusterPanelRef.current || legPanelRef.current;
+        const nothingOpen =
+          !clusterPanelRef.current &&
+          !legPanelRef.current &&
+          !messagePanelRef.current &&
+          !photoPopoutRef.current;
+        if (hadZoomPanel || nothingOpen) {
           svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
         }
         closeAllPanelsRef.current();
@@ -2005,6 +1989,9 @@ export default function CDTmap() {
               onClick={(e) => {
                 e.stopPropagation();
                 closeAllPanelsRef.current();
+                if (zoomRef.current && ref.current) {
+                  d3.select(ref.current).transition().duration(750).ease(d3.easeCubicInOut).call(zoomRef.current.transform, d3.zoomIdentity);
+                }
               }}
               aria-label="Close"
               style={{
@@ -2373,7 +2360,12 @@ export default function CDTmap() {
                 )}
               </div>
               <button
-                onClick={() => setLegPanel(null)}
+                onClick={() => {
+                  setLegPanel(null);
+                  if (zoomRef.current && ref.current) {
+                    d3.select(ref.current).transition().duration(750).ease(d3.easeCubicInOut).call(zoomRef.current.transform, d3.zoomIdentity);
+                  }
+                }}
                 aria-label="Close"
                 style={{
                   color: "#fff",
