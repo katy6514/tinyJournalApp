@@ -445,6 +445,8 @@ export default function CDTmap() {
   // Fraction of the viewport width occupied by left-side panels (w-1/2).
   // Update here if any panel container's width class changes.
   const PANEL_FRACTION = 0.5;
+  // Shared shadow for all three panel inner cards — heavier on the right edge.
+  const PANEL_SHADOW = "8px 0 40px rgba(0,0,0,0.28), 0 4px 24px rgba(0,0,0,0.15), 28px 0 60px rgba(0,0,0,0.18)";
 
   const projection = useMemo(() => {
     return d3
@@ -1961,10 +1963,10 @@ export default function CDTmap() {
         }}
       ></svg>
 
-      {/* Photo panel — overlays the left half, photo at natural proportions */}
+      {/* Photo panel — overlays the left half, styled like garmin/leg panels */}
       {displayedPopout && (
         <div
-          className={`absolute inset-y-0 left-0 w-1/2 z-10 flex flex-col items-center justify-center pl-6 pr-2 pt-6 pb-6 ${notoSans.className}`}
+          className={`absolute inset-y-0 left-0 w-1/2 z-10 p-10 flex items-center justify-center ${notoSans.className}`}
           style={{
             animation: photoPopout
               ? "photo-fade-in 0.3s ease-in-out forwards"
@@ -1972,131 +1974,128 @@ export default function CDTmap() {
             pointerEvents: "none",
           }}
         >
-          {/* Photo card — pointer-events: auto so the card is interactive;
-              clicks outside the card pass through to the SVG */}
           <div
-            style={{
-              position: "relative",
-              maxWidth: "100%",
-              maxHeight: "100%",
-              borderRadius: 8,
-              overflow: "hidden",
-              flexShrink: 1,
-              pointerEvents: "auto",
-            }}
+            className="flex flex-col max-w-full rounded-xl overflow-hidden"
+            style={{ background: "rgba(255,255,255,0.97)", pointerEvents: "auto", boxShadow: PANEL_SHADOW }}
           >
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                closeAllPanelsRef.current();
-                if (zoomRef.current && ref.current) {
-                  d3.select(ref.current).transition().duration(750).ease(d3.easeCubicInOut).call(zoomRef.current.transform, d3.zoomIdentity);
-                }
-              }}
-              aria-label="Close"
-              style={{
-                position: "absolute",
-                top: 10,
-                right: 10,
-                width: 28,
-                height: 28,
-                borderRadius: "50%",
-                background: "rgba(0,0,0,0.5)",
-                color: "#fff",
-                border: "none",
-                cursor: "pointer",
-                fontSize: 18,
-                lineHeight: 1,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 1,
-              }}
-            >
-              ×
-            </button>
-            <img
-              src={popoutProps?.path}
-              alt="Trail photo"
-              style={{
-                display: "block",
-                maxWidth: "100%",
-                maxHeight: "100%",
-                width: "auto",
-                height: "auto",
-              }}
-            />
-            {/* Date / time + caption preview overlay at the bottom edge of the photo */}
+            {/* Header — date as title, time as subtitle */}
             <div
-              style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
-                padding: "40px 16px 12px",
-                color: "#fff",
-                pointerEvents: "none",
-              }}
+              className="flex items-center justify-between px-5 py-3 flex-shrink-0"
+              style={{ background: colors.photos }}
             >
-              <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-                {popoutDate.dateStr}
-              </p>
-              <p style={{ margin: "4px 0 0", fontSize: 12, opacity: 0.85 }}>
-                {popoutDate.timeStr}
-              </p>
-              {/* Caption preview — clickable, opens edit modal */}
+              <div>
+                {popoutDate.dateStr && (
+                  <p className="font-semibold text-white text-sm uppercase tracking-wide">
+                    {popoutDate.dateStr}
+                  </p>
+                )}
+                {popoutDate.timeStr && (
+                  <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.8)" }}>
+                    {popoutDate.timeStr}
+                  </p>
+                )}
+              </div>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setCaptionModalOpen(true);
+                  closeAllPanelsRef.current();
+                  if (zoomRef.current && ref.current) {
+                    d3.select(ref.current).transition().duration(750).ease(d3.easeCubicInOut).call(zoomRef.current.transform, d3.zoomIdentity);
+                  }
                 }}
+                aria-label="Close"
                 style={{
-                  pointerEvents: "auto",
+                  color: "#fff",
+                  background: "rgba(0,0,0,0.2)",
+                  borderRadius: "50%",
+                  width: 28,
+                  height: 28,
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 18,
                   display: "flex",
                   alignItems: "center",
-                  gap: 5,
-                  marginTop: 6,
-                  background: "none",
-                  border: "none",
-                  padding: 0,
-                  cursor: "pointer",
-                  width: "100%",
-                  textAlign: "left",
+                  justifyContent: "center",
                 }}
               >
-                <span
+                ×
+              </button>
+            </div>
+
+            {/* Photo body with caption overlay */}
+            <div className="overflow-hidden relative">
+              <img
+                src={popoutProps?.path}
+                alt="Trail photo"
+                style={{
+                  display: "block",
+                  width: "auto",
+                  height: "auto",
+                  maxWidth: "100%",
+                  maxHeight: "calc(100vh - 9rem)",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
+                  padding: "40px 16px 12px",
+                  color: "#fff",
+                  pointerEvents: "none",
+                }}
+              >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCaptionModalOpen(true);
+                  }}
                   style={{
-                    color: "#fff",
-                    fontSize: 11,
-                    opacity: 0.75,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    flex: 1,
-                    fontStyle: captionDraft ? "normal" : "italic",
+                    pointerEvents: "auto",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 5,
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    width: "100%",
+                    textAlign: "left",
                   }}
                 >
-                  {captionDraft
-                    ? captionDraft.split("\n")[0]
-                    : "Add a caption…"}
-                </span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width={11}
-                  height={11}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="rgba(255,255,255,0.75)"
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ flexShrink: 0 }}
-                >
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                </svg>
-              </button>
+                  <span
+                    style={{
+                      color: "#fff",
+                      fontSize: 11,
+                      opacity: 0.75,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      flex: 1,
+                      fontStyle: captionDraft ? "normal" : "italic",
+                    }}
+                  >
+                    {captionDraft ? captionDraft.split("\n")[0] : "Add a caption…"}
+                  </span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={11}
+                    height={11}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.75)"
+                    strokeWidth={2.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{ flexShrink: 0 }}
+                  >
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2183,12 +2182,12 @@ export default function CDTmap() {
 
           return (
             <div
-              className={`absolute inset-y-0 left-0 w-1/2 z-10 p-16 flex items-center ${notoSans.className}`}
+              className={`absolute inset-y-0 left-0 w-1/2 z-10 p-10 flex items-center ${notoSans.className}`}
               style={{ animation: "photo-fade-in 0.3s ease-in-out forwards", pointerEvents: "none" }}
             >
               <div
-                className="flex flex-col w-full max-h-full rounded-xl shadow-2xl overflow-hidden"
-                style={{ background: "rgba(255,255,255,0.97)", pointerEvents: "auto" }}
+                className="flex flex-col w-full max-h-full rounded-xl overflow-hidden"
+                style={{ background: "rgba(255,255,255,0.97)", pointerEvents: "auto", boxShadow: PANEL_SHADOW }}
               >
                 <div
                   className="flex items-center justify-between px-5 py-3 flex-shrink-0"
@@ -2341,8 +2340,8 @@ export default function CDTmap() {
           style={{ animation: "photo-fade-in 0.3s ease-in-out forwards", pointerEvents: "none" }}
         >
           <div
-            className="flex flex-col w-full max-h-full rounded-xl shadow-2xl overflow-hidden"
-            style={{ background: "rgba(255,255,255,0.97)", pointerEvents: "auto" }}
+            className="flex flex-col w-full max-h-full rounded-xl overflow-hidden"
+            style={{ background: "rgba(255,255,255,0.97)", pointerEvents: "auto", boxShadow: PANEL_SHADOW }}
           >
             {/* Header */}
             <div
