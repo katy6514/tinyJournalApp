@@ -8,7 +8,7 @@ import * as d3 from "d3";
 
 import { width, height, cities, colors } from "./constants";
 import { updatePhotoCaption } from "@/app/lib/actions/photos";
-import { notoSans } from "@/app/ui/fonts";
+import { notoSans, notoSerif } from "@/app/ui/fonts";
 
 import {
   getAlternatingColor,
@@ -202,6 +202,7 @@ export default function CDTmap() {
   messagePanelRef.current = messagePanel;
 
   const updateActiveHighlightRef = useRef(() => {});
+  const closeAllPanelsRef = useRef(() => {});
 
   // Floating photo popout: shown when a photo point or cluster is clicked
   const [photoPopout, setPhotoPopout] = useState(null);
@@ -220,8 +221,9 @@ export default function CDTmap() {
   // Disambiguation menu: shown when a photo dot overlaps a camp/message point
   const [disambigMenu, setDisambigMenu] = useState(null);
 
-  const [legCard, setLegCard] = useState(null);
-  const legCardHideTimerRef = useRef(null);
+  const [legPanel, setLegPanel] = useState(null);
+  const legPanelRef = useRef(legPanel);
+  legPanelRef.current = legPanel;
 
   const [captionDraft, setCaptionDraft] = useState("");
   const [captionSaved, setCaptionSaved] = useState(false);
@@ -371,6 +373,58 @@ export default function CDTmap() {
     return () => clearTimeout(panTimerRef.current);
   }, [pendingPhotoPopout]); // projection omitted: memoized with [] so never changes
 
+  // When a trail leg panel opens, zoom to show the leg on the right half.
+  // When it closes, reset to the identity transform.
+  useEffect(() => {
+    if (!legPanel) {
+      if (zoomRef.current && ref.current) {
+        d3.select(ref.current)
+          .transition()
+          .duration(750)
+          .ease(d3.easeCubicInOut)
+          .call(zoomRef.current.transform, d3.zoomIdentity);
+      }
+      return;
+    }
+    if (!zoomRef.current || !ref.current) return;
+
+    const svgRect = ref.current.getBoundingClientRect();
+    const rs = Math.min(svgRect.width / width, svgRect.height / height);
+    const ox = (svgRect.width - width * rs) / 2;
+    const oy = (svgRect.height - height * rs) / 2;
+
+    const projected = legPanel.coordinates.map((c) => projection(c));
+    const xs = projected.map((p) => p[0]);
+    const ys = projected.map((p) => p[1]);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs);
+    const y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const legW = x1 - x0;
+    const legH = y1 - y0;
+    const cx = (x0 + x1) / 2;
+    const cy = (y0 + y1) / 2;
+
+    // Fit the leg into the right half of the viewport with padding.
+    const PAD = 80;
+    const availW = svgRect.width * (1 - PANEL_FRACTION) - PAD * 2;
+    const availH = svgRect.height - PAD * 2;
+    const k = Math.max(1, Math.min(
+      legW > 0 ? availW / (legW * rs) : 500,
+      legH > 0 ? availH / (legH * rs) : 500,
+      500,
+    ));
+
+    // Target: center of the right (non-panel) half in SVG viewport units.
+    const targetVBX = (svgRect.width * (1 + PANEL_FRACTION) / 2 - ox) / rs;
+    const targetVBY = (svgRect.height / 2 - oy) / rs;
+    const newT = d3.zoomIdentity.translate(targetVBX - k * cx, targetVBY - k * cy).scale(k);
+
+    d3.select(ref.current)
+      .transition()
+      .duration(1000)
+      .ease(d3.easeCubicInOut)
+      .call(zoomRef.current.transform, newT);
+  }, [legPanel]); // projection stable (memoized with [])
+
   // Re-apply active highlight whenever selection changes.
   useEffect(() => {
     updateActiveHighlightRef.current();
@@ -379,6 +433,10 @@ export default function CDTmap() {
   useEffect(() => {
     updateActiveHighlightRef.current();
   }, [messagePanel]);
+
+  useEffect(() => {
+    updateActiveHighlightRef.current();
+  }, [legPanel]);
 
   const [captionModalOpen, setCaptionModalOpen] = useState(false);
 
@@ -390,6 +448,22 @@ export default function CDTmap() {
     setCaptionSaved(false);
     setCaptionModalOpen(false);
   }, [photoPopout]);
+
+  // Re-assigned on every render so D3 closures (registered once) always call
+  // the latest version, which holds stable React setters and the panTimerRef.
+  closeAllPanelsRef.current = () => {
+    clearTimeout(panTimerRef.current);
+    setPendingPhotoPopout(null);
+    setPhotoPopout(null);
+    setMessagePanel(null);
+    setClusterPanel(null);
+    setLegPanel(null);
+    setDisambigMenu(null);
+  };
+
+  // Fraction of the viewport width occupied by left-side panels (w-1/2).
+  // Update here if any panel container's width class changes.
+  const PANEL_FRACTION = 0.5;
 
   const projection = useMemo(() => {
     return d3
@@ -952,6 +1026,7 @@ export default function CDTmap() {
         "active-pulse",
         false,
       );
+      g.selectAll(".trail").classed("trail-active-pulse", false);
 
       const photo = photoPopoutRef.current;
       if (photo) {
@@ -974,21 +1049,27 @@ export default function CDTmap() {
           )
           .classed("active-pulse", true);
       }
+
+      const leg = legPanelRef.current;
+      if (leg?.title) {
+        g.selectAll(".trail")
+          .filter((d) => d.properties.title === leg.title)
+          .classed("trail-active-pulse", true);
+      }
     }
     updateActiveHighlightRef.current = updateActiveHighlight;
 
     svg.on("click", (event) => {
       if (!event.target.classList.contains("state-clickable")) {
-        if (clusterPanelRef.current) {
-          setClusterPanel(null);
-        } else if (!messagePanelRef.current && !photoPopoutRef.current) {
+        const anyOpen =
+          clusterPanelRef.current ||
+          legPanelRef.current ||
+          messagePanelRef.current ||
+          photoPopoutRef.current;
+        if (!anyOpen) {
           svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
         }
-        clearTimeout(panTimerRef.current);
-        setPendingPhotoPopout(null);
-        setPhotoPopout(null);
-        setDisambigMenu(null);
-        setMessagePanel(null);
+        closeAllPanelsRef.current();
       }
     });
 
@@ -1173,7 +1254,7 @@ export default function CDTmap() {
         .attr("d", path)
         .on("click", function (event, d) {
           event.stopPropagation();
-          setMessagePanel(null);
+          closeAllPanelsRef.current();
 
           // Check if we’re already zoomed in on this state
           const [[x0, y0], [x1, y1]] = path.bounds(d); // Get bounding box of the selected state
@@ -1278,6 +1359,7 @@ export default function CDTmap() {
         tooltipLabel: "messages",
         visKey: "messages",
         onClusterClick: (d) => {
+          closeAllPanelsRef.current();
           const currentK = currentTransformRef.current?.k ?? 1;
           const dissolveK = clusterDissolveScale(d.points, projection);
 
@@ -1289,9 +1371,6 @@ export default function CDTmap() {
                 parseGPSTime(b.properties.GPSTime),
             );
             setMessagePanel({ items: sorted, datum: d });
-            clearTimeout(panTimerRef.current);
-            setPendingPhotoPopout(null);
-            setPhotoPopout(null);
             // Pan+zoom only if the cluster is near an edge of the visible area.
             if (ref.current && zoomRef.current) {
               const svgRect = ref.current.getBoundingClientRect();
@@ -1356,12 +1435,9 @@ export default function CDTmap() {
         tooltipLabel: "campsites",
         visKey: "campsites",
         onClusterClick: (d) => {
+          closeAllPanelsRef.current();
           const currentK = currentTransformRef.current?.k ?? 1;
           const dissolveK = clusterDissolveScale(d.points, projection);
-          clearTimeout(panTimerRef.current);
-          setPendingPhotoPopout(null);
-          setPhotoPopout(null);
-          setMessagePanel(null);
 
           if (dissolveK > MAX_CLUSTER_ZOOM || currentK >= MAX_CLUSTER_ZOOM) {
             // Co-located or at max zoom: zoom+pan to full viewport center if near an edge.
@@ -1534,9 +1610,9 @@ export default function CDTmap() {
           .on("keydown", function (event, d) {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
-              setMessagePanel(null);
-              setPendingPhotoPopout({ item: d, prevOpen: photoPopoutRef.current !== null });
-              setPhotoPopout(null);
+              const prevOpen = photoPopoutRef.current !== null;
+              closeAllPanelsRef.current();
+              setPendingPhotoPopout({ item: d, prevOpen });
             }
           })
           .on("click", function (event, d) {
@@ -1565,6 +1641,7 @@ export default function CDTmap() {
                 others.push({ kind: "message", data: site });
             }
             if (others.length > 0) {
+              closeAllPanelsRef.current();
               setDisambigMenu({
                 x: event.clientX,
                 y: event.clientY,
@@ -1572,18 +1649,15 @@ export default function CDTmap() {
                 others,
               });
             } else {
-              setMessagePanel(null);
-              setPendingPhotoPopout({ item: d, prevOpen: photoPopoutRef.current !== null });
-              setPhotoPopout(null);
+              const wasOpen = photoPopoutRef.current !== null;
+              closeAllPanelsRef.current();
+              setPendingPhotoPopout({ item: d, prevOpen: wasOpen });
             }
           });
 
         function openPhotoClusterPanel(d) {
           handleMouseOut();
-          clearTimeout(panTimerRef.current);
-          setPendingPhotoPopout(null);
-          setPhotoPopout(null);
-          setMessagePanel(null);
+          closeAllPanelsRef.current();
           const currentK = currentTransformRef.current?.k ?? 1;
           const scale = clusterZoomTarget(d.points, currentK, projection);
           setClusterPanel({
@@ -1704,9 +1778,9 @@ export default function CDTmap() {
         .attr("stroke", "transparent")
         .attr("stroke-width", 12)
         .attr("vector-effect", "non-scaling-stroke")
+        .attr("aria-describedby", "tooltip")
         .on("mouseover", function (event, d) {
-          if ((currentTransformRef.current?.k ?? 0) <= 20) return;
-          clearTimeout(legCardHideTimerRef.current);
+          if ((currentTransformRef.current?.k ?? 0) <= 2.35) return;
           const raw = d.properties.date;
           const dateStr = raw
             ? new Date(raw + "T00:00:00").toLocaleDateString("en-US", {
@@ -1715,37 +1789,51 @@ export default function CDTmap() {
                 year: "numeric",
               })
             : null;
-          setLegCard({
-            x: event.pageX,
-            y: event.pageY,
-            date: dateStr,
-            name: d.properties.description || "",
-            text: d.properties.text || null,
-            entryId: d.properties.entry_id || null,
-          });
+          const desc = d.properties.description || "";
+          const tooltip = document.getElementById("tooltip");
+          tooltip.innerHTML = dateStr
+            ? `<p style="font-weight:600">${dateStr}</p><p style="font-weight:400;opacity:0.85">${desc}</p>`
+            : `<p style="font-weight:600">${desc}</p>`;
+          tooltip.style.left = event.pageX + 15 + "px";
+          tooltip.style.top = event.pageY - 50 + "px";
+          tooltip.classList.remove("invisible", "opacity-0");
+          tooltip.classList.add("visible", "opacity-100");
           g.selectAll(".trail")
             .filter((td) => td === d)
             .attr("stroke-width", 4);
         })
+        .on("mousemove", handleMouseMove)
         .on("mouseout", function (_event, d) {
-          legCardHideTimerRef.current = setTimeout(() => setLegCard(null), 300);
+          handleMouseOut();
           g.selectAll(".trail")
             .filter((td) => td === d)
             .attr("stroke-width", 2);
         })
-        .on("click", function (_event, d) {
-          if (!currentUserRef.current) return;
-          const entryId = d.properties.entry_id;
-          if (!entryId) return;
-          clearTimeout(legCardHideTimerRef.current);
-          setLegCard(null);
-          router.push(`/journal/${entryId}`);
+        .on("click", function (event, d) {
+          if ((currentTransformRef.current?.k ?? 0) <= 2.35) return;
+          event.stopPropagation();
+          handleMouseOut();
+          g.selectAll(".trail").filter((td) => td === d).attr("stroke-width", 2);
+          const raw = d.properties.date;
+          const dateStr = raw
+            ? new Date(raw + "T00:00:00").toLocaleDateString("en-US", {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })
+            : null;
+          closeAllPanelsRef.current();
+          setLegPanel({
+            title: d.properties.title,
+            date: dateStr,
+            name: d.properties.description || "",
+            text: d.properties.text || null,
+            entryId: d.properties.entry_id || null,
+            color: getAlternatingColor(d.properties),
+            coordinates: d.geometry.coordinates,
+          });
         })
-        .style("cursor", (d) =>
-          d.properties.entry_id && currentUserRef.current
-            ? "pointer"
-            : "default",
-        )
+        .style("cursor", "pointer")
         .attr("display", "none");
 
       // Raise leader lines and origin dots above the trail layer
@@ -1872,6 +1960,8 @@ export default function CDTmap() {
       <style>{`
         @keyframes border-pulse { 0%, 100% { stroke-width: 1.5; } 50% { stroke-width: 10; } }
         .active-pulse { animation: border-pulse 1.5s ease-in-out infinite; }
+        @keyframes trail-pulse { 0%, 100% { stroke-width: 2; } 50% { stroke-width: 7; } }
+        .trail-active-pulse { animation: trail-pulse 1.5s ease-in-out infinite; }
         @keyframes photo-fade-in  { from { opacity: 0; } to { opacity: 1; } }
         @keyframes photo-fade-out { from { opacity: 1; } to { opacity: 0; } }
       `}</style>
@@ -1914,11 +2004,7 @@ export default function CDTmap() {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                clearTimeout(panTimerRef.current);
-                setPendingPhotoPopout(null);
-                setPhotoPopout(null);
-                setClusterPanel(null);
-                setDisambigMenu(null);
+                closeAllPanelsRef.current();
               }}
               aria-label="Close"
               style={{
@@ -2139,6 +2225,7 @@ export default function CDTmap() {
                     onClick={() => {
                       setMessagePanel(null);
                       setClusterPanel(null);
+                      setLegPanel(null);
                     }}
                     aria-label="Close"
                     style={{
@@ -2206,10 +2293,9 @@ export default function CDTmap() {
           <button
             className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
             onClick={() => {
-              setMessagePanel(null);
-              setPhotoPopout(null);
-              setPendingPhotoPopout({ item: disambigMenu.photo, prevOpen: photoPopout !== null });
-              setDisambigMenu(null);
+              const wasOpen = photoPopout !== null;
+              closeAllPanelsRef.current();
+              setPendingPhotoPopout({ item: disambigMenu.photo, prevOpen: wasOpen });
             }}
           >
             <span style={{ color: colors.photosDark }}>●</span>
@@ -2261,55 +2347,78 @@ export default function CDTmap() {
         </div>
       )}
 
-      {/* Leg hover card — floats near cursor when hovering a trail segment */}
-      {legCard && (
+      {/* Leg entry panel — shown when a trail segment is clicked */}
+      {legPanel && (
         <div
-          className={`fixed z-30 ${notoSans.className}`}
-          style={{
-            left: legCard.x + 15,
-            top: legCard.y - 80,
-            width: 240,
-            background: "rgba(255,255,255,0.97)",
-            borderRadius: 10,
-            boxShadow: "0 4px 24px rgba(0,0,0,0.18)",
-            padding: "14px 16px",
-            pointerEvents: "auto",
-          }}
-          onMouseEnter={() => clearTimeout(legCardHideTimerRef.current)}
-          onMouseLeave={() => {
-            legCardHideTimerRef.current = setTimeout(() => setLegCard(null), 300);
-          }}
+          className={`absolute inset-y-0 left-0 w-1/2 z-10 p-10 flex items-center ${notoSans.className}`}
+          style={{ animation: "photo-fade-in 0.3s ease-in-out forwards", pointerEvents: "none" }}
         >
-          {legCard.date && (
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              {legCard.date}
-            </p>
-          )}
-          <p className="font-semibold text-sm text-gray-900 mb-2">{legCard.name}</p>
-          {legCard.text && (
-            <p
-              className="text-xs text-gray-600 leading-relaxed mb-3"
-              style={{
-                display: "-webkit-box",
-                WebkitLineClamp: 4,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
+          <div
+            className="flex flex-col w-full max-h-full rounded-xl shadow-2xl overflow-hidden"
+            style={{ background: "rgba(255,255,255,0.97)", pointerEvents: "auto" }}
+          >
+            {/* Header */}
+            <div
+              className="flex items-center justify-between px-5 py-3 flex-shrink-0"
+              style={{ background: legPanel.color }}
             >
-              {legCard.text}
-            </p>
-          )}
-          {legCard.entryId && currentUserRef.current && (
-            <button
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800"
-              onClick={() => {
-                setLegCard(null);
-                router.push(`/journal/${legCard.entryId}`);
-              }}
-            >
-              Read full entry →
-            </button>
-          )}
+              <div>
+                <p className="font-semibold text-white text-sm uppercase tracking-wide">
+                  {legPanel.name}
+                </p>
+                {legPanel.date && (
+                  <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.8)" }}>
+                    {legPanel.date}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setLegPanel(null)}
+                aria-label="Close"
+                style={{
+                  color: "#fff",
+                  background: "rgba(0,0,0,0.2)",
+                  borderRadius: "50%",
+                  width: 28,
+                  height: 28,
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 18,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Entry text */}
+            <div className="overflow-y-auto px-5 py-4 flex-1 min-h-0">
+              {legPanel.text ? (
+                <p className={`${notoSerif.className} whitespace-pre-wrap text-sm leading-relaxed text-gray-800`}>
+                  {legPanel.text}
+                </p>
+              ) : (
+                <p className="text-sm text-gray-400 italic">No journal entry for this day.</p>
+              )}
+            </div>
+
+            {/* Footer */}
+            {legPanel.entryId && currentUserRef.current && (
+              <div className="px-5 py-3 flex-shrink-0 border-t border-gray-100 flex justify-end">
+                <button
+                  className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                  onClick={() => {
+                    setLegPanel(null);
+                    router.push(`/journal/${legPanel.entryId}`);
+                  }}
+                >
+                  Read full entry →
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
