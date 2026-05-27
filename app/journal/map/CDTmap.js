@@ -174,6 +174,7 @@ function LegendSymbol({ shape, fill, stroke, color }) {
   }
 }
 
+
 export default function CDTmap() {
   const ref = useRef();
   const gRef = useRef(null);
@@ -188,6 +189,8 @@ export default function CDTmap() {
     photos: true,
     campsites: true,
     messages: true,
+    contours: true,
+
   });
   const visibilityRef = useRef(visibility);
   visibilityRef.current = visibility;
@@ -265,6 +268,8 @@ export default function CDTmap() {
     g.selectAll(
       ".messagePoints, .msgCluster, .msgClusterHit, .msgClusterLabel",
     ).attr("display", visibility.messages ? null : "none");
+    g.selectAll(".contour").attr("display", visibility.contours ? null : "none");
+
   }, [visibility]);
 
   // When a cluster is clicked, zoom to the next pre-set level centered on the cluster centroid.
@@ -1224,7 +1229,8 @@ export default function CDTmap() {
       d3.json("/api/states"),
       d3.json("/data/cdtInreachData_withCoords.geojson"),
       d3.json("/api/photos"),
-    ]).then(([trackData, stateData, inReachData, photoData]) => {
+      d3.json("/contours.geojson"),
+    ]).then(([trackData, stateData, inReachData, photoData, contourData]) => {
       /* -----------------------------------------------------
       *  State outline mapping functionality
       ----------------------------------------------------- */
@@ -1309,6 +1315,24 @@ export default function CDTmap() {
           .attr("pointer-events", "none")
           .text(d.properties.name.toUpperCase());
       });
+
+      /* -----------------------------------------------------
+      *  Contour lines (below all data layers)
+      ----------------------------------------------------- */
+      if (contourData?.features?.length) {
+        g.selectAll(".contour")
+          .data(contourData.features)
+          .enter()
+          .append("path")
+          .attr("class", "contour")
+          .attr("d", path)
+          .attr("fill", "none")
+          .attr("stroke", (d) => d.properties.index ? "#9a7040" : "#c4a882")
+          .attr("stroke-width", (d) => d.properties.index ? 0.9 : 0.35)
+          .attr("vector-effect", "non-scaling-stroke")
+          .attr("pointer-events", "none")
+          .attr("display", visibilityRef.current.contours ? null : "none");
+      }
 
       /* -----------------------------------------------------
       *  Plotting Garmin Data
@@ -1911,6 +1935,14 @@ export default function CDTmap() {
       stroke: colors.messagesDark,
       shape: "square",
     },
+    {
+      key: "contours",
+      label: "Contours",
+      fill: "none",
+      stroke: "#c4a882",
+      shape: "line",
+    },
+
   ];
 
   const STATIC_LAYERS = [

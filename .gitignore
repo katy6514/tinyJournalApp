@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# DEM raster source files (large binaries, processed into public/contours.geojson)
+/scripts/dem/*.tif
+/scripts/dem/*.tiff
