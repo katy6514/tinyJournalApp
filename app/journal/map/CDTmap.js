@@ -1999,9 +1999,6 @@ export default function CDTmap() {
                 onClick={(e) => {
                   e.stopPropagation();
                   closeAllPanelsRef.current();
-                  if (zoomRef.current && ref.current) {
-                    d3.select(ref.current).transition().duration(750).ease(d3.easeCubicInOut).call(zoomRef.current.transform, d3.zoomIdentity);
-                  }
                 }}
                 aria-label="Close"
                 style={{
