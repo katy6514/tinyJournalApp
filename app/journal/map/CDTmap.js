@@ -228,6 +228,9 @@ export default function CDTmap() {
   const legPanelRef = useRef(legPanel);
   legPanelRef.current = legPanel;
 
+  const [scaleBar, setScaleBar] = useState(null);
+  const updateScaleBarRef = useRef(() => {});
+
   const [captionDraft, setCaptionDraft] = useState("");
   const [captionSaved, setCaptionSaved] = useState(false);
   const lastSavedCaptionRef = useRef("");
@@ -445,6 +448,30 @@ export default function CDTmap() {
     setClusterPanel(null);
     setLegPanel(null);
     setDisambigMenu(null);
+  };
+
+  const MI_STEPS = [0.1, 0.25, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
+  updateScaleBarRef.current = (transform) => {
+    if (!ref.current || !projection.invert) return;
+    const svgRect = ref.current.getBoundingClientRect();
+    const k = transform.k;
+    const rs = svgRect.width / width;
+    const cx = (width / 2 - transform.x) / k;
+    const cy = (height / 2 - transform.y) / k;
+    const p1 = projection.invert([cx, cy]);
+    const p2 = projection.invert([cx + 1, cy]);
+    if (!p1 || !p2) return;
+    const miPerGPx = d3.geoDistance(p1, p2) * 3959;
+    if (!miPerGPx) return;
+    const miPerCssPx = miPerGPx / (k * rs);
+    const targetMi = 140 * miPerCssPx;
+    const niceMi = MI_STEPS.find((d) => d >= targetMi) ?? MI_STEPS[MI_STEPS.length - 1];
+    const widthPx = Math.round(niceMi / miPerCssPx);
+    if (widthPx < 20 || widthPx > 500) return;
+    setScaleBar({
+      widthPx,
+      label: niceMi >= 1 ? `${niceMi} mi` : `${Math.round(niceMi * 5280)} ft`,
+    });
   };
 
   // Fraction of the viewport width occupied by left-side panels (w-1/2).
@@ -998,6 +1025,7 @@ export default function CDTmap() {
           applyRaiseOrder();
         }
         updateActiveHighlightRef.current();
+        updateScaleBarRef.current(event.transform);
       });
 
     zoomRef.current = zoom;
@@ -1879,6 +1907,8 @@ export default function CDTmap() {
         .attr("stroke-width", 3)
         .attr("stroke-linejoin", "round")
         .attr("paint-order", "stroke");
+
+      updateScaleBarRef.current(currentTransformRef.current ?? d3.zoomIdentity);
     });
 
     /* -----------------------------------------------------
@@ -2439,6 +2469,22 @@ export default function CDTmap() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Scale bar — bottom left */}
+      {scaleBar && (
+        <div
+          className={`absolute bottom-3 left-3 z-20 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg shadow-md px-3 py-2 ${notoSans.className}`}
+          style={{ minWidth: scaleBar.widthPx + 24 }}
+        >
+          <div
+            className="border-l-2 border-r-2 border-b-2 border-gray-500 dark:border-gray-400 mb-1 mx-auto"
+            style={{ width: scaleBar.widthPx, height: 7 }}
+          />
+          <p className="text-xs text-center text-gray-600 dark:text-gray-400 leading-none">
+            {scaleBar.label}
+          </p>
         </div>
       )}
 
