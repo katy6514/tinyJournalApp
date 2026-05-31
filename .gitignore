@@ -43,3 +43,6 @@ next-env.d.ts
 # DEM raster source files (large binaries, processed into public/contours.geojson)
 /scripts/dem/*.tif
 /scripts/dem/*.tiff
+
+# Trail legs export (generated from DB for contour clipping, not source data)
+/scripts/trail_legs.geojson
