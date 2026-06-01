@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notoSans, notoSerif } from "@/app/ui/fonts";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
 import { Button } from "@/app/ui/components/button";
-import { PencilIcon } from "@heroicons/react/24/outline";
+import { PencilIcon, MapIcon } from "@heroicons/react/24/outline";
 
 import {
   fetchEntryByID,
@@ -72,8 +72,8 @@ export default async function Page(props: {
           },
         ]}
       />
-      {/* Prev / Next navigation */}
-      <div className="flex justify-between py-2 mb-2 w-[85%] mx-auto">
+      {/* Prev / Next navigation + action buttons */}
+      <div className="flex justify-between items-center py-2 mb-2 w-[85%] mx-auto">
         {adjacent.prev ? (
           <Link href={`/journal/${adjacent.prev.entry_id}`} className="btn btn-ghost btn-sm gap-1">
             <span>←</span>
@@ -82,6 +82,14 @@ export default async function Page(props: {
         ) : (
           <span />
         )}
+        <div className="flex gap-2">
+          <Button href={`/journal/map?entry_id=${entry_id}`} icon={<MapIcon />} variant="secondary">
+            View on Map
+          </Button>
+          <Button href={`/journal/${entry_id}/edit`} icon={<PencilIcon />} variant="secondary">
+            Edit
+          </Button>
+        </div>
         {adjacent.next ? (
           <Link href={`/journal/${adjacent.next.entry_id}`} className="btn btn-ghost btn-sm gap-1">
             <span>{format(parseISO(adjacent.next.date), "MMM d, yyyy")}</span>
@@ -155,15 +163,6 @@ export default async function Page(props: {
         </p>
         <div className="mt-8">
           <EntryPhotos photos={photos} />
-        </div>
-        <div className="mt-6 flex justify-end">
-          <Button
-            href={`/journal/${entry_id}/edit`}
-            icon={<PencilIcon />}
-            variant="secondary"
-          >
-            Edit
-          </Button>
         </div>
       </div>
     </main>

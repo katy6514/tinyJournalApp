@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import * as d3 from "d3";
 
@@ -241,6 +241,8 @@ export default function CDTmap() {
   const trackDataRef = useRef(null);
   const openLegByEntryIdRef = useRef(() => {});
   const pendingLegTitleRef = useRef(null);
+  const searchParams = useSearchParams();
+  const initialEntryId = useRef(searchParams.get("entry_id"));
 
   const [captionDraft, setCaptionDraft] = useState("");
   const [captionSaved, setCaptionSaved] = useState(false);
@@ -1901,6 +1903,11 @@ export default function CDTmap() {
           d.geometry.coordinates.length > 0,
       );
       trackDataRef.current = trailFeatures;
+      if (initialEntryId.current) {
+        const id = initialEntryId.current;
+        initialEntryId.current = null;
+        openLegByEntryIdRef.current(id);
+      }
 
       g.selectAll(".trail")
         .data(trailFeatures)

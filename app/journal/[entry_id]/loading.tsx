@@ -5,9 +5,13 @@ export default function Loading() {
     <main>
       <BreadcrumbSkeleton />
 
-      {/* Prev / Next navigation */}
-      <div className="flex justify-between py-2 mb-2 w-[85%] mx-auto">
+      {/* Prev / Next navigation + action buttons */}
+      <div className="flex justify-between items-center py-2 mb-2 w-[85%] mx-auto">
         <div className="skeleton h-8 w-36 rounded-lg" />
+        <div className="flex gap-2">
+          <div className="skeleton h-10 w-32 rounded-lg" />
+          <div className="skeleton h-10 w-24 rounded-lg" />
+        </div>
         <div className="skeleton h-8 w-36 rounded-lg" />
       </div>
 
@@ -58,9 +62,6 @@ export default function Loading() {
           <div className="skeleton h-28 flex-[3]" />
           <div className="skeleton h-28 flex-[2]" />
           <div className="skeleton h-28 flex-[1]" />
-        </div>
-        <div className="mt-6 flex justify-end">
-          <div className="skeleton h-10 w-24" />
         </div>
       </div>
     </main>
