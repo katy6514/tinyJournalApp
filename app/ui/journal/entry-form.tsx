@@ -52,7 +52,7 @@ export default function EntryForm({
       {!isEdit && (
         <input type="hidden" name="returnPage" value={returnPage} />
       )}
-      <div className=" bg-gray-50 p-4 md:p-6">
+      <div className="bg-gray-50 dark:bg-gray-700 p-4 md:p-6">
         <div className="grid gap-6 mb-6 grid-cols-2 grid-rows-4">
 
           {/* DATE — selector in create mode, heading in edit mode */}

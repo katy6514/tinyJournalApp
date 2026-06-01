@@ -1,7 +1,5 @@
 import React from "react";
-import Link from "next/link";
 import { twMerge } from "tailwind-merge";
-import { sourceSans } from "@/app/ui/fonts";
 
 const baseClasses = `text-gray-900 bg-white
 block w-full p-2.5 text-sm border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500`;
@@ -55,7 +53,7 @@ export function Select({
       id={id}
       name={name}
       required={required}
-      className={twMerge("select w-full", className)}
+      className={twMerge("select w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500", className)}
       aria-describedby={ariaDescribedby}
       onChange={onChange}
       defaultValue={defaultValue}

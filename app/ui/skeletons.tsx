@@ -1,6 +1,6 @@
 // Loading animation — requires @keyframes shimmer defined in globals.css
 // Container must have `relative overflow-hidden` for before: pseudo-element to work
-const shimmer = `before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent`;
+const shimmer = `before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 dark:before:via-white/10 before:to-transparent`;
 
 const bgWhite = "bg-white dark:bg-gray-800";
 const bgGray50 = "bg-gray-50 dark:bg-gray-700";

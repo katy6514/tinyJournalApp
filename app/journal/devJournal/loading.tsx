@@ -2,11 +2,11 @@ import { BreadcrumbSkeleton } from "@/app/ui/skeletons";
 
 export default function Loading() {
   return (
-    <main className="bg-gray-50 dark:bg-gray-800 p-4 md:p-6">
+    <main>
       <BreadcrumbSkeleton />
-      <div className="max-w-3xl mx-auto p-6 space-y-10">
+      <div className="max-w-3xl mx-auto p-6">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i}>
+          <div key={i} className="mb-8">
             <div className="skeleton h-6 w-64 mb-4" />
             <div className="space-y-2">
               {Array.from({ length: 4 }).map((_, j) => (
