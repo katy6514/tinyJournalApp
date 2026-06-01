@@ -19,6 +19,7 @@ import {
   handleMouseOut,
   handleMouseOver,
 } from "./utils";
+import { MapIcon, MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 const clusterRadius = (count, k) => (9 + Math.log(count + 1) * 5) / k;
 
@@ -231,6 +232,15 @@ export default function CDTmap() {
   const [scaleBar, setScaleBar] = useState(null);
   const updateScaleBarRef = useRef(() => {});
 
+  const [exploreOpen, setExploreOpen] = useState(false);
+  const [exploreData, setExploreData] = useState(null);
+  const [mapMessageCount, setMapMessageCount] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const stateDataRef = useRef(null);
+  const zoomToStateRef = useRef(() => {});
+  const trackDataRef = useRef(null);
+  const openLegByEntryIdRef = useRef(() => {});
+
   const [captionDraft, setCaptionDraft] = useState("");
   const [captionSaved, setCaptionSaved] = useState(false);
   const lastSavedCaptionRef = useRef("");
@@ -242,6 +252,10 @@ export default function CDTmap() {
     const handler = (e) => setIsDark(e.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/explore").then((r) => r.json()).then(setExploreData);
   }, []);
 
   // displayedPopout lags behind photoPopout by ~320ms so the panel can fade
@@ -448,6 +462,53 @@ export default function CDTmap() {
     setClusterPanel(null);
     setLegPanel(null);
     setDisambigMenu(null);
+  };
+
+  openLegByEntryIdRef.current = (entryId) => {
+    const feature = trackDataRef.current?.find(
+      (f) => f.properties.entry_id === entryId,
+    );
+    if (!feature) return;
+    const raw = feature.properties.date;
+    const dateStr = raw
+      ? new Date(raw + "T00:00:00").toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })
+      : null;
+    closeAllPanelsRef.current();
+    setExploreOpen(false);
+    setLegPanel({
+      title: feature.properties.title,
+      date: dateStr,
+      name: feature.properties.description || "",
+      text: feature.properties.text || null,
+      entryId: feature.properties.entry_id || null,
+      color: getAlternatingColor(feature.properties),
+      coordinates: feature.geometry.coordinates,
+    });
+  };
+
+  zoomToStateRef.current = (stateName) => {
+    const svgEl = ref.current;
+    if (!svgEl || !zoomRef.current || !stateDataRef.current) return;
+    const feature = stateDataRef.current.find((f) => f.properties.name === stateName);
+    if (!feature) return;
+    const [[x0, y0], [x1, y1]] = path.bounds(feature);
+    const dx = x1 - x0;
+    const dy = y1 - y0;
+    const x = (x0 + x1) / 2;
+    const y = (y0 + y1) / 2;
+    const scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / width, dy / height)));
+    const translate = [width / 2 - scale * x, height / 2 - scale * y];
+    d3.select(svgEl)
+      .transition()
+      .duration(750)
+      .call(
+        zoomRef.current.transform,
+        d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale),
+      );
   };
 
   const MI_STEPS = [0.1, 0.25, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
@@ -1076,6 +1137,7 @@ export default function CDTmap() {
     updateActiveHighlightRef.current = updateActiveHighlight;
 
     svg.on("click", (event) => {
+      setExploreOpen(false);
       if (!event.target.classList.contains("state-clickable")) {
         // Zoom out if a zoom-altering panel was open, or if nothing was open.
         // Non-zoom panels (message, photo) don't reset the zoom on close.
@@ -1384,6 +1446,9 @@ export default function CDTmap() {
           messageSites.push(d);
         }
       });
+
+      stateDataRef.current = stateData.features;
+      setMapMessageCount(messageSites.length);
 
       renderMessageClusters = makeSymbolClusterRenderer({
         sites: messageSites,
@@ -1790,6 +1855,7 @@ export default function CDTmap() {
           Array.isArray(d.geometry?.coordinates) &&
           d.geometry.coordinates.length > 0,
       );
+      trackDataRef.current = trailFeatures;
 
       g.selectAll(".trail")
         .data(trailFeatures)
@@ -2471,6 +2537,224 @@ export default function CDTmap() {
           </div>
         </div>
       )}
+
+      {/* Explore panel — top left floating */}
+      {(() => {
+        const CDT_STATES = [
+          { name: "New Mexico", abbr: "NM" },
+          { name: "Colorado", abbr: "CO" },
+          { name: "Wyoming", abbr: "WY" },
+          { name: "Idaho", abbr: "ID" },
+          { name: "Montana", abbr: "MT" },
+        ];
+
+        const formatDateLabel = (dateStr) => {
+          const [year, month, day] = dateStr.split("-");
+          const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+          return `${months[parseInt(month, 10) - 1]} ${parseInt(day, 10)}, ${year}`;
+        };
+
+        const trailYear = exploreData?.stats?.start_date?.substring(0, 4);
+        const today = new Date();
+        const mm = String(today.getMonth() + 1).padStart(2, "0");
+        const dd = String(today.getDate()).padStart(2, "0");
+        const onThisDayDate = trailYear ? `${trailYear}-${mm}-${dd}` : null;
+        const onThisDayEntry = onThisDayDate
+          ? exploreData?.dates?.find((d) => d.date === onThisDayDate)
+          : null;
+        const trailStart = exploreData?.stats?.start_date;
+        const trailEnd = exploreData?.stats?.end_date;
+        const onThisDayInRange =
+          onThisDayDate && trailStart && trailEnd
+            ? onThisDayDate >= trailStart && onThisDayDate <= trailEnd
+            : false;
+        const onThisDayDisabled = !onThisDayEntry;
+        const onThisDayTooltip = !onThisDayDate
+          ? "Loading…"
+          : !onThisDayInRange
+          ? `Trail wasn't active on this calendar date in ${trailYear}`
+          : !onThisDayEntry
+          ? "No entry recorded for this date"
+          : undefined;
+
+        const totalDays = exploreData?.stats?.total_days;
+        const totalPhotos = exploreData?.stats?.total_photos;
+
+        const handleRandomDay = () => {
+          const dates = exploreData?.dates;
+          if (!dates?.length) return;
+          const pick = dates[Math.floor(Math.random() * dates.length)];
+          openLegByEntryIdRef.current(pick.entry_id);
+        };
+
+        const handleSearch = (e) => {
+          e.preventDefault();
+          if (!searchQuery.trim()) return;
+          router.push(`/journal/listView?query=${encodeURIComponent(searchQuery.trim())}`);
+        };
+
+        return (
+          <div className={`absolute top-3 left-3 z-30 ${notoSans.className}`}>
+            {/* Trigger */}
+            <button
+              onClick={(e) => { e.stopPropagation(); setExploreOpen((o) => !o); }}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-lg shadow-md hover:bg-white dark:hover:bg-gray-900 transition-colors"
+            >
+              <MapIcon className="w-4 h-4 shrink-0" />
+              explore the map…
+            </button>
+
+            {/* Dropdown panel */}
+            {exploreOpen && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="mt-1.5 w-72 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                    Explore the map
+                  </p>
+                  <button
+                    onClick={() => setExploreOpen(false)}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="p-3 space-y-4 max-h-[70vh] overflow-y-auto">
+
+                  {/* Go to date */}
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Go to date</p>
+                    <select
+                      defaultValue=""
+                      onChange={(e) => {
+                        if (e.target.value) openLegByEntryIdRef.current(e.target.value);
+                      }}
+                      className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    >
+                      <option value="" disabled>Select a date…</option>
+                      {exploreData?.dates?.map((d) => (
+                        <option key={d.entry_id} value={d.entry_id}>
+                          {formatDateLabel(d.date)}
+                          {d.state ? ` — ${d.state}` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Search */}
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Search entries</p>
+                    <form onSubmit={handleSearch} className="flex gap-1.5">
+                      <label className="flex-1 flex items-center gap-1.5 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 focus-within:ring-2 focus-within:ring-blue-400">
+                        <MagnifyingGlassIcon className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Search entries…"
+                          className="flex-1 text-sm bg-transparent outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400"
+                        />
+                      </label>
+                      <button
+                        type="submit"
+                        className="px-2.5 py-1.5 text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                      >
+                        Go
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Random + quick actions */}
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Quick picks</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        onClick={handleRandomDay}
+                        disabled={!exploreData?.dates?.length}
+                        className="px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-center"
+                      >
+                        🎲 Random day
+                      </button>
+                      <button
+                        onClick={() => exploreData?.longestDay && router.push(`/journal/${exploreData.longestDay.entry_id}`)}
+                        disabled={!exploreData?.longestDay}
+                        title={exploreData?.longestDay ? `${formatDateLabel(exploreData.longestDay.date)} — ${Number(exploreData.longestDay.mileage).toFixed(1)} mi` : undefined}
+                        className="px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-center"
+                      >
+                        ↑ Longest day
+                      </button>
+                      <button
+                        onClick={() => exploreData?.shortestDay && router.push(`/journal/${exploreData.shortestDay.entry_id}`)}
+                        disabled={!exploreData?.shortestDay}
+                        title={exploreData?.shortestDay ? `${formatDateLabel(exploreData.shortestDay.date)} — ${Number(exploreData.shortestDay.mileage).toFixed(1)} mi` : undefined}
+                        className="px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-center"
+                      >
+                        ↓ Shortest day
+                      </button>
+                      <button
+                        onClick={() => onThisDayEntry && router.push(`/journal/${onThisDayEntry.entry_id}`)}
+                        disabled={onThisDayDisabled}
+                        title={onThisDayTooltip}
+                        className="px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-center"
+                      >
+                        📅 On this day{trailYear ? ` in ${trailYear}` : ""}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Zoom to state */}
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Zoom to state</p>
+                    <div className="flex gap-1">
+                      {CDT_STATES.map(({ name, abbr }) => (
+                        <button
+                          key={name}
+                          onClick={() => zoomToStateRef.current(name)}
+                          className="flex-1 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+                        >
+                          {abbr}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  {(totalDays || totalPhotos || mapMessageCount !== null) && (
+                    <div className="pt-1 border-t border-gray-100 dark:border-gray-800">
+                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Trail stats</p>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        {totalDays && (
+                          <div>
+                            <p className="text-lg font-semibold text-gray-800 dark:text-gray-100 leading-tight">{totalDays}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500">days</p>
+                          </div>
+                        )}
+                        {totalPhotos && (
+                          <div>
+                            <p className="text-lg font-semibold text-gray-800 dark:text-gray-100 leading-tight">{totalPhotos}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500">photos</p>
+                          </div>
+                        )}
+                        {mapMessageCount !== null && (
+                          <div>
+                            <p className="text-lg font-semibold text-gray-800 dark:text-gray-100 leading-tight">{mapMessageCount}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500">messages</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Scale bar — bottom left */}
       {scaleBar && (
