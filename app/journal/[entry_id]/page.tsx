@@ -73,23 +73,19 @@ export default async function Page(props: {
         ]}
       />
       {/* Prev / Next navigation */}
-      <div className="flex justify-between py-2 text-sm w-[85%] mx-auto">
+      <div className="flex justify-between py-2 mb-2 w-[85%] mx-auto">
         {adjacent.prev ? (
-          <Link
-            href={`/journal/${adjacent.prev.entry_id}`}
-            className="text-blue-600 hover:underline dark:text-blue-400"
-          >
-            ← prev day: {format(parseISO(adjacent.prev.date), "MMMM d, yyyy")}
+          <Link href={`/journal/${adjacent.prev.entry_id}`} className="btn btn-ghost btn-sm gap-1">
+            <span>←</span>
+            <span>{format(parseISO(adjacent.prev.date), "MMM d, yyyy")}</span>
           </Link>
         ) : (
           <span />
         )}
         {adjacent.next ? (
-          <Link
-            href={`/journal/${adjacent.next.entry_id}`}
-            className="text-blue-600 hover:underline dark:text-blue-400"
-          >
-            next day: {format(parseISO(adjacent.next.date), "MMMM d, yyyy")} →
+          <Link href={`/journal/${adjacent.next.entry_id}`} className="btn btn-ghost btn-sm gap-1">
+            <span>{format(parseISO(adjacent.next.date), "MMM d, yyyy")}</span>
+            <span>→</span>
           </Link>
         ) : (
           <span />
@@ -97,7 +93,7 @@ export default async function Page(props: {
       </div>
 
       {/* Metadata + minimap section */}
-      <div className="flex gap-6 items-start py-6 w-[85%] mx-auto">
+      <div className="flex gap-6 items-start p-6 w-[85%] mx-auto bg-white dark:bg-gray-700 rounded-lg shadow-sm">
         <div className="w-1/2 text-right">
           <h2 className={`${notoSans.className} mb-1 text-md md:text-lg text-gray-500 dark:text-gray-400`}>
             {formattedDate}
@@ -150,9 +146,11 @@ export default async function Page(props: {
         )}
       </div>
 
+      <hr className="w-[85%] mx-auto mt-8 border-gray-200 dark:border-gray-600" />
+
       {/* Constrained journal content */}
       <div className="max-w-3xl mx-auto p-6">
-        <p className={`${notoSerif.className} whitespace-pre-wrap`}>
+        <p className={`${notoSerif.className} whitespace-pre-wrap text-lg leading-loose mt-8`}>
           {text}
         </p>
         <div className="mt-8">
