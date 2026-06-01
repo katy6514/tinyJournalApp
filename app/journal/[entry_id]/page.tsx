@@ -72,8 +72,8 @@ export default async function Page(props: {
           },
         ]}
       />
-      <div className="max-w-3xl mx-auto p-6">
-      <div className="flex justify-between py-2 text-sm">
+      {/* Prev / Next navigation */}
+      <div className="flex justify-between py-2 text-sm w-[85%] mx-auto">
         {adjacent.prev ? (
           <Link
             href={`/journal/${adjacent.prev.entry_id}`}
@@ -96,72 +96,65 @@ export default async function Page(props: {
         )}
       </div>
 
-      <div>
-        {/* Grid: col 1 = metadata then journal text, col 2 = minimap spanning both rows */}
-        <div className={legGeoJSON ? "grid grid-cols-[1fr_50%] gap-4 items-start" : ""}>
-          {/* Metadata */}
-          <div className="flex justify-between gap-6 mb-6">
-            <div>
-              <h2 className={`${notoSans.className} mb-1 text-md md:text-lg text-gray-500 dark:text-gray-400`}>
-                {formattedDate}
-              </h2>
-              <h1 className={`${notoSans.className} mb-1 text-xl md:text-2xl`}>
-                {legname}
-              </h1>
-              <h2 className={`${notoSans.className} text-lg md:text-xl`}>
-                {state}
-              </h2>
-            </div>
-            {(legStart || legEnd || leg?.mileage) && (
-              <table className={`${notoSans.className} text-sm text-gray-600 dark:text-gray-400 self-start mt-1`}>
-                <tbody>
-                  {legStart && (
-                    <tr>
-                      <td className="font-medium pr-4 py-0.5">
-                        <span className="flex items-center gap-1.5">
-                          Start
-                          <svg width="14" height="14" className="shrink-0"><circle cx="7" cy="7" r="5.5" fill="#16a34a" stroke="white" strokeWidth="1.5" /></svg>
-                        </span>
-                      </td>
-                      <td>{legStart}</td>
-                    </tr>
-                  )}
-                  {legEnd && (
-                    <tr>
-                      <td className="font-medium pr-4 py-0.5">
-                        <span className="flex items-center gap-1.5">
-                          End
-                          <svg width="14" height="14" className="shrink-0"><rect x="1.5" y="1.5" width="11" height="11" fill="#dc2626" stroke="white" strokeWidth="1.5" /></svg>
-                        </span>
-                      </td>
-                      <td>{legEnd}</td>
-                    </tr>
-                  )}
-                  {leg?.mileage && (
-                    <tr>
-                      <td className="font-medium pr-4 py-0.5">Mileage</td>
-                      <td>{leg.mileage} mi</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          {/* Mini map — spans metadata row + journal text row */}
-          {legGeoJSON && (
-            <div className="row-span-2">
-              <EntryMiniMap legGeoJSON={legGeoJSON} date={date} start={legStart} end={legEnd} />
-            </div>
+      {/* Metadata + minimap section */}
+      <div className="flex gap-6 items-start py-6 w-[85%] mx-auto">
+        <div className="w-1/2 text-right">
+          <h2 className={`${notoSans.className} mb-1 text-md md:text-lg text-gray-500 dark:text-gray-400`}>
+            {formattedDate}
+          </h2>
+          <h1 className={`${notoSans.className} mb-1 text-xl md:text-2xl`}>
+            {legname}
+          </h1>
+          <h2 className={`${notoSans.className} text-lg md:text-xl`}>
+            {state}
+          </h2>
+          {(legStart || legEnd || leg?.mileage) && (
+            <table className={`${notoSans.className} text-base text-gray-600 dark:text-gray-400 mt-3`}>
+              <tbody>
+                {legStart && (
+                  <tr>
+                    <td className="font-medium px-2 py-1">
+                      <span className="flex items-center gap-2">
+                        Start
+                        <svg width="14" height="14" className="shrink-0"><circle cx="7" cy="7" r="5.5" fill="#16a34a" stroke="white" strokeWidth="1.5" /></svg>
+                      </span>
+                    </td>
+                    <td className="px-2 py-1 text-left">{legStart}</td>
+                  </tr>
+                )}
+                {legEnd && (
+                  <tr>
+                    <td className="font-medium px-2 py-1">
+                      <span className="flex items-center gap-2">
+                        End
+                        <svg width="14" height="14" className="shrink-0"><rect x="1.5" y="1.5" width="11" height="11" fill="#dc2626" stroke="white" strokeWidth="1.5" /></svg>
+                      </span>
+                    </td>
+                    <td className="px-2 py-1 text-left">{legEnd}</td>
+                  </tr>
+                )}
+                {leg?.mileage && (
+                  <tr>
+                    <td className="font-medium px-2 py-1">Mileage</td>
+                    <td className="px-2 py-1 text-left">{leg.mileage} mi</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           )}
-
-          {/* Journal text */}
-          <div>
-            <p className={`${notoSerif.className} whitespace-pre-wrap`}>
-              {text}
-            </p>
-          </div>
         </div>
+        {legGeoJSON && (
+          <div className="w-1/2">
+            <EntryMiniMap legGeoJSON={legGeoJSON} date={date} start={legStart} end={legEnd} />
+          </div>
+        )}
+      </div>
+
+      {/* Constrained journal content */}
+      <div className="max-w-3xl mx-auto p-6">
+        <p className={`${notoSerif.className} whitespace-pre-wrap`}>
+          {text}
+        </p>
         <div className="mt-8">
           <EntryPhotos photos={photos} />
         </div>
@@ -174,7 +167,6 @@ export default async function Page(props: {
             Edit
           </Button>
         </div>
-      </div>
       </div>
     </main>
   );
