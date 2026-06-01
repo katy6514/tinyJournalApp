@@ -240,6 +240,7 @@ export default function CDTmap() {
   const zoomToStateRef = useRef(() => {});
   const trackDataRef = useRef(null);
   const openLegByEntryIdRef = useRef(() => {});
+  const pendingLegTitleRef = useRef(null);
 
   const [captionDraft, setCaptionDraft] = useState("");
   const [captionSaved, setCaptionSaved] = useState(false);
@@ -469,6 +470,7 @@ export default function CDTmap() {
       (f) => f.properties.entry_id === entryId,
     );
     if (!feature) return;
+
     const raw = feature.properties.date;
     const dateStr = raw
       ? new Date(raw + "T00:00:00").toLocaleDateString("en-US", {
@@ -477,9 +479,7 @@ export default function CDTmap() {
           year: "numeric",
         })
       : null;
-    closeAllPanelsRef.current();
-    setExploreOpen(false);
-    setLegPanel({
+    const panelData = {
       title: feature.properties.title,
       date: dateStr,
       name: feature.properties.description || "",
@@ -487,7 +487,52 @@ export default function CDTmap() {
       entryId: feature.properties.entry_id || null,
       color: getAlternatingColor(feature.properties),
       coordinates: feature.geometry.coordinates,
-    });
+    };
+
+    closeAllPanelsRef.current();
+    setExploreOpen(false);
+
+    // Start pulsing the trail immediately so it's visible during the zoom.
+    // pendingLegTitleRef is read by updateActiveHighlight on every zoom tick.
+    pendingLegTitleRef.current = panelData.title;
+
+    // Zoom to leg — same math as the legPanel useEffect.
+    if (ref.current && zoomRef.current) {
+      const svgRect = ref.current.getBoundingClientRect();
+      const rs = Math.min(svgRect.width / width, svgRect.height / height);
+      const ox = (svgRect.width - width * rs) / 2;
+      const oy = (svgRect.height - height * rs) / 2;
+      const projected = panelData.coordinates.map((c) => projection(c));
+      const xs = projected.map((p) => p[0]);
+      const ys = projected.map((p) => p[1]);
+      const x0 = Math.min(...xs), x1 = Math.max(...xs);
+      const y0 = Math.min(...ys), y1 = Math.max(...ys);
+      const legW = x1 - x0, legH = y1 - y0;
+      const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+      const PAD = 80;
+      const availW = svgRect.width * (1 - PANEL_FRACTION) - PAD * 2;
+      const availH = svgRect.height - PAD * 2;
+      const k = Math.max(1, Math.min(
+        legW > 0 ? availW / (legW * rs) : 500,
+        legH > 0 ? availH / (legH * rs) : 500,
+        500,
+      ));
+      const targetVBX = (svgRect.width * (1 + PANEL_FRACTION) / 2 - ox) / rs;
+      const targetVBY = (svgRect.height / 2 - oy) / rs;
+      const newT = d3.zoomIdentity.translate(targetVBX - k * cx, targetVBY - k * cy).scale(k);
+      d3.select(ref.current)
+        .transition()
+        .duration(1000)
+        .ease(d3.easeCubicInOut)
+        .call(zoomRef.current.transform, newT);
+    }
+
+    // Open the panel after the zoom finishes, then clear the pending title
+    // (legPanel useEffect will re-run zoom but it's already at the right position).
+    setTimeout(() => {
+      pendingLegTitleRef.current = null;
+      setLegPanel(panelData);
+    }, 1100);
   };
 
   zoomToStateRef.current = (stateName) => {
@@ -1127,10 +1172,10 @@ export default function CDTmap() {
           .classed("active-pulse", true);
       }
 
-      const leg = legPanelRef.current;
-      if (leg?.title) {
+      const activeTitle = legPanelRef.current?.title ?? pendingLegTitleRef.current;
+      if (activeTitle) {
         g.selectAll(".trail")
-          .filter((d) => d.properties.title === leg.title)
+          .filter((d) => d.properties.title === activeTitle)
           .classed("trail-active-pulse", true);
       }
     }
