@@ -72,6 +72,7 @@ export default async function Page(props: {
           },
         ]}
       />
+      <div className="max-w-3xl mx-auto p-6">
       <div className="flex justify-between py-2 text-sm">
         {adjacent.prev ? (
           <Link
@@ -173,6 +174,7 @@ export default async function Page(props: {
             Edit
           </Button>
         </div>
+      </div>
       </div>
     </main>
   );

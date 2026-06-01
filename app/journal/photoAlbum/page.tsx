@@ -30,15 +30,16 @@ export default async function Page() {
           },
         ]}
       />
-      <div className="inner">
-        <p>Below are some of the photos I took during my trip.</p>
-      </div>
-
-      <div
-        className="inner divided"
-        style={{ maxHeight: "700px", overflowY: "auto" }}
-      >
-        <PhotoAlbum photos={photosData} />
+      <div className="max-w-3xl mx-auto p-6">
+        <div className="inner">
+          <p>Below are some of the photos I took during my trip.</p>
+        </div>
+        <div
+          className="inner divided"
+          style={{ maxHeight: "700px", overflowY: "auto" }}
+        >
+          <PhotoAlbum photos={photosData} />
+        </div>
       </div>
     </main>
   );

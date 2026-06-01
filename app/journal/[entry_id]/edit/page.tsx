@@ -31,7 +31,9 @@ export default async function Page(props: {
           },
         ]}
       />
-      <EntryForm entry={entry} states={states} />
+      <div className="max-w-3xl mx-auto p-6">
+        <EntryForm entry={entry} states={states} />
+      </div>
     </main>
   );
 }

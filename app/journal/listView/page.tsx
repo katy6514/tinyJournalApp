@@ -32,19 +32,21 @@ export default async function Page(props: {
           },
         ]}
       />
-      <div className="my-4 flex items-center justify-between md:my-8">
-        <Search placeholder="Search entries..." />
-        <Button href={`/journal/create?returnPage=${currentPage}`} variant="primary" icon={<PlusIcon />}>
+      <div className="max-w-3xl mx-auto p-6">
+        <div className="my-4 flex items-center justify-between md:my-8">
+          <Search placeholder="Search entries..." />
+          <Button href={`/journal/create?returnPage=${currentPage}`} variant="primary" icon={<PlusIcon />}>
+            Add Entry
+          </Button>
+        </div>
+        <JournalList entries={entries} />
+        <div className="mt-5 flex w-full justify-center">
+          <Pagination totalPages={totalPages} />
+        </div>
+        <Button href={"/journal/create"} variant="primary" icon={<PlusIcon />}>
           Add Entry
-        </Button>
+        </Button>{" "}
       </div>
-      <JournalList entries={entries} />
-      <div className="mt-5 flex w-full justify-center">
-        <Pagination totalPages={totalPages} />
-      </div>
-      <Button href={"/journal/create"} variant="primary" icon={<PlusIcon />}>
-        Add Entry
-      </Button>{" "}
     </main>
   );
 }

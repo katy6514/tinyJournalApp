@@ -29,7 +29,9 @@ export default async function Page(props: {
           },
         ]}
       />
-      <EntryForm emptyEntries={emptyEntries} legNameByDateId={legNameByDateId} returnPage={returnPage} states={states} />
+      <div className="max-w-3xl mx-auto p-6">
+        <EntryForm emptyEntries={emptyEntries} legNameByDateId={legNameByDateId} returnPage={returnPage} states={states} />
+      </div>
     </main>
   );
 }
