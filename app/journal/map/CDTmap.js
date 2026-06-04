@@ -2688,12 +2688,27 @@ export default function CDTmap() {
                       className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     >
                       <option value="" disabled>Select a date…</option>
-                      {exploreData?.dates?.map((d) => (
-                        <option key={d.entry_id} value={d.entry_id}>
-                          {formatDateLabel(d.date)}
-                          {d.state ? ` — ${d.state}` : ""}
-                        </option>
-                      ))}
+                      {(() => {
+                        const groups = [];
+                        const seen = new Map();
+                        for (const d of (exploreData?.dates ?? [])) {
+                          const key = d.state ?? "Other";
+                          if (!seen.has(key)) {
+                            seen.set(key, []);
+                            groups.push({ state: key, dates: seen.get(key) });
+                          }
+                          seen.get(key).push(d);
+                        }
+                        return groups.map(({ state, dates }) => (
+                          <optgroup key={state} label={state}>
+                            {dates.map((d) => (
+                              <option key={d.entry_id} value={d.entry_id}>
+                                {formatDateLabel(d.date)}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ));
+                      })()}
                     </select>
                   </div>
 
