@@ -45,7 +45,7 @@ export default async function Page(props: {
       <div className="flex gap-8 p-6">
 
         {/* Left column: metadata + photos */}
-        <div className="w-1/3 shrink-0 space-y-4 sticky top-6 self-start">
+        <div className="w-1/3 shrink-0 space-y-4 sticky top-6 self-start max-h-[calc(100vh-5rem)] overflow-y-auto pr-1">
           <div className="card bg-base-100 dark:bg-gray-700 shadow-sm border border-base-200 dark:border-gray-600">
             <div className="card-body p-5">
               <h2 className={`${notoSans.className} text-sm text-gray-500 dark:text-gray-400`}>

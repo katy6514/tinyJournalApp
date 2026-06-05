@@ -16,7 +16,6 @@ import { parseLegName } from "@/app/lib/utils";
 import EntryPhotos from "@/app/ui/journal/entry-photos";
 import EntryMiniMap from "@/app/ui/journal/entry-mini-map";
 
-// import { EditEntry } from "@/app/ui/journal/buttons";
 
 export default async function Page(props: {
   params: Promise<{ entry_id: string }>;

@@ -44,6 +44,7 @@ export default function EntryPhotos({ photos, maxPhotosPerRow }: { photos: Photo
         rowConstraints={maxPhotosPerRow ? { maxPhotos: maxPhotosPerRow } : undefined}
         onClick={({ index }) => setIndex(index)}
         render={{
+          image: (props, { photo }) => <img {...props} title={photo.description || undefined} />,
           wrapper: (props, { photo }) => (
             <div {...props} style={{ ...props.style, position: "relative", overflow: "hidden" }}>
               {props.children}
