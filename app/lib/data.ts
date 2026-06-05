@@ -329,6 +329,82 @@ export async function fetchAllLegs(): Promise<Leg[]> {
 //   FROM dates d
 //   ORDER BY d.date;
 
+// ==========================
+// Trail stats for sidebar
+// ==========================
+export async function fetchTrailStats(): Promise<{
+  total_entries: number;
+  total_days: number;
+  total_mileage: number;
+  total_photos: number;
+}> {
+  const result = await sql`
+    SELECT
+      (SELECT COUNT(*)::int FROM entries)                                          AS total_entries,
+      (SELECT COUNT(*)::int FROM dates d WHERE EXISTS
+        (SELECT 1 FROM entries e WHERE e.date_id = d.id))                         AS total_days,
+      (SELECT COALESCE(SUM(l.mileage), 0)::int FROM legs l WHERE EXISTS
+        (SELECT 1 FROM dates d WHERE d.leg_id = l.id))                            AS total_mileage,
+      (SELECT COUNT(*)::int FROM photos)                                           AS total_photos
+  `;
+  const row = result[0];
+  return {
+    total_entries: Number(row.total_entries),
+    total_days:    Number(row.total_days),
+    total_mileage: Number(row.total_mileage),
+    total_photos:  Number(row.total_photos),
+  };
+}
+
+// ==========================
+// Random photo + entry for sidebar
+// ==========================
+export async function fetchRandomPhotoWithEntry(): Promise<{
+  photo_id: string;
+  path: string;
+  width: number;
+  height: number;
+  title: string;
+  description: string;
+  entry_id: string;
+  date: string;
+  legname: string;
+} | null> {
+  const result = await sql`
+    SELECT
+      p.id                               AS photo_id,
+      p.src                              AS path,
+      p.width::int,
+      p.height::int,
+      COALESCE(p.title, '')              AS title,
+      COALESCE(p.description, '')        AS description,
+      e.id                               AS entry_id,
+      TO_CHAR(d.date, 'YYYY-MM-DD')      AS date,
+      e.legname
+    FROM photos p
+    JOIN dates d ON d.id = p.date_id
+    JOIN entries e ON e.date_id = d.id
+    WHERE p.src IS NOT NULL
+      AND p.width  IS NOT NULL
+      AND p.height IS NOT NULL
+    ORDER BY RANDOM()
+    LIMIT 1
+  `;
+  if (!result[0]) return null;
+  const r = result[0];
+  return {
+    photo_id:    r.photo_id,
+    path:        r.path,
+    width:       Number(r.width),
+    height:      Number(r.height),
+    title:       r.title,
+    description: r.description,
+    entry_id:    r.entry_id,
+    date:        r.date,
+    legname:     r.legname,
+  };
+}
+
 export async function fetchDates() {
   try {
     const rawResult = await sql`
