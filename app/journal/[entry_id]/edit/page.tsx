@@ -58,7 +58,9 @@ export default async function Page(props: {
                 {entry.state}
               </h2>
               {(legStart || legEnd || leg?.mileage) && (
-                <table className={`${notoSans.className} text-sm text-gray-600 dark:text-gray-400 mt-1`}>
+                <>
+                  <div className="divider my-1" />
+                  <table className={`${notoSans.className} text-sm text-gray-600 dark:text-gray-400`}>
                   <tbody>
                     {legStart && (
                       <tr>
@@ -90,6 +92,7 @@ export default async function Page(props: {
                     )}
                   </tbody>
                 </table>
+                </>
               )}
             </div>
           </div>
@@ -97,7 +100,7 @@ export default async function Page(props: {
           {entry.photos?.length > 0 && (
             <div className="card bg-base-100 dark:bg-gray-700 shadow-sm border border-base-200 dark:border-gray-600">
               <div className="card-body p-5">
-                <p className={`${notoSans.className} text-xs font-medium text-gray-500 dark:text-gray-400 mb-2`}>
+                <p className={`${notoSans.className} text-sm font-medium text-gray-500 dark:text-gray-400 mb-2`}>
                   Photos from this day
                 </p>
                 <EntryPhotos photos={entry.photos} maxPhotosPerRow={1} />

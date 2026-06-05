@@ -87,7 +87,7 @@ export default function EntryForm({
             )}
 
             {/* STATE */}
-            <fieldset className="fieldset col-span-2 md:col-span-1">
+            <fieldset className={`fieldset ${isEdit ? "col-span-2" : "col-span-2 md:col-span-1"}`}>
               <legend className="fieldset-legend text-sm">State</legend>
               <Select
                 id="state_id"
@@ -161,7 +161,7 @@ export default function EntryForm({
       <div className="mt-6 flex justify-end gap-4">
         <Button
           href={isEdit ? `/journal/${entry.entry_id}` : "/journal/listView"}
-          variant="secondary"
+          variant="ghost"
         >
           Cancel
         </Button>

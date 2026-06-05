@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { twMerge } from "tailwind-merge";
 
-type ButtonVariant = "primary" | "secondary" | "error" | "outline";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "error" | "outline";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
