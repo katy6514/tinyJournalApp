@@ -22,7 +22,7 @@ type AlbumPhoto = {
   description: string;
 };
 
-export default function EntryPhotos({ photos }: { photos: Photo[] }) {
+export default function EntryPhotos({ photos, maxPhotosPerRow }: { photos: Photo[]; maxPhotosPerRow?: number }) {
   const [index, setIndex] = useState(-1);
 
   if (!photos || photos.length === 0) return null;
@@ -41,6 +41,7 @@ export default function EntryPhotos({ photos }: { photos: Photo[] }) {
       <RowsPhotoAlbum<AlbumPhoto>
         photos={slides}
         targetRowHeight={120}
+        rowConstraints={maxPhotosPerRow ? { maxPhotos: maxPhotosPerRow } : undefined}
         onClick={({ index }) => setIndex(index)}
         render={{
           wrapper: (props, { photo }) => (

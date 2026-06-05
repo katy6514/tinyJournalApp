@@ -6,7 +6,7 @@ import { createEntry, updateEntry, State } from "@/app/lib/actions/entries";
 import { JournalEntry, StateOption } from "@/app/lib/definitions";
 
 import { Button } from "../components/button";
-import { Select, Input, TextArea, Label } from "../components/inputs";
+import { Select, Input, TextArea } from "../components/inputs";
 
 type CreateProps = {
   entry?: undefined;
@@ -52,16 +52,14 @@ export default function EntryForm({
       {!isEdit && (
         <input type="hidden" name="returnPage" value={returnPage} />
       )}
-      <div className="bg-gray-50 dark:bg-gray-700 p-4 md:p-6">
-        <div className="grid gap-6 mb-6 grid-cols-2 grid-rows-4">
+      <div className="card bg-base-100 dark:bg-gray-700 shadow-sm">
+        <div className="card-body">
+          <div className="grid gap-5 grid-cols-2">
 
-          {/* DATE — selector in create mode, heading in edit mode */}
-          <div className="col-span-2 md:col-span-1 row-span-1">
-            {isEdit ? (
-              <h3 className="text-lg font-semibold">updating {entry.date}</h3>
-            ) : (
-              <>
-                <Label htmlFor="date">Select an empty date</Label>
+            {/* DATE — selector in create mode only */}
+            {!isEdit && (
+              <fieldset className="fieldset col-span-2 md:col-span-1">
+                <legend className="fieldset-legend text-sm">Select an empty date</legend>
                 <Select
                   id="date"
                   name="date_id"
@@ -85,78 +83,79 @@ export default function EntryForm({
                     </p>
                   ))}
                 </div>
-              </>
+              </fieldset>
             )}
-          </div>
 
-          {/* STATE */}
-          <div className="col-span-2 md:col-span-1 row-span-1">
-            <Label htmlFor="state_id">State</Label>
-            <Select
-              id="state_id"
-              name="state_id"
-              aria-describedby="state-error"
-              required
-              defaultValue={entry?.state_id ?? ""}
-            >
-              <option value="">Select a state</option>
-              {states.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </Select>
-            <div id="state-error" aria-live="polite" aria-atomic="true">
-              {formState.errors?.state_id?.map((error) => (
-                <p className="mt-2 text-sm text-red-500" key={error}>
-                  {error}
-                </p>
-              ))}
-            </div>
-          </div>
+            {/* STATE */}
+            <fieldset className="fieldset col-span-2 md:col-span-1">
+              <legend className="fieldset-legend text-sm">State</legend>
+              <Select
+                id="state_id"
+                name="state_id"
+                aria-describedby="state-error"
+                required
+                defaultValue={entry?.state_id ?? ""}
+              >
+                <option value="">Select a state</option>
+                {states.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </Select>
+              <div id="state-error" aria-live="polite" aria-atomic="true">
+                {formState.errors?.state_id?.map((error) => (
+                  <p className="mt-2 text-sm text-red-500" key={error}>
+                    {error}
+                  </p>
+                ))}
+              </div>
+            </fieldset>
 
-          {/* LEGNAME */}
-          <div className="col-span-2 row-span-1">
-            <Label htmlFor="legname">{isEdit ? "Title / LegName" : "LegName"}</Label>
-            <Input
-              type="text"
-              id="legname"
-              name="legname"
-              placeholder="Title"
-              aria-describedby="legname-error"
-              required
-              value={legname}
-              onChange={(e) => setLegname(e.target.value)}
-            />
-            <div id="legname-error" aria-live="polite" aria-atomic="true">
-              {formState.errors?.legname?.map((error) => (
-                <p className="mt-2 text-sm text-red-500" key={error}>
-                  {error}
-                </p>
-              ))}
-            </div>
-          </div>
+            {/* LEGNAME */}
+            <fieldset className="fieldset col-span-2">
+              <legend className="fieldset-legend text-sm">{isEdit ? "Title / LegName" : "LegName"}</legend>
+              <Input
+                type="text"
+                id="legname"
+                name="legname"
+                placeholder="Title"
+                aria-describedby="legname-error"
+                required
+                value={legname}
+                onChange={(e) => setLegname(e.target.value)}
+              />
+              <div id="legname-error" aria-live="polite" aria-atomic="true">
+                {formState.errors?.legname?.map((error) => (
+                  <p className="mt-2 text-sm text-red-500" key={error}>
+                    {error}
+                  </p>
+                ))}
+              </div>
+            </fieldset>
 
-          {/* JOURNAL ENTRY */}
-          <div className="col-span-2 row-span-2">
-            <Label htmlFor="text">Journal Entry</Label>
-            <TextArea
-              id="text"
-              name="text"
-              placeholder="Write your thoughts here..."
-              defaultValue={entry?.text ?? ""}
-              aria-describedby="entry-error"
-              required
-            />
-            <div id="entry-error" aria-live="polite" aria-atomic="true">
-              {formState.errors?.text?.map((error) => (
-                <p className="mt-2 text-sm text-red-500" key={error}>
-                  {error}
-                </p>
-              ))}
-            </div>
-          </div>
+            {/* JOURNAL ENTRY */}
+            <fieldset className="fieldset col-span-2">
+              <legend className="fieldset-legend text-sm">Journal Entry</legend>
+              <TextArea
+                id="text"
+                name="text"
+                placeholder="Write your thoughts here..."
+                defaultValue={entry?.text ?? ""}
+                aria-describedby="entry-error"
+                required
+                className="min-h-80"
+              />
+              <div id="entry-error" aria-live="polite" aria-atomic="true">
+                {formState.errors?.text?.map((error) => (
+                  <p className="mt-2 text-sm text-red-500" key={error}>
+                    {error}
+                  </p>
+                ))}
+              </div>
+            </fieldset>
 
+          </div>
         </div>
       </div>
       <div className="mt-6 flex justify-end gap-4">
