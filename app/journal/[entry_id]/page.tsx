@@ -17,7 +17,6 @@ import { parseLegName } from "@/app/lib/utils";
 import EntryPhotos from "@/app/ui/journal/entry-photos";
 import EntryMiniMap from "@/app/ui/journal/entry-mini-map";
 
-
 export default async function Page(props: {
   params: Promise<{ entry_id: string }>;
 }) {
@@ -58,7 +57,9 @@ export default async function Page(props: {
   }
 
   const formattedDate = format(parseISO(date), "MMMM d, yyyy");
-  const { start: legStart, end: legEnd } = leg?.name ? parseLegName(leg.name) : { start: null, end: null };
+  const { start: legStart, end: legEnd } = leg?.name
+    ? parseLegName(leg.name)
+    : { start: null, end: null };
 
   return (
     <main>
@@ -75,7 +76,10 @@ export default async function Page(props: {
       {/* Prev / Next navigation + action buttons */}
       <div className="flex justify-between items-center py-2 mb-2 w-[85%] mx-auto">
         {adjacent.prev ? (
-          <Link href={`/journal/${adjacent.prev.entry_id}`} className="btn btn-ghost btn-sm gap-1">
+          <Link
+            href={`/journal/${adjacent.prev.entry_id}`}
+            className="btn btn-ghost btn-sm gap-1"
+          >
             <span>←</span>
             <span>{format(parseISO(adjacent.prev.date), "MMM d, yyyy")}</span>
           </Link>
@@ -83,15 +87,26 @@ export default async function Page(props: {
           <span />
         )}
         <div className="flex gap-2">
-          <Button href={`/journal/map?entry_id=${entry_id}`} icon={<MapIcon />} variant="secondary">
+          <Button
+            href={`/journal/map?entry_id=${entry_id}`}
+            icon={<MapIcon />}
+            variant="secondary"
+          >
             View on Map
           </Button>
-          <Button href={`/journal/${entry_id}/edit`} icon={<PencilIcon />} variant="secondary">
+          <Button
+            href={`/journal/${entry_id}/edit`}
+            icon={<PencilIcon />}
+            variant="secondary"
+          >
             Edit
           </Button>
         </div>
         {adjacent.next ? (
-          <Link href={`/journal/${adjacent.next.entry_id}`} className="btn btn-ghost btn-sm gap-1">
+          <Link
+            href={`/journal/${adjacent.next.entry_id}`}
+            className="btn btn-ghost btn-sm gap-1"
+          >
             <span>{format(parseISO(adjacent.next.date), "MMM d, yyyy")}</span>
             <span>→</span>
           </Link>
@@ -101,7 +116,7 @@ export default async function Page(props: {
       </div>
 
       {/* Metadata + minimap section */}
-      <div className="relative flex gap-6 items-start p-6 w-[85%] mx-auto rounded-lg shadow-sm overflow-hidden">
+      <div className="relative flex gap-6 items-stretch p-6 w-[85%] mx-auto rounded-lg shadow-sm overflow-hidden">
         {/* Background photo */}
         <Image
           src={photos?.[0]?.path ?? "/ContinentalDivideTrailLogo.png"}
@@ -110,49 +125,80 @@ export default async function Page(props: {
           sizes="85vw"
           className="object-cover"
         />
-        {/* Dark gradient overlay for text readability */}
+        {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/55 to-black/35" />
 
-        {/* Metadata */}
-        <div className="relative w-1/2 text-right">
-          <h2 className={`${notoSans.className} mb-1 text-md md:text-lg text-white/70`}>
-            {formattedDate}
-          </h2>
-          <h1 className={`${notoSans.className} mb-1 text-xl md:text-2xl text-white`}>
-            {legname}
-          </h1>
-          <h2 className={`${notoSans.className} text-lg md:text-xl text-white`}>
-            {state}
-          </h2>
+        {/* Metadata — flex column so table pushes to bottom */}
+        <div className="relative w-1/2 flex flex-col text-right">
+          <div>
+            <h2
+              className={`${notoSans.className} mb-1 text-md md:text-lg text-white/70`}
+            >
+              {formattedDate}
+            </h2>
+            <h1
+              className={`${notoSans.className} mb-1 text-xl md:text-2xl text-white`}
+            >
+              {legname}
+            </h1>
+            <h2
+              className={`${notoSans.className} text-lg md:text-xl text-white`}
+            >
+              {state}
+            </h2>
+          </div>
           {(legStart || legEnd || leg?.mileage) && (
-            <table className={`${notoSans.className} text-base text-white/75 mt-3`}>
+            <table
+              className={`${notoSans.className} mt-auto text-sm text-white/80 text-left`}
+            >
               <tbody>
                 {legStart && (
                   <tr>
-                    <td className="font-medium px-2 py-1">
+                    <td className="font-medium w-px whitespace-nowrap pr-[5px] py-0.5">
                       <span className="flex items-center gap-2">
                         Start
-                        <svg width="14" height="14" className="shrink-0"><circle cx="7" cy="7" r="5.5" fill="#16a34a" stroke="white" strokeWidth="1.5" /></svg>
+                        <svg width="12" height="12" className="shrink-0">
+                          <circle
+                            cx="6"
+                            cy="6"
+                            r="4.5"
+                            fill="#16a34a"
+                            stroke="white"
+                            strokeWidth="1.5"
+                          />
+                        </svg>
                       </span>
                     </td>
-                    <td className="px-2 py-1 text-left">{legStart}</td>
+                    <td className="py-0.5">{legStart}</td>
                   </tr>
                 )}
                 {legEnd && (
                   <tr>
-                    <td className="font-medium px-2 py-1">
+                    <td className="font-medium w-px whitespace-nowrap pr-[5px] py-0.5">
                       <span className="flex items-center gap-2">
                         End
-                        <svg width="14" height="14" className="shrink-0"><rect x="1.5" y="1.5" width="11" height="11" fill="#dc2626" stroke="white" strokeWidth="1.5" /></svg>
+                        <svg width="12" height="12" className="shrink-0">
+                          <rect
+                            x="1"
+                            y="1"
+                            width="10"
+                            height="10"
+                            fill="#dc2626"
+                            stroke="white"
+                            strokeWidth="1.5"
+                          />
+                        </svg>
                       </span>
                     </td>
-                    <td className="px-2 py-1 text-left">{legEnd}</td>
+                    <td className="py-0.5">{legEnd}</td>
                   </tr>
                 )}
                 {leg?.mileage && (
                   <tr>
-                    <td className="font-medium px-2 py-1">Mileage</td>
-                    <td className="px-2 py-1 text-left">{leg.mileage} mi</td>
+                    <td className="font-medium w-px whitespace-nowrap pr-5 py-0.5">
+                      Mileage
+                    </td>
+                    <td className="py-0.5">{leg.mileage} mi</td>
                   </tr>
                 )}
               </tbody>
@@ -163,7 +209,12 @@ export default async function Page(props: {
         {/* Minimap — already has its own bg-white wrapper */}
         {legGeoJSON && (
           <div className="relative w-1/2">
-            <EntryMiniMap legGeoJSON={legGeoJSON} date={date} start={legStart} end={legEnd} />
+            <EntryMiniMap
+              legGeoJSON={legGeoJSON}
+              date={date}
+              start={legStart}
+              end={legEnd}
+            />
           </div>
         )}
       </div>
@@ -172,7 +223,9 @@ export default async function Page(props: {
 
       {/* Constrained journal content */}
       <div className="max-w-3xl mx-auto p-6">
-        <p className={`${notoSerif.className} whitespace-pre-wrap text-lg leading-loose mt-8`}>
+        <p
+          className={`${notoSerif.className} whitespace-pre-wrap text-lg leading-loose mt-8`}
+        >
           {text}
         </p>
         <div className="mt-8">
