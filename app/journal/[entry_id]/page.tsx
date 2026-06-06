@@ -1,5 +1,6 @@
 import { parseISO, format } from "date-fns";
 import Link from "next/link";
+import Image from "next/image";
 
 import { notoSans, notoSerif } from "@/app/ui/fonts";
 import Breadcrumbs from "@/app/ui/journal/breadcrumbs";
@@ -100,19 +101,31 @@ export default async function Page(props: {
       </div>
 
       {/* Metadata + minimap section */}
-      <div className="flex gap-6 items-start p-6 w-[85%] mx-auto bg-white dark:bg-gray-700 rounded-lg shadow-sm">
-        <div className="w-1/2 text-right">
-          <h2 className={`${notoSans.className} mb-1 text-md md:text-lg text-gray-500 dark:text-gray-400`}>
+      <div className="relative flex gap-6 items-start p-6 w-[85%] mx-auto rounded-lg shadow-sm overflow-hidden">
+        {/* Background photo */}
+        <Image
+          src={photos?.[0]?.path ?? "/ContinentalDivideTrailLogo.png"}
+          alt=""
+          fill
+          sizes="85vw"
+          className="object-cover"
+        />
+        {/* Dark gradient overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/55 to-black/35" />
+
+        {/* Metadata */}
+        <div className="relative w-1/2 text-right">
+          <h2 className={`${notoSans.className} mb-1 text-md md:text-lg text-white/70`}>
             {formattedDate}
           </h2>
-          <h1 className={`${notoSans.className} mb-1 text-xl md:text-2xl`}>
+          <h1 className={`${notoSans.className} mb-1 text-xl md:text-2xl text-white`}>
             {legname}
           </h1>
-          <h2 className={`${notoSans.className} text-lg md:text-xl`}>
+          <h2 className={`${notoSans.className} text-lg md:text-xl text-white`}>
             {state}
           </h2>
           {(legStart || legEnd || leg?.mileage) && (
-            <table className={`${notoSans.className} text-base text-gray-600 dark:text-gray-400 mt-3`}>
+            <table className={`${notoSans.className} text-base text-white/75 mt-3`}>
               <tbody>
                 {legStart && (
                   <tr>
@@ -146,8 +159,10 @@ export default async function Page(props: {
             </table>
           )}
         </div>
+
+        {/* Minimap — already has its own bg-white wrapper */}
         {legGeoJSON && (
-          <div className="w-1/2">
+          <div className="relative w-1/2">
             <EntryMiniMap legGeoJSON={legGeoJSON} date={date} start={legStart} end={legEnd} />
           </div>
         )}
