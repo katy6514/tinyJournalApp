@@ -22,6 +22,9 @@ export default async function Page(props: {
 }) {
   const { entry_id } = await props.params;
 
+  // Fire adjacent entries fetch immediately — only needs entry_id, not entry data
+  const adjacentPromise = fetchAdjacentEntries(entry_id);
+
   const entries = await fetchEntryByID(entry_id);
   const entry: JournalEntry = Array.isArray(entries) ? entries[0] : entries;
 
@@ -33,7 +36,7 @@ export default async function Page(props: {
 
   const [leg, adjacent] = await Promise.all([
     fetchLegForDateID(date_id),
-    fetchAdjacentEntries(entry_id),
+    adjacentPromise,
   ]);
 
   let legGeoJSON = null;
