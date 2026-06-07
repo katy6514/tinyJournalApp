@@ -15,27 +15,32 @@ export default function Loading() {
         <div className="skeleton h-8 w-36 rounded-lg" />
       </div>
 
-      {/* Metadata + minimap hero card */}
-      <div className="flex gap-6 items-start p-6 w-[85%] mx-auto bg-white dark:bg-gray-700 rounded-lg shadow-sm">
-        <div className="w-1/2 flex flex-col items-end space-y-1">
-          <div className="skeleton h-5 w-40" />
-          <div className="skeleton h-7 w-48" />
-          <div className="skeleton h-6 w-28" />
-          <div className="space-y-1.5 pt-3 flex flex-col items-start">
+      {/* Metadata + minimap hero card — bg-gray-300 stands in for the photo background */}
+      <div className="relative flex gap-6 items-stretch p-6 w-[85%] mx-auto bg-gray-300 dark:bg-gray-600 rounded-lg shadow-sm overflow-hidden">
+        {/* Left: headings at top, table pinned to bottom */}
+        <div className="w-1/2 flex flex-col items-end">
+          <div className="space-y-2">
+            <div className="skeleton h-5 w-40" />
+            <div className="skeleton h-7 w-48" />
+            <div className="skeleton h-6 w-28" />
+          </div>
+          <div className="mt-auto space-y-1.5 pt-3 self-start">
             <div className="flex gap-4">
-              <div className="skeleton h-5 w-16" />
-              <div className="skeleton h-5 w-36" />
+              <div className="skeleton h-4 w-16" />
+              <div className="skeleton h-4 w-36" />
             </div>
             <div className="flex gap-4">
-              <div className="skeleton h-5 w-16" />
-              <div className="skeleton h-5 w-36" />
+              <div className="skeleton h-4 w-16" />
+              <div className="skeleton h-4 w-36" />
             </div>
             <div className="flex gap-4">
-              <div className="skeleton h-5 w-20" />
-              <div className="skeleton h-5 w-20" />
+              <div className="skeleton h-4 w-20" />
+              <div className="skeleton h-4 w-20" />
             </div>
           </div>
         </div>
+
+        {/* Right: minimap */}
         <div className="w-1/2">
           <div className="skeleton h-64 w-full rounded-lg" />
         </div>
