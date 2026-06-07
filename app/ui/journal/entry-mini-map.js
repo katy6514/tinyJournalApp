@@ -309,12 +309,13 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
         ref={tooltipRef}
         style={{
           display: "none",
-          position: "absolute",
-          top: 0,
-          right: "100%",
-          paddingRight: "12px",
-          width: "100%",
-          zIndex: 10,
+          position: "fixed",
+          top: "50%",
+          left: "2rem",
+          transform: "translateY(-50%)",
+          width: "min(45vw, 680px)",
+          maxHeight: "80vh",
+          zIndex: 50,
           pointerEvents: "none",
         }}
       >
@@ -325,8 +326,10 @@ export default function EntryMiniMap({ legGeoJSON, date, start, end }) {
           style={{
             width: "100%",
             height: "auto",
-            borderRadius: "8px",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
+            maxHeight: "80vh",
+            objectFit: "contain",
+            borderRadius: "12px",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.45)",
           }}
         />
       </div>
