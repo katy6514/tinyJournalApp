@@ -129,30 +129,30 @@ export default async function Page(props: {
           className="object-cover"
         />
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/55 to-black/35" />
+        <div className="absolute inset-0 bg-gradient-to-t from-white/10 via-white/35 to-white/70" />
 
         {/* Metadata — flex column so table pushes to bottom */}
         <div className="relative w-1/2 flex flex-col text-right">
           <div>
             <h2
-              className={`${notoSans.className} mb-1 text-md md:text-lg text-white/70`}
+              className={`${notoSans.className} mb-1 text-md md:text-lg text-gray-600`}
             >
               {formattedDate}
             </h2>
             <h1
-              className={`${notoSans.className} mb-1 text-xl md:text-2xl text-white`}
+              className={`${notoSans.className} mb-1 text-xl md:text-2xl text-gray-900`}
             >
               {legname}
             </h1>
             <h2
-              className={`${notoSans.className} text-lg md:text-xl text-white`}
+              className={`${notoSans.className} text-lg md:text-xl text-gray-900`}
             >
               {state}
             </h2>
           </div>
           {(legStart || legEnd || leg?.mileage) && (
             <table
-              className={`${notoSans.className} mt-auto text-sm text-white/80 text-left`}
+              className={`${notoSans.className} mt-auto text-sm text-gray-700 text-left`}
             >
               <tbody>
                 {legStart && (
