@@ -215,6 +215,11 @@ export default function CDTmap() {
   const photoPopoutRef = useRef(photoPopout);
   photoPopoutRef.current = photoPopout;
 
+  // All valid photo features sorted by dateTime — populated when D3 loads photoData
+  const allPhotosRef = useRef([]);
+  // Re-assigned each render so buttons/keyboard always call the latest version
+  const navigatePhotoRef = useRef(() => {});
+
   // Pending popout: set immediately on click; photoPopout is set after pan completes
   const [pendingPhotoPopout, setPendingPhotoPopout] = useState(null);
   const panTimerRef = useRef(null);
@@ -454,6 +459,28 @@ export default function CDTmap() {
     setCaptionSaved(false);
     setCaptionModalOpen(false);
   }, [photoPopout]);
+
+  // Arrow-key navigation through photos when the popout is open
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (!photoPopoutRef.current) return;
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      navigatePhotoRef.current(e.key === "ArrowRight" ? 1 : -1);
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []); // stable — reads only from refs
+
+  navigatePhotoRef.current = (dir) => {
+    const photos = allPhotosRef.current;
+    if (!photos.length || !photoPopoutRef.current) return;
+    const currentPath = photoPopoutRef.current.item?.properties?.path;
+    const idx = photos.findIndex((p) => p.properties.path === currentPath);
+    if (idx === -1) return;
+    const nextIdx = Math.max(0, Math.min(photos.length - 1, idx + dir));
+    if (nextIdx !== idx) setPhotoPopout({ item: photos[nextIdx], prevOpen: true });
+  };
 
   // Re-assigned on every render so D3 closures (registered once) always call
   // the latest version, which holds stable React setters and the panTimerRef.
@@ -1643,6 +1670,11 @@ export default function CDTmap() {
           projection(d.geometry.coordinates),
       );
 
+      // Keep a sorted snapshot for keyboard/button navigation
+      allPhotosRef.current = [...validPhotoPoints].sort((a, b) =>
+        (a.properties?.dateTime ?? "").localeCompare(b.properties?.dateTime ?? ""),
+      );
+
       /* -----------------------------------------------------
       *  Photo points — clustered by zoom level
       ----------------------------------------------------- */
@@ -2121,6 +2153,14 @@ export default function CDTmap() {
     };
   }, [popoutProps]);
 
+  const currentPhotoIdx = displayedPopout
+    ? allPhotosRef.current.findIndex(
+        (p) => p.properties.path === displayedPopout.item?.properties?.path,
+      )
+    : -1;
+  const hasPrev = currentPhotoIdx > 0;
+  const hasNext = currentPhotoIdx >= 0 && currentPhotoIdx < allPhotosRef.current.length - 1;
+
   return (
     <div className="relative w-full h-full overflow-hidden">
       <style>{`
@@ -2175,28 +2215,72 @@ export default function CDTmap() {
                   </p>
                 )}
               </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  closeAllPanelsRef.current();
-                }}
-                aria-label="Close"
-                style={{
-                  color: "#fff",
-                  background: "rgba(0,0,0,0.2)",
-                  borderRadius: "50%",
-                  width: 28,
-                  height: 28,
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 18,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                ×
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); navigatePhotoRef.current(-1); }}
+                  aria-label="Previous photo"
+                  disabled={!hasPrev}
+                  style={{
+                    color: "#fff",
+                    background: hasPrev ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.08)",
+                    borderRadius: "50%",
+                    width: 28,
+                    height: 28,
+                    border: "none",
+                    cursor: hasPrev ? "pointer" : "default",
+                    fontSize: 18,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: hasPrev ? 1 : 0.35,
+                  }}
+                >
+                  ‹
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); navigatePhotoRef.current(1); }}
+                  aria-label="Next photo"
+                  disabled={!hasNext}
+                  style={{
+                    color: "#fff",
+                    background: hasNext ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.08)",
+                    borderRadius: "50%",
+                    width: 28,
+                    height: 28,
+                    border: "none",
+                    cursor: hasNext ? "pointer" : "default",
+                    fontSize: 18,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: hasNext ? 1 : 0.35,
+                  }}
+                >
+                  ›
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    closeAllPanelsRef.current();
+                  }}
+                  aria-label="Close"
+                  style={{
+                    color: "#fff",
+                    background: "rgba(0,0,0,0.2)",
+                    borderRadius: "50%",
+                    width: 28,
+                    height: 28,
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: 18,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
             {/* Photo body with caption overlay */}
