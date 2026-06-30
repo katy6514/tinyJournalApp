@@ -710,6 +710,11 @@ export default function CDTmap() {
     // Tracks force-displaced positions so the photo click handler can test
     // against visual positions rather than original projection coordinates.
     const displacedPositions = new Map();
+    // Cluster positions keyed by centroid string ("cx,cy") so they survive
+    // the data-object churn caused by renderPhotoClusters re-creating elements
+    // on every pan (cluster objects are new instances each time, so identity
+    // matching via displacedPositions fails for them).
+    const displacedClusterPositions = new Map();
 
     // Separate overlapping solo points using per-hotspot force simulations.
     // Points are first grouped into geographic hotspots via BFS; each hotspot
@@ -720,6 +725,7 @@ export default function CDTmap() {
       const k = transform.k;
       leaderLinesGroup.selectAll("*").remove();
       displacedPositions.clear();
+      displacedClusterPositions.clear();
       if (k < 4) return;
 
       // Match the visual radii used in renderPhotoClusters / zoom handler
@@ -864,6 +870,9 @@ export default function CDTmap() {
         if (Math.abs(x - ox) < 0.01 && Math.abs(y - oy) < 0.01) return;
         if (type !== "msg-cluster" && type !== "camp-cluster") {
           displacedPositions.set(data, { x, y });
+        }
+        if (type === "photo-cluster") {
+          displacedClusterPositions.set(`${ox},${oy}`, { x, y });
         }
 
         const lineColor =
@@ -1148,14 +1157,16 @@ export default function CDTmap() {
             g.selectAll(".photoThumbGroup")
               .filter((d) => d === data)
               .attr("transform", `translate(${x}, ${y})`);
-            g.selectAll(".photoCluster, .photoClusterHit")
-              .filter((d) => d === data)
-              .attr("cx", x)
-              .attr("cy", y);
-            g.selectAll(".photoClusterLabel")
-              .filter((d) => d === data)
-              .attr("x", x)
-              .attr("y", y);
+          });
+          // Clusters are re-created with new data objects on every pan, so
+          // identity matching fails. Look up by centroid string instead.
+          g.selectAll(".photoCluster, .photoClusterHit").each(function (d) {
+            const pos = displacedClusterPositions.get(`${d.cx},${d.cy}`);
+            if (pos) d3.select(this).attr("cx", pos.x).attr("cy", pos.y);
+          });
+          g.selectAll(".photoClusterLabel").each(function (d) {
+            const pos = displacedClusterPositions.get(`${d.cx},${d.cy}`);
+            if (pos) d3.select(this).attr("x", pos.x).attr("y", pos.y);
           });
           applyRaiseOrder();
         }
