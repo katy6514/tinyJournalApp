@@ -34,6 +34,7 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   children: React.ReactNode;
   ariaDescribedby?: string;
   onChange?: React.ChangeEventHandler<HTMLSelectElement>;
+  value?: string | number;
 }
 
 export function Select({
@@ -45,6 +46,7 @@ export function Select({
   ariaDescribedby,
   onChange,
   defaultValue,
+  value,
 }: SelectProps) {
   return (
     <select
@@ -54,7 +56,8 @@ export function Select({
       className={twMerge("select w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500", className)}
       aria-describedby={ariaDescribedby}
       onChange={onChange}
-      defaultValue={defaultValue}
+      defaultValue={value === undefined ? defaultValue : undefined}
+      value={value}
     >
       {children}
     </select>
@@ -84,6 +87,7 @@ export function TextArea({
   placeholder,
   defaultValue,
   ariaDescribedby,
+  onChange,
 }: TextAreaProps) {
   const combinedClasses = twMerge(baseClasses, textAreaClasses, className);
 
@@ -97,6 +101,7 @@ export function TextArea({
       placeholder={placeholder}
       defaultValue={defaultValue}
       aria-describedby={ariaDescribedby}
+      onChange={onChange}
     />
   );
 }
