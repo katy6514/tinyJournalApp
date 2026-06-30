@@ -151,61 +151,61 @@ export default async function Page(props: {
             </h2>
           </div>
           {(legStart || legEnd || leg?.mileage) && (
-            <table
-              className={`${notoSans.className} mt-auto text-sm text-gray-700 text-left`}
-            >
-              <tbody>
-                {legStart && (
-                  <tr>
-                    <td className="font-medium w-px whitespace-nowrap pr-[5px] py-0.5">
-                      <span className="flex items-center gap-2">
-                        Start
-                        <svg width="12" height="12" className="shrink-0">
-                          <circle
-                            cx="6"
-                            cy="6"
-                            r="4.5"
-                            fill="#16a34a"
-                            stroke="white"
-                            strokeWidth="1.5"
-                          />
-                        </svg>
-                      </span>
-                    </td>
-                    <td className="py-0.5">{legStart}</td>
-                  </tr>
-                )}
-                {legEnd && (
-                  <tr>
-                    <td className="font-medium w-px whitespace-nowrap pr-[5px] py-0.5">
-                      <span className="flex items-center gap-2">
-                        End
-                        <svg width="12" height="12" className="shrink-0">
-                          <rect
-                            x="1"
-                            y="1"
-                            width="10"
-                            height="10"
-                            fill="#dc2626"
-                            stroke="white"
-                            strokeWidth="1.5"
-                          />
-                        </svg>
-                      </span>
-                    </td>
-                    <td className="py-0.5">{legEnd}</td>
-                  </tr>
-                )}
-                {leg?.mileage && (
-                  <tr>
-                    <td className="font-medium w-px whitespace-nowrap pr-5 py-0.5">
-                      Mileage
-                    </td>
-                    <td className="py-0.5">{leg.mileage} mi</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+            <div className="mt-auto w-fit bg-white/70 backdrop-blur-sm rounded-lg p-3">
+              <table className={`${notoSans.className} text-sm text-gray-700 text-left`}>
+                <tbody>
+                  {legStart && (
+                    <tr>
+                      <td className="font-medium whitespace-nowrap pr-4 py-1">
+                        <span className="flex items-center gap-2">
+                          Start
+                          <svg width="12" height="12" className="shrink-0">
+                            <circle
+                              cx="6"
+                              cy="6"
+                              r="4.5"
+                              fill="#16a34a"
+                              stroke="white"
+                              strokeWidth="1.5"
+                            />
+                          </svg>
+                        </span>
+                      </td>
+                      <td className="py-1">{legStart}</td>
+                    </tr>
+                  )}
+                  {legEnd && (
+                    <tr>
+                      <td className="font-medium whitespace-nowrap pr-4 py-1">
+                        <span className="flex items-center gap-2">
+                          End
+                          <svg width="12" height="12" className="shrink-0">
+                            <rect
+                              x="1"
+                              y="1"
+                              width="10"
+                              height="10"
+                              fill="#dc2626"
+                              stroke="white"
+                              strokeWidth="1.5"
+                            />
+                          </svg>
+                        </span>
+                      </td>
+                      <td className="py-1">{legEnd}</td>
+                    </tr>
+                  )}
+                  {leg?.mileage && (
+                    <tr>
+                      <td className="font-medium whitespace-nowrap pr-4 py-1">
+                        Mileage
+                      </td>
+                      <td className="py-1">{leg.mileage} mi</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
