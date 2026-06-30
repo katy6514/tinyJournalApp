@@ -1173,11 +1173,12 @@ export default function CDTmap() {
     // border strokes thick-and-thin in place (avoids the displacement mismatch
     // that a separate ring element would have).
     function updateActiveHighlight() {
-      g.selectAll(".photoPoints, .photoThumbBorder, .msgCluster").classed(
+      g.selectAll(".photoPoints, .photoThumbBorder, .msgCluster, .photoCluster").classed(
         "active-pulse",
         false,
       );
       g.selectAll(".trail").classed("trail-active-pulse", false);
+      g.selectAll(".photoClusterLabel").text((d) => d.count);
 
       const photo = photoPopoutRef.current;
       if (photo) {
@@ -1188,6 +1189,15 @@ export default function CDTmap() {
           .filter((d) => d === photo.item)
           .select(".photoThumbBorder")
           .classed("active-pulse", true);
+
+        // If the photo is inside an un-dissolved cluster, pulse the cluster
+        // circle and replace its count label with a position counter.
+        g.selectAll(".photoCluster")
+          .filter((d) => d.points.includes(photo.item))
+          .classed("active-pulse", true);
+        g.selectAll(".photoClusterLabel")
+          .filter((d) => d.points.includes(photo.item))
+          .text((d) => `${d.points.indexOf(photo.item) + 1}/${d.count}`);
       }
 
       const panel = messagePanelRef.current;
