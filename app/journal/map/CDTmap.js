@@ -479,7 +479,7 @@ export default function CDTmap() {
     const idx = photos.findIndex((p) => p.properties.path === currentPath);
     if (idx === -1) return;
     const nextIdx = Math.max(0, Math.min(photos.length - 1, idx + dir));
-    if (nextIdx !== idx) setPhotoPopout({ item: photos[nextIdx], prevOpen: true });
+    if (nextIdx !== idx) setPendingPhotoPopout({ item: photos[nextIdx], prevOpen: true });
   };
 
   // Re-assigned on every render so D3 closures (registered once) always call
@@ -1337,72 +1337,67 @@ export default function CDTmap() {
             .on("mouseout", handleMouseOut);
         }
 
-        g.selectAll(`.${clusterClass}`)
-          .data(groups)
-          .enter()
-          .append("path")
-          .attr("class", clusterClass)
-          .attr("d", (d) => {
-            const r = clusterRadius(d.count, k);
-            return symbol.size(r * r * 2)();
-          })
-          .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
-          .attr("fill", fillColor)
-          .attr("stroke", strokeColor)
-          .attr("stroke-width", 1.5)
-          .attr("vector-effect", "non-scaling-stroke")
-          .attr("pointer-events", "none");
+        // Render each cluster's shape, hit area, and label together so they
+        // are adjacent in DOM order. This ensures a foreground cluster's shape
+        // paints over a background cluster's label when two clusters overlap.
+        groups.forEach((d) => {
+          const r = clusterRadius(d.count, k);
+          const vSide = r * Math.SQRT2;
 
-        g.selectAll(`.${hitClass}`)
-          .data(groups)
-          .enter()
-          .append("path")
-          .attr("class", hitClass)
-          .attr("d", (d) => {
-            const r = clusterRadius(d.count, k);
-            const vSide = r * Math.SQRT2;
-            return symbol.size((vSide + hitPad) ** 2)();
-          })
-          .attr("transform", (d) => `translate(${d.cx}, ${d.cy})`)
-          .attr("fill", "rgba(0,0,0,0.02)")
-          .attr("stroke", "none")
-          .attr("vector-effect", "non-scaling-stroke")
-          .attr("pointer-events", "all")
-          .attr("aria-describedby", "tooltip")
-          .on("mouseover", function (_event, d) {
-            const tooltip = document.getElementById("tooltip");
-            tooltip.classList.remove("invisible", "opacity-0");
-            tooltip.classList.add("visible", "opacity-100");
-            tooltip.innerHTML = `<p style="font-weight:600">${d.count} ${tooltipLabel}</p>`;
-          })
-          .on("mousemove", handleMouseMove)
-          .on("mouseout", handleMouseOut)
-          .on(
-            "click",
-            onClusterClick
-              ? function (event, d) {
-                  event.stopPropagation();
-                  handleMouseOut();
-                  onClusterClick(d);
-                }
-              : null,
-          )
-          .style("cursor", onClusterClick ? "pointer" : "default");
+          g.append("path")
+            .datum(d)
+            .attr("class", clusterClass)
+            .attr("d", symbol.size(r * r * 2)())
+            .attr("transform", `translate(${d.cx}, ${d.cy})`)
+            .attr("fill", fillColor)
+            .attr("stroke", strokeColor)
+            .attr("stroke-width", 1.5)
+            .attr("vector-effect", "non-scaling-stroke")
+            .attr("pointer-events", "none");
 
-        g.selectAll(`.${labelClass}`)
-          .data(groups)
-          .enter()
-          .append("text")
-          .attr("class", labelClass)
-          .attr("x", (d) => d.cx)
-          .attr("y", (d) => d.cy)
-          .attr("text-anchor", "middle")
-          .attr("dominant-baseline", "middle")
-          .attr("font-size", 11 / k)
-          .attr("fill", "white")
-          .attr("stroke", "none")
-          .attr("pointer-events", "none")
-          .text((d) => d.count);
+          g.append("path")
+            .datum(d)
+            .attr("class", hitClass)
+            .attr("d", symbol.size((vSide + hitPad) ** 2)())
+            .attr("transform", `translate(${d.cx}, ${d.cy})`)
+            .attr("fill", "rgba(0,0,0,0.02)")
+            .attr("stroke", "none")
+            .attr("vector-effect", "non-scaling-stroke")
+            .attr("pointer-events", "all")
+            .attr("aria-describedby", "tooltip")
+            .on("mouseover", function (_event, hd) {
+              const tooltip = document.getElementById("tooltip");
+              tooltip.classList.remove("invisible", "opacity-0");
+              tooltip.classList.add("visible", "opacity-100");
+              tooltip.innerHTML = `<p style="font-weight:600">${hd.count} ${tooltipLabel}</p>`;
+            })
+            .on("mousemove", handleMouseMove)
+            .on("mouseout", handleMouseOut)
+            .on(
+              "click",
+              onClusterClick
+                ? function (event, hd) {
+                    event.stopPropagation();
+                    handleMouseOut();
+                    onClusterClick(hd);
+                  }
+                : null,
+            )
+            .style("cursor", onClusterClick ? "pointer" : "default");
+
+          g.append("text")
+            .datum(d)
+            .attr("class", labelClass)
+            .attr("x", d.cx)
+            .attr("y", d.cy)
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "middle")
+            .attr("font-size", 11 / k)
+            .attr("fill", "white")
+            .attr("stroke", "none")
+            .attr("pointer-events", "none")
+            .text(d.count);
+        });
 
         if (!visibilityRef.current[visKey])
           g.selectAll(allClasses).attr("display", "none");
