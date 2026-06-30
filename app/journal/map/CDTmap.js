@@ -1715,12 +1715,19 @@ export default function CDTmap() {
         const photoR = 18 / k;
 
         // Split solos: visible ones get thumbnail images; off-screen ones get plain circles.
+        // Use a buffer so dots near the edge that get force-displaced into view still
+        // receive thumbnails. Buffer is in SVG coordinate space (~29 units per collision
+        // pair × up to ~5 nodes ≈ 150 units of worst-case spread).
+        const thumbBuffer = 150;
         const visibleSolos = [];
         const hiddenSolos = [];
         for (const d of solos) {
           const [px, py] = projection(d.geometry.coordinates);
           const [sx, sy] = transform.apply([px, py]);
-          if (sx >= 0 && sx <= width && sy >= 0 && sy <= height) {
+          if (
+            sx >= -thumbBuffer && sx <= width + thumbBuffer &&
+            sy >= -thumbBuffer && sy <= height + thumbBuffer
+          ) {
             visibleSolos.push(d);
           } else {
             hiddenSolos.push(d);
