@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import sql from "@/app/lib/db";
+import { auth } from "@/auth";
+
+const PREVIEW_CHARS = 160;
+
+function previewText(text: string): string {
+  if (text.length <= PREVIEW_CHARS) return text;
+  const cut = text.slice(0, PREVIEW_CHARS);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut).trimEnd() + "…";
+}
 
 const getLegsGeoJSON = unstable_cache(
   async () => {
@@ -41,7 +51,27 @@ const getLegsGeoJSON = unstable_cache(
 
 export async function GET() {
   const data = await getLegsGeoJSON();
-  return NextResponse.json(data, {
+  const session = await auth();
+
+  if (session?.user) {
+    return NextResponse.json(data, {
+      headers: { "Cache-Control": "private, no-store" },
+    });
+  }
+
+  // Unauthenticated: send only a short teaser of the entry text, not the full body.
+  const publicData = {
+    ...data,
+    features: data.features.map((f) => ({
+      ...f,
+      properties: {
+        ...f.properties,
+        text: f.properties.text ? previewText(f.properties.text) : null,
+      },
+    })),
+  };
+
+  return NextResponse.json(publicData, {
     headers: { "Cache-Control": "public, max-age=31536000, immutable" },
   });
 }

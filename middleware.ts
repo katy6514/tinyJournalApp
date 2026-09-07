@@ -2,10 +2,10 @@ import NextAuth from "next-auth";
 import { authConfig } from "./auth.config";
 import { NextRequest, NextResponse } from "next/server";
 
-// Custom middleware to allow /seed without auth
+// Custom middleware to allow /seed and the public trail map without auth
 export function middleware(req: NextRequest) {
-  // Allow /seed route without authentication
-  if (req.nextUrl.pathname.startsWith("/seed")) {
+  const { pathname } = req.nextUrl;
+  if (pathname.startsWith("/seed") || pathname.startsWith("/journal/map")) {
     return NextResponse.next();
   }
   // Otherwise, use NextAuth middleware
@@ -18,5 +18,5 @@ export const config = {
   // matcher: [
   //   "/((?!api|_next/static|_next/image|data|login|CDTphotos|.*\\.png$|$).*)",
   // ],
-  matcher: ["/journal/listView/:path*"],
+  matcher: ["/journal/:path*"],
 };

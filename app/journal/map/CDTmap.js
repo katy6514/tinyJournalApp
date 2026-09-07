@@ -2671,9 +2671,37 @@ export default function CDTmap() {
             {/* Entry text */}
             <div className="overflow-y-auto px-5 py-4 flex-1 min-h-0">
               {legPanel.text ? (
-                <p className={`${notoSerif.className} whitespace-pre-wrap text-sm leading-relaxed text-gray-800`}>
-                  {legPanel.text}
-                </p>
+                currentUserRef.current ? (
+                  <p className={`${notoSerif.className} whitespace-pre-wrap text-sm leading-relaxed text-gray-800`}>
+                    {legPanel.text}
+                  </p>
+                ) : (
+                  <div>
+                    <div className="relative">
+                      <p
+                        className={`${notoSerif.className} whitespace-pre-wrap text-sm leading-relaxed text-gray-800 overflow-hidden`}
+                        style={{ maxHeight: "3.2rem" }}
+                      >
+                        {legPanel.text}
+                      </p>
+                      <div
+                        className="absolute inset-x-0 bottom-0 h-10 pointer-events-none"
+                        style={{ background: "linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.97) 75%)" }}
+                      />
+                    </div>
+                    {legPanel.entryId && (
+                      <button
+                        className="mt-1 text-sm font-medium text-blue-600 hover:text-blue-800"
+                        onClick={() => {
+                          setLegPanel(null);
+                          router.push(`/journal/${legPanel.entryId}`);
+                        }}
+                      >
+                        Log in to read the full entry →
+                      </button>
+                    )}
+                  </div>
+                )
               ) : (
                 <p className="text-sm text-gray-400 italic">No journal entry for this day.</p>
               )}
