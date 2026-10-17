@@ -9,6 +9,7 @@ import * as d3 from "d3";
 import { width, height, cities, colors } from "./constants";
 import { updatePhotoCaption } from "@/app/lib/actions/photos";
 import { notoSans, notoSerif } from "@/app/ui/fonts";
+import { useLoginDialog } from "@/app/ui/login-dialog";
 
 import {
   getAlternatingColor,
@@ -185,6 +186,7 @@ export default function CDTmap() {
   const currentUserRef = useRef(null);
   currentUserRef.current = session?.user ?? null;
   const router = useRouter();
+  const { openLogin } = useLoginDialog();
 
   const [visibility, setVisibility] = useState({
     photos: true,
@@ -2692,10 +2694,7 @@ export default function CDTmap() {
                     {legPanel.entryId && (
                       <button
                         className="mt-1 text-sm font-medium text-blue-600 hover:text-blue-800"
-                        onClick={() => {
-                          setLegPanel(null);
-                          router.push(`/journal/${legPanel.entryId}`);
-                        }}
+                        onClick={() => openLogin(`/journal/${legPanel.entryId}`)}
                       >
                         Log in to read the full entry →
                       </button>

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import NavLinks from "@/app/ui/journal/nav-links";
-import { PowerIcon } from "@heroicons/react/24/outline";
-import { signOut } from "@/auth";
+import AuthButton from "@/app/ui/journal/auth-button";
 
 export default function Navigation() {
   return (
@@ -15,16 +14,7 @@ export default function Navigation() {
         <NavLinks />
       </div>
       <div className="navbar-end gap-2">
-        <form
-          action={async () => {
-            "use server";
-            await signOut({ redirectTo: "/" });
-          }}
-        >
-          <button className="btn btn-ghost btn-circle">
-            <PowerIcon className="h-5 w-5" />
-          </button>
-        </form>
+        <AuthButton />
       </div>
     </div>
   );

@@ -2,10 +2,16 @@ import NextAuth from "next-auth";
 import { authConfig } from "./auth.config";
 import { NextRequest, NextResponse } from "next/server";
 
-// Custom middleware to allow /seed and the public trail map without auth
+// Public pages under /journal: About, the trail map, and the Dev Journal.
+// Everything else (entries, list/calendar views, create/edit) requires login.
+const PUBLIC_JOURNAL_PATHS = ["/journal", "/journal/map", "/journal/devJournal"];
+const isPublicJournalPath = (pathname: string) =>
+  PUBLIC_JOURNAL_PATHS.includes(pathname.replace(/\/$/, ""));
+
+// Custom middleware to allow /seed and the public journal pages without auth
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  if (pathname.startsWith("/seed") || pathname.startsWith("/journal/map")) {
+  if (pathname.startsWith("/seed") || isPublicJournalPath(pathname)) {
     return NextResponse.next();
   }
   // Otherwise, use NextAuth middleware

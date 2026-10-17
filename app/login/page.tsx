@@ -1,28 +1,14 @@
-import Image from "next/image";
+import { redirect } from "next/navigation";
 
-import LoginForm from "@/app/ui/login-form";
-import { Suspense } from "react";
-import titcombBasin from "@/public/titcombBasin.jpg";
-
-export default function LoginPage() {
-  return (
-    <main className="flex flex-column justify-items-center, items-center">
-      <div className="basis-1/4 ">
-        <Image
-          src={titcombBasin}
-          width={394}
-          height={700}
-          alt="Photo of Katy nearing the top of a mountain pass in the Wind River Range near sunrise, many mountains and lakes behind her"
-          className="object-cover w-full h-screen items-center"
-        />
-      </div>
-      <div className="basis-3/4 ">
-        <div className="relative mx-auto flex w-full max-w-[400px] flex-col space-y-2.5 p-4 md:-mt-32">
-          <Suspense>
-            <LoginForm />
-          </Suspense>
-        </div>
-      </div>
-    </main>
+// Login now happens in a dialog over the app. Keep /login working for old
+// links by sending visitors to the map, which opens the dialog.
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
+  const { callbackUrl } = await searchParams;
+  redirect(
+    `/journal/map?callbackUrl=${encodeURIComponent(callbackUrl || "/journal")}`
   );
 }
