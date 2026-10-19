@@ -9,16 +9,10 @@ export const authConfig = {
   },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
-      const isOnJournal = nextUrl.pathname.startsWith("/journal");
-      if (isOnJournal) {
-        if (!isLoggedIn) return false; // Redirect unauthenticated users to the login dialog
-        if (isAdminPath(nextUrl.pathname) && !isAdminEmail(auth.user?.email)) {
-          return Response.redirect(new URL("/journal/map", nextUrl));
-        }
-        return true;
-      } else if (isLoggedIn) {
-        return Response.redirect(new URL("/journal", nextUrl));
+      // Middleware only runs this for protected paths (see middleware.ts).
+      if (!auth?.user) return false; // Redirect unauthenticated users to the login dialog
+      if (isAdminPath(nextUrl.pathname) && !isAdminEmail(auth.user.email)) {
+        return Response.redirect(new URL("/journal/map", nextUrl));
       }
       return true;
     },

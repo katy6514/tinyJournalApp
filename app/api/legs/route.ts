@@ -71,7 +71,8 @@ export async function GET() {
     })),
   };
 
+  // Not cacheable by the browser: after logging in, the same URL must return full text.
   return NextResponse.json(publicData, {
-    headers: { "Cache-Control": "public, max-age=31536000, immutable" },
+    headers: { "Cache-Control": "private, no-store" },
   });
 }

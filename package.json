@@ -17,13 +17,13 @@
     "date-fns": "^4.1.0",
     "exifr": "^7.1.3",
     "heic-convert": "^2.1.0",
-    "next": "^15.4.10",
-    "next-auth": "5.0.0-beta.29",
+    "next": "^15.5.27",
+    "next-auth": "5.0.0-beta.32",
     "postgres": "^3.4.7",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-photo-album": "^3.1.0",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.5",
     "tailwind-merge": "^3.3.1",
     "use-debounce": "^10.0.5",
     "yet-another-react-lightbox": "^3.25.0",
@@ -39,7 +39,7 @@
     "@types/react-dom": "^19",
     "daisyui": "^5.1.13",
     "eslint": "^9",
-    "eslint-config-next": "15.4.6",
+    "eslint-config-next": "15.5.27",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
@@ -50,6 +50,12 @@
       "bcrypt",
       "sharp",
       "unrs-resolver"
-    ]
+    ],
+    "overrides": {
+      "next>sharp": "^0.35.5",
+      "next>postcss": "^8.5.28",
+      "nanoid@3": "^3.3.19",
+      "source-map-js": "^1.2.2"
+    }
   }
 }

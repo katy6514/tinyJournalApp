@@ -8,10 +8,10 @@ const PUBLIC_JOURNAL_PATHS = ["/journal", "/journal/map", "/journal/devJournal"]
 const isPublicJournalPath = (pathname: string) =>
   PUBLIC_JOURNAL_PATHS.includes(pathname.replace(/\/$/, ""));
 
-// Custom middleware to allow /seed and the public journal pages without auth
+// Custom middleware to allow the public journal pages without auth
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  if (pathname.startsWith("/seed") || isPublicJournalPath(pathname)) {
+  if (isPublicJournalPath(pathname)) {
     return NextResponse.next();
   }
   // Otherwise, use NextAuth middleware
@@ -24,5 +24,5 @@ export const config = {
   // matcher: [
   //   "/((?!api|_next/static|_next/image|data|login|CDTphotos|.*\\.png$|$).*)",
   // ],
-  matcher: ["/journal/:path*"],
+  matcher: ["/journal/:path*", "/uploadPhotos/:path*", "/uploadTrack/:path*"],
 };

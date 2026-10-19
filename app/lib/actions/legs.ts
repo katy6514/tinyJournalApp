@@ -2,6 +2,7 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireAdmin } from "@/app/lib/auth-guard";
 
 import sql from "../db";
 
@@ -32,6 +33,7 @@ export async function importLegsFromGeoJSON(
   _prevState: { message: string },
   formData: FormData,
 ) {
+  await requireAdmin();
   const file = formData.get("geojson") as File;
 
   if (!file || file.size === 0) {
@@ -87,6 +89,7 @@ export async function createLeg(
   _prevState: { message: string },
   formData: FormData,
 ) {
+  await requireAdmin();
   const legnum = Number(formData.get("legnum"));
   const name = formData.get("name") as string;
   const file = formData.get("coordinates") as File;
@@ -118,6 +121,7 @@ export async function updateLegCoordinates(
   _prevState: { message: string },
   formData: FormData,
 ) {
+  await requireAdmin();
   const legId = formData.get("legId") as string;
   const file = formData.get("coordinates") as File;
 
@@ -160,6 +164,7 @@ export async function backfillMileage(
   _prevState: { message: string },
   _formData: FormData,
 ): Promise<{ message: string }> {
+  await requireAdmin();
   const legs = await sql<{ id: number; coordinates: number[][] }[]>`
     SELECT id, coordinates FROM legs WHERE mileage IS NULL AND coordinates IS NOT NULL
   `;
@@ -179,6 +184,7 @@ export async function backfillMileage(
 }
 
 export async function updateLegWithDate(formData: FormData) {
+  await requireAdmin();
   const legId = formData.get("legId") as string;
   const dateId = formData.get("dateId") as string;
 

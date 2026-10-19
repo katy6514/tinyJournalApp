@@ -5,7 +5,7 @@ import { writeFile, unlink } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
 
-import { auth } from "@/auth";
+import { requireAdmin } from "@/app/lib/auth-guard";
 
 import sql from "../db";
 import { extractPhotoExif } from "../exif";
@@ -22,8 +22,7 @@ export async function uploadPhotos(
   _prevState: UploadPhotoResult,
   formData: FormData,
 ): Promise<UploadPhotoResult> {
-  const session = await auth();
-  if (!session) throw new Error("Not authenticated");
+  await requireAdmin();
 
   const title = (formData.get("title") as string | null) || null;
   const files = formData.getAll("photos") as File[];
@@ -156,8 +155,7 @@ export async function updatePhotoCaption(
   photoId: string,
   caption: string,
 ): Promise<void> {
-  const session = await auth();
-  if (!session) throw new Error("Not authenticated");
+  await requireAdmin();
 
   await sql`
     UPDATE photos SET description = ${caption} WHERE id = ${photoId}

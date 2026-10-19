@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireAdmin } from "@/app/lib/auth-guard";
 
 import sql from "../db";
 
@@ -29,6 +30,7 @@ export type State = {
 };
 
 export async function createEntry(prevState: State, formData: FormData) {
+  await requireAdmin();
   const validatedFields = CreateEntry.safeParse({
     date_id: formData.get("date_id"),
     state_id: formData.get("state_id"),
@@ -68,6 +70,7 @@ export async function updateEntry(
   prevState: EditState,
   formData: FormData,
 ) {
+  await requireAdmin();
   const validatedFields = UpdateEntry.safeParse({
     state_id: formData.get("state_id"),
     legname: formData.get("legname"),
